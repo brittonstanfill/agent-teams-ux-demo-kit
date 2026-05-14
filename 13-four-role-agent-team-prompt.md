@@ -50,7 +50,7 @@ Required handoffs:
 - Information Architect -> Visual Designer: screen sequence, primary decision per screen, content hierarchy, copy constraints, and scoped gaps.
 - Accessibility Specialist -> Visual Designer: blockers that must change the HTML.
 - Behavioral Scientist -> Visual Designer and lead: trust risks that must change copy, hierarchy, or instrumentation.
-- Visual Designer -> lead: list of audit fixes applied and any fixes deliberately rejected.
+- Visual Designer -> lead: list of audit fixes applied, any fixes deliberately rejected, and a viewport-fit note for the final HTML.
 
 Red-team checklist the lead must run personally:
 - What is the strongest opposing design that does not use this flow?
@@ -95,4 +95,6 @@ Write `demo-output/run-metadata.md` with branch, commit SHA, start/end time, mod
 Also produce the HTML artifact at `demo-output/prototype/index.html`. A recommendation without an artifact, an artifact without a recommendation, or missing appendix/metadata is incomplete.
 
 Before committing, run a blind-hygiene scan on the HTML and final recommendation for origin-identifying terms, branch names, commit SHAs, and ungrounded operational promises. Commit only `demo-output/role-reports`, `demo-output/prototype`, `demo-output/final-recommendation.md`, `demo-output/process-appendix.md`, and `demo-output/run-metadata.md`.
+
+Also before committing, run a responsive render smoke check on `demo-output/prototype/index.html` at a narrow mobile viewport around 390px wide and at a desktop viewport. If browser rendering is available, use screenshots; otherwise inspect CSS/markup and record the limitation. Do not seal while text, nav, cards, phone frames, buttons, or fixed-format elements clip horizontally, overlap incoherently, or require sideways scrolling. Record the check result in `demo-output/run-metadata.md`.
 ```

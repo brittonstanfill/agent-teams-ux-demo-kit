@@ -33,6 +33,7 @@ Gate failures in the candidate system block promotion, even if the score is high
 | Completeness | Required files exist and are not stubs. |
 | Constraint integrity | No invented metrics, user quotes, laws, airline policies, compensation guarantees, static wait times, credit expiration windows, eligibility promises, hotel names, voucher amounts, phone numbers, or other operational facts not supplied by the brief. Dynamic placeholders are acceptable only when clearly framed as placeholders or system-provided values. |
 | Accessibility floor | No obvious keyboard trap, unreadable contrast, missing focus path, or screen-reader-breaking structure. |
+| Responsive render floor | If the artifact is visual UI, check at least one narrow mobile viewport around 390px wide and one desktop viewport. There should be no horizontal clipping/scroll, incoherent overlap, or text escaping buttons, cards, navigation, or fixed-format mockups. |
 | Trust floor | The flow does not hide refund/support/entitlement information to reduce calls. |
 
 ### Layer 1: Outcome Quality
@@ -124,7 +125,7 @@ Promote a system change only when:
 1. Seal both outputs in separate commits before scoring.
 2. Copy only the HTML artifact and meeting-ready recommendation into blind labels `A` and `B`; hide which one is single-agent vs. team.
 3. Exclude `run-metadata.md`, role reports, process appendices, branch names, commit SHAs, and origin-identifying headings from Layer 1.
-4. Run a hygiene scan on the blind artifacts for origin-identifying terms and ungrounded operational claims. Keep scanning results separate from Layer 1 outcome notes until after the blind score is recorded.
+4. Run a hygiene scan on the blind artifacts for origin-identifying terms and ungrounded operational claims. If the artifact has a visual UI, render or screenshot the blind HTML at mobile and desktop sizes before scoring visual craft and accessibility. Keep scanning results separate from Layer 1 outcome notes until after the blind score is recorded.
 5. Have at least one judge score outcome quality while blind to process.
 6. Reveal process artifacts only after Layer 1 scoring, then score Layer 2 and Layer 3.
 7. Reveal which system produced which output.
@@ -167,6 +168,7 @@ Run these before, during, and after each loop. The point is to avoid grounding t
 - **Verbosity bias:** longer reports feel more rigorous. Penalize repetition.
 - **Team halo:** visible coordination feels valuable even when it did not change a decision.
 - **Artifact blindness:** a strong memo can hide a weak prototype.
+- **Code-only visual scoring:** HTML that looks semantically careful can still clip, overflow, or break in a small viewport. Render it.
 - **Process blindness:** a good prototype can hide unsafe assumptions or missing edge cases.
 - **Aesthetic overcorrection:** after a generic team artifact, the next run may chase distinctiveness and lose clarity.
 - **Single-scenario overfitting:** one Northstar result is useful signal, not proof. Promote cautiously.
