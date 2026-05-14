@@ -49,6 +49,7 @@ A good demo names both. The scorecard in `05-scorecard.md` is built around the "
 | `08-single-agent-quick-prompt.md` | **3-line single-agent prompt** — for the 80% of moments where you just need one specialist, not a team |
 | `09-parallel-author-prompt.md` | **Parallel-author team prompt** — use when authorship matters more than peer-challenge (visual composition, distinctive aesthetic). Produces 2–3 distinct authored drafts; team picks a winner. |
 | `10-clean-room-experiment-runbook.md` | **Evaluation protocol** — fresh clone/branch, no prior output contamination, sealed baseline/team outputs, scorecard, and promotion rules |
+| `11-evaluation-system.md` | **Improvement-loop evaluator** — gates, weighted outcome/decision/efficiency scoring, coordination yield, and metacognition checks |
 | `agent-teams-meetup-deck.html` | Self-contained HTML talk deck (17 slides, ~20 min). Open in any browser; arrow keys to navigate; `N` for speaker notes; `F` for fullscreen |
 
 ### The 9 agents (in `claude-agents/`)
@@ -113,7 +114,7 @@ Restart your Claude Code session in this project.
 2. Run [`03-single-agent-baseline-prompt.md`](03-single-agent-baseline-prompt.md) first if you want a direct comparison. For a serious evaluation, follow [`10-clean-room-experiment-runbook.md`](10-clean-room-experiment-runbook.md) so the baseline and team run do not see past outputs.
 3. Run [`02-master-agent-team-prompt.md`](02-master-agent-team-prompt.md) and point it at the brief.
 4. Show the team messages, role-owned files, conflict resolution, and final recommendation.
-5. Score both outputs with [`05-scorecard.md`](05-scorecard.md).
+5. Score both outputs with [`05-scorecard.md`](05-scorecard.md). For improvement-loop decisions, use [`11-evaluation-system.md`](11-evaluation-system.md) plus `templates/evaluation-report-template.md`.
 
 For a deeper, debate-style run (recommended once the demo proves the concept), use [`07-team-debate-master-prompt.md`](07-team-debate-master-prompt.md) instead of `02-`. The 4-round structure forces the team into independent positions → cross-examination → steelman/revise → lead synthesis, with devil's advocate running an inline pre-mortem.
 

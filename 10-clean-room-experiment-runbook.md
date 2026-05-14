@@ -18,7 +18,7 @@ This protocol borrows from Anthropic's public guidance:
 - Preserve direct artifacts from teammates to avoid "game of telephone" loss through the coordinator.
 - Use fresh context between unrelated tasks; accumulated corrections can degrade later work.
 
-Sources: Anthropic's Claude Code agent-team docs, worktree docs, "How we built our multi-agent research system," and "Building effective agents."
+Sources: Anthropic's Claude Code [agent-team docs](https://code.claude.com/docs/en/agent-teams), [worktree docs](https://code.claude.com/docs/en/worktrees), ["How we built our multi-agent research system"](https://www.anthropic.com/engineering/multi-agent-research-system), and ["Building effective agents"](https://www.anthropic.com/engineering/building-effective-agents).
 
 ## Clean-room setup
 
@@ -42,6 +42,16 @@ find demo-output -type f ! -name .gitkeep -print
 ```
 
 The `find` command should print nothing. If it prints generated files, stop and start over.
+
+Install the project-scoped agent definitions in the team checkout so the run does not depend on whatever happens to be installed globally:
+
+```bash
+cd "../northstar-$RUN_ID-team"
+mkdir -p .claude/agents
+cp claude-agents/*.md .claude/agents/
+```
+
+Do not commit `.claude/agents/` as part of the experiment output unless the experiment is specifically testing project-scoped agent packaging.
 
 ## Contamination rules
 
@@ -82,7 +92,7 @@ Only after both commits exist may the lead compare outputs. At that point, creat
 
 ## Score and decide
 
-Use `05-scorecard.md`. Record:
+Use `11-evaluation-system.md` for improvement-loop decisions. Use `05-scorecard.md` only for quick live-demo scoring. Record:
 
 - Branch and commit SHAs for baseline and team outputs
 - Wall time

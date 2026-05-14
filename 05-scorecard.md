@@ -2,6 +2,8 @@
 
 Use this to keep the demo honest. The agent team should not "win" unless the output improves enough to justify coordination cost.
 
+For the improvement loop, use `11-evaluation-system.md`. This file is the quick live-demo scorecard.
+
 **Honest framing for the demo:** the kit's earlier pitch — "team output > single output" — is true on some dimensions and false on others. A live demo that hides this is less useful than one that surfaces it. The "What team wins on / What single agent wins on" section at the bottom is now the most important part of the scorecard.
 
 Score each item 0 to 3.
