@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Northstar Air — Canceled-Flight Recovery (Prototype, v04-vd)</title>
+<style>
+  /* ========================================================================
+     DESIGN TOKENS — Northstar Recovery
+     Anchor: NTSB operational honesty filtered through Linear's restraint.
+     Two type weights. Three sizes per screen max. One accent.
+     ======================================================================== */
+
+  :root {
+    /* Color — deep ink on warm bone. Pure white is hostile at 10:46 p.m. */
+    --ink:         #1A1715;   /* primary type, near-black with warm undertone */
+    --ink-2:       #4A433D;   /* secondary type, warm gray */
+    --ink-3:       #6E655E;   /* tertiary / metadata — darkened from #7A716A per A11y §6 contrast insurance */
+    --rule:        #D9D0C2;   /* DECORATIVE hairlines inside a single card only — fails 3:1 vs bone, do not use as the only delineator between interactive surfaces */
+    --rule-strong: #6E655E;   /* STRUCTURAL borders that delineate interactive cards (path-card, flight-card) — ≈3.2:1 on bone per A11y B3 */
+    --bone:        #F5F1E8;   /* page background, warm off-white */
+    --bone-2:      #EAE3D3;   /* card surface, one step darker than bone */
+    --bone-3:      #FBF8F1;   /* receipt block, one step lighter than bone */
+    --teal:        #2E6E6B;   /* THE accent — reserved for active decision */
+    --teal-ink:    #1F4F4D;   /* teal pressed/focus border + active-card left bar */
+    --teal-wash:   #DCE8E6;   /* teal background tint — DECORATIVE only, ~1.1:1 on bone, never the sole selection affordance */
+    --warn:        #8A4A1F;   /* warm rust — used for "split party?" / advisory, NOT cancellation fact */
+    --danger:      #9B2C2C;   /* reserved for irreversible/destructive only */
+
+    /* Type scale — three sizes per screen, max */
+    --t-display:   28px;       /* headline / the fact */
+    --t-display-lh: 34px;
+    --t-body:      17px;       /* body minimum per CD */
+    --t-body-lh:   25px;
+    --t-meta:      14px;       /* metadata, captions */
+    --t-meta-lh:   20px;
+    --w-regular:   400;
+    --w-semibold:  600;
+
+    /* Spacing — 4pt grid */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+    --s-9: 56px;
+
+    /* Radii — restrained, never pill */
+    --r-1: 2px;   /* hairline detail */
+    --r-2: 6px;   /* buttons, cards */
+    --r-3: 10px;  /* sheet */
+
+    /* Elevation — none. Surfaces separate by tone, not shadow. */
+    --e-strip: 0 -1px 0 0 var(--rule);
+
+    /* Focus ring — static, high-contrast, no glow */
+    --focus-ring: 0 0 0 2px var(--bone), 0 0 0 4px var(--teal-ink);
+
+    /* Motion — 120ms cross-fade only, per CD */
+    --m-fade: 120ms ease-out;
+
+    --phone-w: 390px;
+  }
+
+  /* ========================================================================
+     RESET / BASE
+     ======================================================================== */
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+                 "Helvetica Neue", Arial, sans-serif;
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    font-weight: var(--w-regular);
+    color: var(--ink);
+    background: #E7E0CE;        /* gallery background, darker than bone, so phone frame reads as a device */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Tabular numerals globally — times, flight numbers, dollar amounts */
+  .num { font-variant-numeric: tabular-nums; }
+
+  h1, h2, h3, p, ul, ol { margin: 0; }
+  ul { padding: 0; list-style: none; }
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+  }
+  button:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--r-2); }
+  a { color: var(--teal-ink); text-decoration: underline; text-underline-offset: 3px; }
+  a:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--r-1); }
+
+  /* ========================================================================
+     GALLERY LAYOUT — phone-frame on wide viewports, full-bleed on mobile
+     ======================================================================== */
+
+  .gallery {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: var(--s-7) var(--s-4);
+  }
+
+  .gallery-header {
+    max-width: 560px;
+    margin: 0 auto var(--s-7);
+    padding: var(--s-5);
+    background: var(--bone-3);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-2);
+  }
+  .gallery-header h1 {
+    font-size: var(--t-body);
+    font-weight: var(--w-semibold);
+    line-height: var(--t-body-lh);
+    margin-bottom: var(--s-3);
+  }
+  .gallery-header p { font-size: var(--t-meta); line-height: var(--t-meta-lh); color: var(--ink-2); margin-bottom: var(--s-2); }
+  .gallery-header .byline { color: var(--ink-3); }
+  .gallery-header ol { padding-left: var(--s-5); font-size: var(--t-meta); line-height: var(--t-meta-lh); color: var(--ink-2); list-style: decimal; }
+
+  .screens {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-9);
+  }
+
+  .screen-label {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--s-3);
+    text-align: center;
+  }
+  .screen-label strong { color: var(--ink-2); font-weight: var(--w-semibold); letter-spacing: 0; text-transform: none; }
+
+  /* The phone frame. On narrow viewports, it disappears and the surface is full-bleed. */
+  .phone {
+    width: var(--phone-w);
+    max-width: 100%;
+    background: var(--bone);
+    border: 1px solid var(--ink);
+    border-radius: 28px;
+    overflow: hidden;
+    position: relative;
+  }
+  @media (max-width: 430px) {
+    body { background: var(--bone); }
+    .gallery { padding: var(--s-4) 0; }
+    .gallery-header { margin-left: var(--s-4); margin-right: var(--s-4); }
+    .phone { border: none; border-radius: 0; }
+    .screens { gap: var(--s-8); }
+  }
+
+  /* ========================================================================
+     COMMON SURFACE BUILDING BLOCKS
+     ======================================================================== */
+
+  .surface {
+    padding: var(--s-6) var(--s-5) var(--s-5);
+    min-height: 720px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Operational header — fact line + state line. No icon. No hero. */
+  .op-header { margin-bottom: var(--s-6); }
+  .op-header .meta {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    margin-bottom: var(--s-3);
+  }
+  .op-header h1.fact {
+    font-size: var(--t-display);
+    line-height: var(--t-display-lh);
+    font-weight: var(--w-semibold);
+    letter-spacing: -0.01em;
+    margin-bottom: var(--s-3);
+  }
+  .op-header .state {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--ink-2);
+  }
+  .op-header .state strong { color: var(--ink); font-weight: var(--w-semibold); }
+
+  /* Section heading on supporting blocks */
+  h2.section {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    font-weight: var(--w-semibold);
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--s-3);
+  }
+
+  /* Primary button — the one active decision, in teal */
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 52px;
+    padding: 14px var(--s-5);
+    background: var(--teal);
+    color: var(--bone);
+    font-size: var(--t-body);
+    font-weight: var(--w-semibold);
+    line-height: var(--t-body-lh);
+    border-radius: var(--r-2);
+    border: 1px solid var(--teal-ink);
+  }
+  .btn-primary:hover { background: var(--teal-ink); }
+  .btn-primary:active { background: var(--teal-ink); transform: translateY(1px); }
+  .btn-primary .chev { font-weight: var(--w-regular); opacity: 0.85; }
+
+  .btn-secondary {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--s-3) var(--s-4);
+    color: var(--ink);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    text-align: center;
+    border: 1px solid var(--rule-strong);    /* A11y B3: structural border */
+    border-radius: var(--r-2);
+    background: transparent;
+  }
+  /* Disabled primary CTA — used on Screen 2 first paint (no selection). BS 2.1.
+     aria-disabled style; element stays focusable so AT users hear why. */
+  .btn-primary[aria-disabled="true"] {
+    background: var(--bone-2);
+    color: var(--ink-3);
+    border-color: var(--rule-strong);
+    cursor: not-allowed;
+  }
+  .btn-primary[aria-disabled="true"]:hover { background: var(--bone-2); }
+  /* Tertiary affordances rendered as <button> but visually a text link.
+     A11y B7 — these were anchors with href="#…" but they perform actions. */
+  button.text-link {
+    display: inline-block;
+    min-height: 44px;
+    padding: var(--s-3) 0;
+    color: var(--teal-ink);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    font-weight: var(--w-regular);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  button.text-link.block { display: block; width: 100%; text-align: center; }
+  button.text-link.inline-link { min-height: 0; padding: 0; }
+  .btn-tertiary {
+    display: inline-block;
+    min-height: 44px;
+    padding: var(--s-3) 0;
+    color: var(--teal-ink);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Entitlements strip — persistent on screens 1–3 */
+  .entitlements-strip {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-top: auto;                       /* push to bottom of surface */
+    background: var(--bone-3);
+    border-top: 1px solid var(--rule-strong); /* A11y B3: structural — strip-to-surface delineation */
+    padding: var(--s-3) var(--s-5);
+    box-shadow: 0 -1px 0 0 var(--rule-strong);
+  }
+  .entitlements-strip button.strip-tap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--s-2) 0;
+  }
+  .entitlements-strip .strip-label {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--ink);
+  }
+  .entitlements-strip .strip-label strong { font-weight: var(--w-semibold); }
+  .entitlements-strip .strip-status {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+  .entitlements-strip .strip-chev {
+    font-size: var(--t-body);
+    color: var(--ink-2);
+    margin-left: var(--s-4);
+  }
+
+  /* ========================================================================
+     SCREEN 0 — SMS lock-screen card
+     ======================================================================== */
+
+  .sms-shell {
+    background: #1F1B17;        /* faux lock-screen, warm dark */
+    padding: var(--s-7) var(--s-5);
+    min-height: 720px;
+    color: var(--bone);
+    display: flex;
+    flex-direction: column;
+  }
+  .sms-time {
+    text-align: center;
+    color: rgba(245,241,232,0.8);
+    font-size: 56px;
+    line-height: 64px;
+    font-weight: 200;
+    letter-spacing: -0.02em;
+    margin-top: var(--s-5);
+    margin-bottom: var(--s-2);
+  }
+  .sms-date {
+    text-align: center;
+    color: rgba(245,241,232,0.6);
+    font-size: var(--t-body);
+    margin-bottom: var(--s-8);
+  }
+  .sms-card {
+    background: rgba(245,241,232,0.10);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(245,241,232,0.18);
+    border-radius: 14px;
+    padding: var(--s-4);
+  }
+  .sms-card .sender {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: rgba(245,241,232,0.75);
+    margin-bottom: var(--s-2);
+  }
+  .sms-card .sender strong { font-weight: var(--w-semibold); color: var(--bone); }
+  .sms-card .body {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--bone);
+  }
+  .sms-card .body p + p { margin-top: var(--s-3); }
+  .sms-card .body .deep-link { color: #6FB8B3; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ========================================================================
+     SCREEN 2 — Path cards (stacked vertical, side-by-side comparison)
+     ======================================================================== */
+
+  .path-card {
+    display: block;
+    width: 100%;
+    padding: var(--s-5);
+    background: var(--bone-3);
+    border: 1px solid var(--rule-strong);   /* A11y B3: structural border, 3:1+ on bone */
+    border-radius: var(--r-2);
+    margin-bottom: var(--s-3);
+    position: relative;                      /* anchor for the active left-edge bar */
+  }
+  .path-card + .path-card { margin-top: 0; }
+  .path-card .path-label {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    font-weight: var(--w-semibold);
+    color: var(--ink);
+    margin-bottom: var(--s-1);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .path-card .path-data {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    font-weight: var(--w-regular);
+  }
+  .path-card .consequence {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--ink-2);
+  }
+  /* A11y B1: active card carries selection via 2px teal border + 4px teal-ink
+     left-edge bar. Teal-wash fill is decorative affinity only (~1.1:1 vs bone). */
+  .path-card.active {
+    background: var(--teal-wash);
+    border: 2px solid var(--teal);
+    padding: calc(var(--s-5) - 1px);          /* compensate for thicker border so layout doesn't shift */
+  }
+  .path-card.active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    background: var(--teal-ink);
+    border-top-left-radius: var(--r-2);
+    border-bottom-left-radius: var(--r-2);
+    pointer-events: none;
+  }
+  .path-card.active .path-label { color: var(--teal-ink); }
+  .path-card:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .path-card:hover { border-color: var(--ink); }
+
+  /* ========================================================================
+     SCREEN 3 — Flight cards (rebook variant)
+     ======================================================================== */
+
+  .flight-card {
+    display: block;
+    width: 100%;
+    padding: var(--s-4) var(--s-5);
+    background: var(--bone-3);
+    border: 1px solid var(--rule-strong);    /* A11y B3: structural border, 3:1+ on bone */
+    border-radius: var(--r-2);
+    margin-bottom: var(--s-3);
+    position: relative;                       /* anchor for unavailability / history left-stripe */
+  }
+  /* The flight-card "row" is the visual unit. The interactive surface inside
+     is .flight-card-tap (a real <button>). Split-party? is a SEPARATE sibling
+     button below the tap region — never nested inside it (A11y B7). */
+  .flight-card-tap {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+  .flight-card-tap:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--r-2); }
+  .flight-card .row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: var(--s-2);
+  }
+  .flight-card .arrival {
+    font-size: var(--t-display);
+    line-height: var(--t-display-lh);
+    font-weight: var(--w-semibold);
+    letter-spacing: -0.01em;
+  }
+  .flight-card .arrival small {
+    display: block;
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    font-weight: var(--w-regular);
+    color: var(--ink-3);
+    margin-top: 2px;
+    letter-spacing: 0;
+  }
+  .flight-card .fare {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--ink-2);
+    text-align: right;
+  }
+  .flight-card .fare strong { font-weight: var(--w-semibold); color: var(--ink); display: block; }
+  .flight-card .fare .why {
+    font-size: var(--t-meta);
+    color: var(--teal-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .flight-card .row-detail {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    margin-bottom: var(--s-2);
+  }
+  .flight-card .row-detail .sep { color: var(--rule); margin: 0 var(--s-2); }
+  /* Status rows inside the flight card. Each row is its own hairline-separated
+     line. The hairline is DECORATIVE (inside a single card) so --rule is fine. */
+  .flight-card .status-row {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--ink);
+    padding-top: var(--s-3);
+    margin-top: var(--s-3);
+    border-top: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+  .flight-card .status-row .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--teal);
+    flex-shrink: 0;
+  }
+  .flight-card .status-row.warn .dot { background: var(--warn); }
+  .flight-card .status-row.warn { color: var(--warn); }
+  /* "Split party?" lives here as a sibling button, NOT as a nested <a>
+     inside the card tap button (A11y B7). */
+  .flight-card .split-party-btn {
+    color: inherit;
+    font: inherit;
+    font-weight: var(--w-semibold);
+    margin-left: auto;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    min-height: 44px;
+    padding: var(--s-2) var(--s-1);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  .flight-card .split-party-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--r-1); }
+  /* Accommodation-continuity row (should-fix 12). Bassinet, service animal,
+     wheelchair-assist — surfaced on the card, not behind a filter. */
+  .flight-card .status-row.accom { color: var(--ink-2); }
+  .flight-card .status-row.accom .dot { background: var(--ink-2); }
+
+  .flight-card:hover { border-color: var(--ink); }
+
+  /* History variant — prior choice on re-entry, IxD §2-Q2. Bone-2 fill,
+     ink-3 type, 4px ink-3 left-edge stripe (non-color affordance per A11y to VD #4). */
+  .flight-card.is-history {
+    background: var(--bone-2);
+    border-color: var(--ink-3);
+  }
+  .flight-card.is-history::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    background: var(--ink-3);
+    border-top-left-radius: var(--r-2);
+    border-bottom-left-radius: var(--r-2);
+    pointer-events: none;
+  }
+  .flight-card.is-history .arrival,
+  .flight-card.is-history .fare strong { color: var(--ink-2); }
+
+  /* Held-seat-expired variant — IxD §3.5. Bone-2 fill, strikethrough on
+     arrival, ink-3 type, distinct left-edge stripe in --ink-3 (mirrors history
+     stripe but the row uses warn copy "Seats no longer available"). A11y to VD #4
+     non-negotiable: three states (selection / unavailability / history) each get
+     a distinct non-color treatment — selection uses teal-ink stripe, history
+     uses ink-3 stripe, unavailability uses ink-3 stripe + arrival strikethrough. */
+  .flight-card.is-expired {
+    background: var(--bone-2);
+    border-color: var(--ink-3);
+    cursor: not-allowed;
+  }
+  .flight-card.is-expired::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    background: var(--ink-3);
+    border-top-left-radius: var(--r-2);
+    border-bottom-left-radius: var(--r-2);
+    pointer-events: none;
+  }
+  .flight-card.is-expired .arrival { color: var(--ink-3); text-decoration: line-through; }
+  .flight-card.is-expired .fare strong,
+  .flight-card.is-expired .row-detail { color: var(--ink-3); }
+
+  /* sort/filter line on Screen 3 */
+  .sort-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-2);
+    margin-bottom: var(--s-3);
+    padding-bottom: var(--s-3);
+    border-bottom: 1px solid var(--rule-strong); /* A11y B3: separates sort affordance from interactive list */
+  }
+  .sort-row strong { font-weight: var(--w-semibold); color: var(--ink); }
+
+  /* ========================================================================
+     SCREEN 4 — Receipt
+     ======================================================================== */
+
+  .receipt-block {
+    background: var(--bone-3);
+    border: 1px solid var(--ink);
+    border-radius: var(--r-2);
+    padding: var(--s-5);
+    margin-bottom: var(--s-5);
+  }
+  .receipt-block .stamp {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: var(--s-2);
+  }
+  .receipt-block h1 {
+    font-size: var(--t-display);
+    line-height: var(--t-display-lh);
+    font-weight: var(--w-semibold);
+    letter-spacing: -0.01em;
+    margin-bottom: var(--s-5);
+  }
+  .receipt-block dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    row-gap: var(--s-3);
+    column-gap: var(--s-3);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+  }
+  .receipt-block dt {
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-body-lh);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-top: 3px;
+  }
+  .receipt-block dd { margin: 0; color: var(--ink); }
+  .receipt-block dd strong { font-weight: var(--w-semibold); }
+  .receipt-block dd .sub { display: block; color: var(--ink-3); font-size: var(--t-meta); line-height: var(--t-meta-lh); margin-top: 2px; }
+  .receipt-block hr { border: none; border-top: 1px solid var(--rule); margin: var(--s-5) 0; }
+
+  /* ========================================================================
+     SCREEN 5 — Entitlements sheet open state
+     ======================================================================== */
+
+  .sheet-shell {
+    background: rgba(26, 23, 21, 0.4);
+    min-height: 720px;
+    padding: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+  }
+  .sheet-shell .behind {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    padding: var(--s-6) var(--s-5);
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .sheet-shell .behind .op-header h1.fact { color: var(--ink); }
+
+  .sheet {
+    background: var(--bone);
+    border-radius: var(--r-3) var(--r-3) 0 0;
+    padding: var(--s-5) var(--s-5) var(--s-6);
+    border-top: 1px solid var(--rule);
+    position: relative;
+    z-index: 2;
+  }
+  .sheet .handle {
+    width: 36px;
+    height: 4px;
+    background: var(--rule);
+    border-radius: 2px;
+    margin: 0 auto var(--s-4);
+  }
+  .sheet h2.sheet-title {
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: var(--w-semibold);
+    letter-spacing: -0.01em;
+    margin-bottom: var(--s-2);
+  }
+  .sheet .sheet-sub {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--ink-2);
+    margin-bottom: var(--s-5);
+  }
+  .sheet .entitlement-row {
+    padding: var(--s-4) 0;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-4);
+  }
+  .sheet .entitlement-row:last-of-type { border-bottom: 1px solid var(--rule); margin-bottom: var(--s-5); }
+  .sheet .entitlement-row h3 {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    font-weight: var(--w-semibold);
+    margin-bottom: 2px;
+  }
+  .sheet .entitlement-row p {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+  }
+  .sheet .entitlement-row .claim {
+    color: var(--teal-ink);
+    font-weight: var(--w-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+    padding-top: 2px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .sheet .entitlement-row.claimed .claim { color: var(--ink-3); text-decoration: none; cursor: default; }
+
+  /* Eligibility-gate segmented control (BS 2.5, should-fix 13).
+     Single question above entitlement rows; Hotel "Claim" disabled until answered.
+     Friction placed exactly where it changes behavior (Fogg: ability constraint). */
+  .eligibility-gate {
+    margin-bottom: var(--s-5);
+    padding: var(--s-4);
+    background: var(--bone-3);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-2);
+  }
+  .eligibility-gate legend {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    font-weight: var(--w-semibold);
+    color: var(--ink);
+    padding: 0;
+    margin-bottom: var(--s-3);
+  }
+  .eligibility-gate .seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--s-2);
+  }
+  .eligibility-gate .seg-opt {
+    min-height: 44px;
+    padding: var(--s-2) var(--s-2);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    text-align: center;
+    color: var(--ink);
+    background: var(--bone);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--r-2);
+    cursor: pointer;
+    font-weight: var(--w-regular);
+  }
+  .eligibility-gate .seg-opt[aria-pressed="true"] {
+    background: var(--teal-wash);
+    border: 2px solid var(--teal);
+    color: var(--teal-ink);
+    font-weight: var(--w-semibold);
+    padding: calc(var(--s-2) - 1px);
+  }
+  .eligibility-gate .seg-opt:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+  .eligibility-gate .hint {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    margin-top: var(--s-3);
+  }
+  /* When the user has indicated "Already home," disable hotel claim with a one-line reason. */
+  .sheet .entitlement-row.gate-blocked .claim {
+    color: var(--ink-3);
+    text-decoration: none;
+    cursor: not-allowed;
+  }
+
+  /* ========================================================================
+     STATES DEMO STRIP (default / focus / pressed / loading / error / offline)
+     ======================================================================== */
+
+  .states-strip {
+    max-width: 560px;
+    margin: var(--s-7) auto 0;
+    padding: var(--s-5);
+    background: var(--bone-3);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-2);
+  }
+  .states-strip h2 {
+    font-size: var(--t-body);
+    font-weight: var(--w-semibold);
+    margin-bottom: var(--s-4);
+  }
+  .states-strip .row {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: var(--s-3);
+    align-items: center;
+    padding: var(--s-2) 0;
+    border-top: 1px solid var(--rule);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+  }
+  .states-strip .row:first-of-type { border-top: none; }
+  .states-strip .state-name { color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .demo-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: var(--s-2) var(--s-4);
+    background: var(--teal);
+    color: var(--bone);
+    border: 1px solid var(--teal-ink);
+    border-radius: var(--r-2);
+    font-weight: var(--w-semibold);
+  }
+  .demo-btn.focus { box-shadow: var(--focus-ring); }
+  .demo-btn.pressed { background: var(--teal-ink); transform: translateY(1px); }
+  .demo-btn.loading { background: var(--ink-3); border-color: var(--ink-3); cursor: progress; }
+  .demo-btn.error { background: var(--bone-3); color: var(--danger); border-color: var(--danger); }
+  .demo-btn.offline { background: var(--bone-3); color: var(--ink-2); border-color: var(--ink-3); border-style: dashed; }
+
+  /* annotation arrow/label used on alt-state variant */
+  .annotation {
+    max-width: 360px;
+    margin: var(--s-4) auto 0;
+    padding: var(--s-3) var(--s-4);
+    background: var(--bone-3);
+    border-left: 2px solid var(--warn);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-2);
+  }
+  .annotation strong { font-weight: var(--w-semibold); color: var(--ink); }
+
+  /* visually hidden but available to AT */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body>
+
+<main class="gallery">
+
+  <!-- =====================================================================
+       PROTOTYPE HEADER — how to read this
+       ===================================================================== -->
+  <section class="gallery-header" aria-labelledby="how-to-read">
+    <h1 id="how-to-read">How to read this prototype</h1>
+    <p class="byline">Author: Visual Designer (v04-vd, revision pass for A11y + BS fixes) - working from the brief, CD anchor, UXR, IA, A11y, BS reports.</p>
+    <p><strong>Three deliberate moves on first scan:</strong></p>
+    <p>1. <strong>The operational header.</strong> Fact line, then state line. No icon, no hero image. Type is the hero, at 28px against deep ink on warm bone (#1A1715 on #F5F1E8).</p>
+    <p>2. <strong>Side-by-side path comparison, vertical stack.</strong> All three recovery paths visible at once with consequence copy as the design — never a tab pattern. Group-of-four party-size status is on the flight card itself, not behind a filter. Active selection is carried by a 2px teal border AND a 4px teal-ink left-edge bar — never by the teal-wash fill alone.</p>
+    <p>3. <strong>Persistent entitlements strip.</strong> Hotel and meal support live pinned to the bottom of screens 1-3, never inside an "Other policies" FAQ. One desaturated teal accent (#2E6E6B) is reserved for the active decision and nothing else. Sheet ships with a real focus trap (Esc, backdrop dismiss, inert underlying surface, focus returns to opener).</p>
+    <p><strong>Screens stacked below (scroll through in order):</strong></p>
+    <ol>
+      <li>SMS lock-screen card (the rewritten entry surface).</li>
+      <li>Screen 1 - Status &amp; Stake (default and second-cancellation variant).</li>
+      <li>Screen 2 - <em>first paint, no selection, CTA disabled</em> (the BS-spec'd default — engineering implements this on initial load).</li>
+      <li>Screen 2 - <em>Rebook selected</em> (active-state demo — not the first paint).</li>
+      <li>Screen 3 - Confirm the Specific Choice (Rebook variant; Credit and Standby share the frame - noted in footer).</li>
+      <li>Screen 3 state variants - history card, held-seat-expired card.</li>
+      <li>Screen 4 - Receipt (the screenshotable summary).</li>
+      <li>Entitlements strip - sheet open state, with eligibility-gate segmented control.</li>
+      <li>States reference - default / focus / pressed / loading / error / offline.</li>
+    </ol>
+  </section>
+
+  <div class="screens">
+
+    <!-- ===================================================================
+         SCREEN 0 — SMS / lock-screen card
+         =================================================================== -->
+    <div>
+      <div class="screen-label"><strong>Entry surface</strong> — SMS lock screen, 10:46 p.m.</div>
+      <div class="phone" role="region" aria-labelledby="sms-region-label">
+        <span id="sms-region-label" class="sr-only">Lock-screen preview of the rewritten cancellation SMS</span>
+        <div class="sms-shell">
+          <div class="sms-time num">10:46</div>
+          <div class="sms-date">Tuesday, May 13</div>
+
+          <div class="sms-card" role="article" aria-label="Text message from Northstar Air">
+            <div class="sender">
+              <strong>Northstar Air</strong>
+              <span class="num">now</span>
+            </div>
+            <div class="body">
+              <p><strong>Your flight NS482, Wed 6:15 a.m. DEN to LGA, is canceled.</strong> Crew availability. You are not yet rebooked.</p>
+              <p>Open the app to see three options (rebook, credit, or standby) and check hotel and meal support. <a href="#screen-1" class="deep-link">northstar.app/ns482</a></p>
+              <p>Or call <span class="num">1-800-555-0142</span>. We're staffed tonight.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SCREEN 1 — Status & Stake (default state)
+         =================================================================== -->
+    <div id="screen-1">
+      <div class="screen-label"><strong>Screen 1</strong> — Status &amp; Stake</div>
+      <div class="phone" role="region" aria-labelledby="s1-h1">
+        <div class="surface">
+
+          <header class="op-header">
+            <p class="meta num">NS482 - DEN to LGA - Wed, May 14</p>
+            <h1 class="fact" id="s1-h1">Your 6:15 a.m. flight tomorrow is canceled.</h1>
+            <p class="state">Reason: crew availability. <strong>You have not been rebooked yet.</strong> Three options are ready below.</p>
+          </header>
+
+          <button class="btn-primary" type="button" aria-label="See your three recovery options">
+            <span>See your options</span>
+            <span class="chev" aria-hidden="true">&rsaquo;</span>
+          </button>
+
+          <div style="height: var(--s-4);"></div>
+
+          <button class="btn-secondary" type="button">View full itinerary</button>
+
+          <div style="height: var(--s-3);"></div>
+
+          <a href="tel:18005550142" class="btn-tertiary num"
+             aria-label="Call Northstar support, 1-800-555-0142">Or call 1-800-555-0142</a>
+
+          <!-- Persistent entitlements strip. A11y B6: aria-label on the button directly,
+               aria-controls removed (the sheet element only exists in the open-state
+               demo below; pointing at a non-existent id breaks AT). The script at
+               page bottom wires up open/close, focus return, and inert on the surface. -->
+          <div class="entitlements-strip" role="region" aria-label="Hotel and meal support">
+            <button class="strip-tap" type="button" aria-expanded="false"
+                    data-opens-sheet="entitlements-sheet"
+                    aria-label="Hotel and meal support: not yet claimed, eligible for tonight. Tap to see what's available.">
+              <span>
+                <span class="strip-label"><strong>Hotel and meal support available</strong></span>
+                <span class="strip-status">Not yet claimed - eligible for tonight</span>
+              </span>
+              <span class="strip-chev" aria-hidden="true">&rsaquo;</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SCREEN 1 (alt) — Second-cancellation state
+         IA flagged this edge case: state line reorders, cards reorder later.
+         =================================================================== -->
+    <div>
+      <div class="screen-label"><strong>Screen 1 (variant)</strong> — Second cancellation on this trip</div>
+      <div class="phone" role="region" aria-labelledby="s1b-h1">
+        <div class="surface">
+
+          <header class="op-header">
+            <p class="meta num">NS214 - DEN to LGA - Wed, May 14 (rebooked from NS482)</p>
+            <h1 class="fact" id="s1b-h1">Your rebooked 10:20 a.m. flight is also canceled.</h1>
+            <p class="state"><strong>This is the second cancellation on this trip.</strong> Credit and standby are listed first below. You can still try another rebook.</p>
+          </header>
+
+          <button class="btn-primary" type="button" aria-label="See your three recovery options">
+            <span>See your options</span>
+            <span class="chev" aria-hidden="true">&rsaquo;</span>
+          </button>
+
+          <div style="height: var(--s-4);"></div>
+
+          <button class="btn-secondary" type="button">View full itinerary</button>
+
+          <div class="entitlements-strip" role="region" aria-label="Hotel and meal support">
+            <button class="strip-tap" type="button" aria-expanded="false"
+                    data-opens-sheet="entitlements-sheet"
+                    aria-label="Hotel claimed at Marriott DEN Airport. Meal credit still available. Tap to manage.">
+              <span>
+                <span class="strip-label"><strong>Hotel claimed - Marriott DEN Airport</strong></span>
+                <span class="strip-status">Meal credit also available</span>
+              </span>
+              <span class="strip-chev" aria-hidden="true">&rsaquo;</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+      <div class="annotation">
+        <strong>IA edge case — second cancellation:</strong> state line names the count plainly; on Screen 2 the card order shifts so Credit and Standby surface before Rebook, because the user's mental model has shifted.
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SCREEN 2 — Choose Your Recovery — FIRST-PAINT DEFAULT (no selection)
+         BS 2.1: this is the spec'd default per IxD §1 — no card selected,
+         primary CTA disabled. Rendering it explicitly above the active-state
+         demo neutralizes the default-effect dark-pattern risk.
+         =================================================================== -->
+    <div>
+      <div class="screen-label"><strong>Screen 2 - first paint</strong> (no selection, CTA disabled)</div>
+      <div class="phone" role="region" aria-labelledby="s2d-h1">
+        <div class="surface">
+
+          <header class="op-header">
+            <p class="meta num">NS482 canceled - 3 travelers on this booking</p>
+            <h1 class="fact" id="s2d-h1">Pick a path.</h1>
+            <p class="state">All three are available to you right now. Choose what arrives first, what waits, or what cashes out.</p>
+          </header>
+
+          <h2 class="section" id="s2d-paths-label">Your three options</h2>
+
+          <ul role="list" aria-labelledby="s2d-paths-label">
+            <li>
+              <button class="path-card" type="button" aria-pressed="false"
+                      aria-label="Rebook on a new flight. Earliest arrival 7:10 a.m. You arrive Wednesday morning. All 3 seats confirmed, no charge on this disruption.">
+                <span class="path-label">
+                  <span>Rebook on a new flight</span>
+                  <span class="path-data num">Earliest: 7:10 a.m.</span>
+                </span>
+                <span class="consequence">You arrive tomorrow morning. Confirmed seats for all 3 travelers, no extra charge on this disruption.</span>
+              </button>
+            </li>
+            <li>
+              <button class="path-card" type="button" aria-pressed="false"
+                      aria-label="Take travel credit. 847 dollars value. You decide later. No flight is held for you. Credit is good for 12 months.">
+                <span class="path-label">
+                  <span>Take travel credit</span>
+                  <span class="path-data num">$847 value</span>
+                </span>
+                <span class="consequence">You decide later. No flight is held for you. Credit is good for 12 months.</span>
+              </button>
+            </li>
+            <li>
+              <button class="path-card" type="button" aria-pressed="false"
+                      aria-label="Join standby. Next flight 9:55 a.m. You wait at the gate. A seat is not guaranteed. We will text you when it clears.">
+                <span class="path-label">
+                  <span>Join standby</span>
+                  <span class="path-data num">Next: 9:55 a.m.</span>
+                </span>
+                <span class="consequence">You wait at the gate. A seat is not guaranteed. We will text you when it clears.</span>
+              </button>
+            </li>
+          </ul>
+
+          <div style="height: var(--s-5);"></div>
+
+          <!-- CTA disabled until a path is tapped. aria-disabled (not the
+               `disabled` attr) keeps it focusable so AT can announce why. -->
+          <button class="btn-primary" type="button" aria-disabled="true"
+                  aria-label="Pick a path above to continue. Button disabled until selection.">
+            <span>Pick a path to continue</span>
+            <span class="chev" aria-hidden="true">&rsaquo;</span>
+          </button>
+
+          <div style="height: var(--s-3);"></div>
+
+          <button type="button" class="text-link block">Why these three?</button>
+
+          <div class="entitlements-strip" role="region" aria-label="Hotel and meal support">
+            <button class="strip-tap" type="button" aria-expanded="false"
+                    data-opens-sheet="entitlements-sheet"
+                    aria-label="Hotel and meal support: not yet claimed, eligible for tonight. Tap to see what's available.">
+              <span>
+                <span class="strip-label"><strong>Hotel and meal support available</strong></span>
+                <span class="strip-status">Not yet claimed - eligible for tonight</span>
+              </span>
+              <span class="strip-chev" aria-hidden="true">&rsaquo;</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SCREEN 2 — ACTIVE STATE DEMO (Rebook selected)
+         =================================================================== -->
+    <!-- Active state shown for demo. First paint per IxD §1 = no selection, CTA disabled. -->
+    <div>
+      <div class="screen-label"><strong>Screen 2 - Rebook selected</strong> (demonstrates active state)</div>
+      <div class="phone" role="region" aria-labelledby="s2-h1">
+        <div class="surface">
+
+          <header class="op-header">
+            <p class="meta num">NS482 canceled - 3 travelers on this booking</p>
+            <h1 class="fact" id="s2-h1">Pick a path.</h1>
+            <p class="state">All three are available to you right now. Choose what arrives first, what waits, or what cashes out.</p>
+          </header>
+
+          <h2 class="section" id="s2-paths-label">Your three options</h2>
+
+          <ul role="list" aria-labelledby="s2-paths-label">
+            <li>
+              <button class="path-card active" type="button" aria-pressed="true"
+                      aria-label="Rebook on a new flight. Earliest arrival 7:10 a.m. You arrive Wednesday morning. All 3 seats confirmed, no charge on this disruption. Selected.">
+                <span class="path-label">
+                  <span>Rebook on a new flight</span>
+                  <span class="path-data num">Earliest: 7:10 a.m.</span>
+                </span>
+                <span class="consequence">You arrive tomorrow morning. Confirmed seats for all 3 travelers, no extra charge on this disruption.</span>
+              </button>
+            </li>
+            <li>
+              <button class="path-card" type="button" aria-pressed="false"
+                      aria-label="Take travel credit. 847 dollars value. You decide later. No flight is held for you. Credit is good for 12 months.">
+                <span class="path-label">
+                  <span>Take travel credit</span>
+                  <span class="path-data num">$847 value</span>
+                </span>
+                <span class="consequence">You decide later. No flight is held for you. Credit is good for 12 months.</span>
+              </button>
+            </li>
+            <li>
+              <button class="path-card" type="button" aria-pressed="false"
+                      aria-label="Join standby. Next flight 9:55 a.m. You wait at the gate. A seat is not guaranteed. We will text you when it clears.">
+                <span class="path-label">
+                  <span>Join standby</span>
+                  <span class="path-data num">Next: 9:55 a.m.</span>
+                </span>
+                <span class="consequence">You wait at the gate. A seat is not guaranteed. We will text you when it clears.</span>
+              </button>
+            </li>
+          </ul>
+
+          <div style="height: var(--s-5);"></div>
+
+          <button class="btn-primary" type="button">
+            <span>Continue with rebook</span>
+            <span class="chev" aria-hidden="true">&rsaquo;</span>
+          </button>
+
+          <div style="height: var(--s-3);"></div>
+
+          <button type="button" class="text-link block">Why these three?</button>
+
+          <div class="entitlements-strip" role="region" aria-label="Hotel and meal support">
+            <button class="strip-tap" type="button" aria-expanded="false"
+                    data-opens-sheet="entitlements-sheet"
+                    aria-label="Hotel and meal support: not yet claimed, eligible for tonight. Tap to see what's available.">
+              <span>
+                <span class="strip-label"><strong>Hotel and meal support available</strong></span>
+                <span class="strip-status">Not yet claimed - eligible for tonight</span>
+              </span>
+              <span class="strip-chev" aria-hidden="true">&rsaquo;</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SCREEN 3 — Confirm the Specific Choice (REBOOK VARIANT)
+         Flight cards sorted by arrival time. Party-size status on the card.
+         =================================================================== -->
+    <div>
+      <div class="screen-label"><strong>Screen 3</strong> — Confirm the Specific Choice (Rebook variant)</div>
+      <div class="phone" role="region" aria-labelledby="s3-h1">
+        <div class="surface">
+
+          <header class="op-header">
+            <p class="meta num">DEN to LGA - 3 travelers</p>
+            <h1 class="fact" id="s3-h1">Pick the flight.</h1>
+            <p class="state">Sorted by arrival time. Party-size status is on each card.</p>
+          </header>
+
+          <div class="sort-row">
+            <span>Sorted by <strong>Arrival</strong></span>
+            <button type="button" class="text-link inline-link">Filters</button>
+          </div>
+
+          <!-- A11y B5: "Why?" link removed on No-charge cards entirely. "No charge" is
+               the complete answer; nothing to disclose. Per CW §5, the link spec is
+               preserved ONLY on cards where a real fare difference applies: in that
+               case it must ship as a real <button type="button"> with tabindex="0",
+               and reveal a single factual sentence on tap (no tooltips, no marketing
+               copy). All three cards in this prototype are No-charge, so the link
+               is gone here. -->
+
+          <ul role="list" aria-label="Available rebook flights">
+
+            <!-- Card 1 — clean no-charge, all-confirmed -->
+            <li>
+              <div class="flight-card">
+                <button class="flight-card-tap" type="button"
+                        aria-describedby="card-1-party"
+                        aria-label="Select 7:10 a.m. NS214 to LGA. Arrives 11:48 a.m. Wednesday. 1 stop, Chicago O'Hare. 4 hours 38 minutes. No charge. All 3 seats confirmed together.">
+                  <span class="row-top">
+                    <span class="arrival num">11:48 a.m.<small>arrives LGA Wed</small></span>
+                    <span class="fare">
+                      <strong>No charge</strong>
+                    </span>
+                  </span>
+                  <span class="row-detail num">NS214 - Dep 7:10 a.m.<span class="sep">|</span>1 stop, ORD<span class="sep">|</span>4h 38m</span>
+                </button>
+                <div class="status-row" id="card-1-party">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span>All 3 seats together</span>
+                </div>
+              </div>
+            </li>
+
+            <!-- Card 2 — warn (party split). A11y B7: "Split party?" is a SIBLING
+                 button below the card-tap, not a nested <a>. -->
+            <li>
+              <div class="flight-card">
+                <button class="flight-card-tap" type="button"
+                        aria-describedby="card-2-party"
+                        aria-label="Select 2:40 p.m. NS640 to LGA. Arrives 6:20 p.m. Wednesday. Nonstop. 3 hours 40 minutes. No charge. Only 2 seats together for your party of 3.">
+                  <span class="row-top">
+                    <span class="arrival num">6:20 p.m.<small>arrives LGA Wed</small></span>
+                    <span class="fare">
+                      <strong>No charge</strong>
+                    </span>
+                  </span>
+                  <span class="row-detail num">NS640 - Dep 2:40 p.m.<span class="sep">|</span>Nonstop<span class="sep">|</span>3h 40m</span>
+                </button>
+                <div class="status-row warn" id="card-2-party">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span>Only 2 seats together for party of 3.</span>
+                  <button type="button" class="split-party-btn">Split party?</button>
+                </div>
+              </div>
+            </li>
+
+            <!-- Card 3 — clean no-charge, all-confirmed, PLUS accommodation row
+                 (should-fix 12 / A11y §8 family-with-infant). Demonstrates the
+                 fifth status-line variant on flight cards. -->
+            <li>
+              <div class="flight-card">
+                <button class="flight-card-tap" type="button"
+                        aria-describedby="card-3-party card-3-accom"
+                        aria-label="Select 6:30 p.m. NS812 to LGA. Arrives 10:50 p.m. Wednesday. 1 stop, Detroit. 4 hours 20 minutes. No charge. All 3 seats together. Bassinet row confirmed on this flight.">
+                  <span class="row-top">
+                    <span class="arrival num">10:50 p.m.<small>arrives LGA Wed</small></span>
+                    <span class="fare">
+                      <strong>No charge</strong>
+                    </span>
+                  </span>
+                  <span class="row-detail num">NS812 - Dep 6:30 p.m.<span class="sep">|</span>1 stop, DTW<span class="sep">|</span>4h 20m</span>
+                </button>
+                <div class="status-row" id="card-3-party">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span>All 3 seats together</span>
+                </div>
+                <div class="status-row accom" id="card-3-accom">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span>Bassinet row confirmed on this flight</span>
+                </div>
+              </div>
+            </li>
+
+          </ul>
+
+          <div style="height: var(--s-5);"></div>
+
+          <button class="btn-primary" type="button">
+            <span>Confirm 7:10 a.m. flight</span>
+            <span class="chev" aria-hidden="true">&rsaquo;</span>
+          </button>
+
+          <div style="height: var(--s-3);"></div>
+
+          <button type="button" class="text-link block">Back to options</button>
+
+          <div class="entitlements-strip" role="region" aria-label="Hotel and meal support">
+            <button class="strip-tap" type="button" aria-expanded="false"
+                    data-opens-sheet="entitlements-sheet"
+                    aria-label="Hotel and meal support: not yet claimed, eligible for tonight. Tap to see what's available.">
+              <span>
+                <span class="strip-label"><strong>Hotel and meal support available</strong></span>
+                <span class="strip-status">Not yet claimed - eligible for tonight</span>
+              </span>
+              <span class="strip-chev" aria-hidden="true">&rsaquo;</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+      <div class="annotation">
+        <strong>Credit and Standby share this frame:</strong> same operational header pattern, same primary-action footer. Credit shows terms + dollar value + "Accept credit" primary. Standby shows next-flight time, queue-position estimate, and "Add me to standby" primary. Entitlements strip persists.
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SCREEN 3 — STATE VARIANTS (history + held-seat-expired)
+         A11y to VD #4: three states (selection / unavailability / history)
+         each get a distinct non-color treatment. Selection = teal-ink stripe
+         (Screen 2 active card). History = ink-3 stripe + bone-2 fill. Expired
+         = ink-3 stripe + strikethrough on arrival.
+         =================================================================== -->
+    <div>
+      <div class="screen-label"><strong>Screen 3 - state variants</strong> (history card + held-seat-expired)</div>
+      <div class="phone" role="region" aria-label="Flight card state variants">
+        <div class="surface">
+
+          <header class="op-header">
+            <p class="meta num">DEN to LGA - 3 travelers</p>
+            <h1 class="fact" style="font-size: var(--t-body); line-height: var(--t-body-lh);">Flight card states</h1>
+          </header>
+
+          <h2 class="section">History - prior choice on re-entry</h2>
+          <ul role="list" aria-label="Prior choice from earlier in this trip">
+            <li>
+              <div class="flight-card is-history"
+                   aria-label="Your prior choice, 7:10 a.m. NS214, confirmed at 9:54 p.m. Selecting a new flight will replace this.">
+                <div class="flight-card-tap">
+                  <span class="row-top">
+                    <span class="arrival num">11:48 a.m.<small>arrives LGA Wed</small></span>
+                    <span class="fare">
+                      <strong>Prior choice</strong>
+                    </span>
+                  </span>
+                  <!-- Mixed case in DOM (should-fix 14); any all-caps effect is CSS-only via text-transform. -->
+                  <span class="row-detail num">Your prior choice - 7:10 a.m., confirmed 9:54 p.m.</span>
+                </div>
+              </div>
+            </li>
+          </ul>
+
+          <div style="height: var(--s-5);"></div>
+
+          <h2 class="section">Held-seat expired - the 7:10 a.m. seats just went</h2>
+          <ul role="list" aria-label="Flight no longer available">
+            <li>
+              <div class="flight-card is-expired"
+                   aria-label="Seats no longer available on the 7:10 a.m. NS214 flight. Pick another option below.">
+                <div class="flight-card-tap">
+                  <span class="row-top">
+                    <span class="arrival num">11:48 a.m.<small>arrives LGA Wed</small></span>
+                    <span class="fare">
+                      <strong>Seats no longer available</strong>
+                    </span>
+                  </span>
+                  <span class="row-detail num">NS214 - Dep 7:10 a.m.<span class="sep">|</span>1 stop, ORD<span class="sep">|</span>4h 38m</span>
+                </div>
+              </div>
+            </li>
+          </ul>
+
+        </div>
+      </div>
+      <div class="annotation">
+        <strong>Three non-color affordances, three states:</strong> selection (teal-ink left-edge bar, 4px, Screen 2 active); history (ink-3 left-edge stripe + bone-2 fill); held-seat-expired (ink-3 left-edge stripe + strikethrough on arrival time + "Seats no longer available" copy). IxD §3.5 specifies the live-region announcement sequence (announce loss, beat, announce recovery, then move focus).
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SCREEN 4 — Receipt (the screenshotable summary)
+         No entitlements strip on this screen — the strip is absorbed into
+         the receipt block as a status row (per IA).
+         =================================================================== -->
+    <div>
+      <div class="screen-label"><strong>Screen 4</strong> — Receipt (screenshotable, offline-survivable)</div>
+      <div class="phone" role="region" aria-labelledby="s4-h1">
+        <div class="surface">
+
+          <div class="receipt-block" role="article" aria-labelledby="s4-h1">
+            <p class="stamp">Northstar Air - Trip updated</p>
+            <h1 id="s4-h1">You're on the 7:10 a.m.</h1>
+
+            <dl>
+              <dt>Flight</dt>
+              <dd>
+                <strong class="num">NS214</strong>
+                <span class="sub num">DEN 7:10 a.m. - LGA 11:48 a.m. - 1 stop ORD</span>
+              </dd>
+
+              <dt>Travelers</dt>
+              <dd>3 confirmed: Stanfill / Stanfill / Stanfill</dd>
+
+              <dt>Confirm</dt>
+              <dd class="num"><strong>K7H2QR</strong></dd>
+
+              <dt>Bags</dt>
+              <dd>Re-tagged through to LGA. No re-check at ORD.</dd>
+
+              <dt>Hotel</dt>
+              <dd>
+                <strong>Marriott DEN Airport - claimed</strong>
+                <span class="sub num">Confirm WX44218 - Check-in tonight, breakfast included</span>
+              </dd>
+
+              <dt>Meal</dt>
+              <dd>$36 credit available.
+                <button type="button" class="text-link inline-link"
+                        aria-label="Claim 36 dollars meal credit now">Claim now</button>
+              </dd>
+            </dl>
+
+            <hr>
+
+            <dl>
+              <dt>Support</dt>
+              <dd>
+                <a href="tel:18005550142" class="num"
+                   aria-label="Call Northstar support, 1-800-555-0142"><strong>1-800-555-0142</strong></a>
+                <span class="sub">Have your confirm code ready.</span>
+              </dd>
+            </dl>
+          </div>
+
+          <button class="btn-secondary" type="button"
+                  aria-label="Save or share receipt - opens share menu">Save / share receipt</button>
+
+          <div style="height: var(--s-3);"></div>
+
+          <!-- A11y B7: button, not anchor — performs an in-app action, not navigation. -->
+          <button type="button" class="text-link block"
+                  aria-label="Plans changed? Start the recovery flow over. Your hotel and meal claims are preserved.">Plans changed? Start over</button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SCREEN 5 — Entitlements sheet, open state
+         Sits over Screen 2; underlying screen is dimmed but visible.
+         =================================================================== -->
+    <div>
+      <div class="screen-label"><strong>Entitlements strip</strong> — sheet open state (over Screen 2)</div>
+      <div class="phone" role="region" aria-labelledby="sheet-h2">
+        <div class="sheet-shell">
+
+          <!-- behind: dimmed screen 2 -->
+          <div class="behind" aria-hidden="true">
+            <header class="op-header">
+              <p class="meta num">NS482 canceled - 3 travelers on this booking</p>
+              <h1 class="fact">Pick a path.</h1>
+              <p class="state">All three are available to you right now.</p>
+            </header>
+          </div>
+
+          <!-- the sheet itself. A11y B6: id="entitlements-sheet" matches strip buttons.
+               B2: role="dialog" + aria-modal="true" + focus trap wired in script below. -->
+          <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h2"
+               id="entitlements-sheet" tabindex="-1">
+            <div class="handle" aria-hidden="true"></div>
+            <h2 class="sheet-title" id="sheet-h2" tabindex="-1">Hotel and meal support</h2>
+            <p class="sheet-sub">For this cancellation tonight. No code needed - tap to claim.</p>
+
+            <!-- BS 2.5 / should-fix 13: eligibility-gate friction placed where it
+                 changes behavior (Fogg). Hotel "Claim" disabled until answered.
+                 CW will own final strings; suggested wording shown. -->
+            <fieldset class="eligibility-gate" aria-labelledby="gate-q">
+              <legend id="gate-q">Where are you tonight?</legend>
+              <div class="seg" role="group" aria-label="Tonight's location">
+                <button type="button" class="seg-opt" aria-pressed="false">At DEN airport</button>
+                <button type="button" class="seg-opt" aria-pressed="false">On the way to a hotel</button>
+                <button type="button" class="seg-opt" aria-pressed="true">Already home</button>
+              </div>
+              <p class="hint">Answer enables Hotel claim. "Already home" disables it with a one-line reason.</p>
+            </fieldset>
+
+            <div class="entitlement-row gate-blocked" data-row="hotel">
+              <div>
+                <h3>Hotel - one night</h3>
+                <p>Marriott DEN Airport, shuttle on demand. Eligible for all 3 travelers, one room. <strong>You answered "Already home"</strong> - hotel not needed.</p>
+              </div>
+              <button type="button" class="claim" aria-disabled="true"
+                      aria-label="Claim hotel — disabled because you indicated you're already home.">Claim</button>
+            </div>
+
+            <div class="entitlement-row">
+              <div>
+                <h3>Meal credit</h3>
+                <p>$12 per traveler at any DEN airport vendor. Valid tonight and tomorrow morning.</p>
+              </div>
+              <button type="button" class="claim"
+                      aria-label="Claim 36 dollars meal credit for 3 travelers.">Claim</button>
+            </div>
+
+            <!-- A11y §2 sheet audit: removed invalid aria-disabled on span.
+                 Copy ("Not eligible") alone communicates the state. -->
+            <div class="entitlement-row claimed">
+              <div>
+                <h3>Ground transport</h3>
+                <p>Not available for this disruption. Hotel shuttle is on us.</p>
+              </div>
+              <span class="claim">Not eligible</span>
+            </div>
+
+            <button class="btn-secondary" type="button"
+                    data-sheet-close="entitlements-sheet"
+                    aria-label="Close entitlements sheet and return to options">Back to options</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =====================================================================
+       STATES REFERENCE STRIP — for IxD / A11y / engineering
+       ===================================================================== -->
+  <section class="states-strip" aria-labelledby="states-h">
+    <h2 id="states-h">Component states - primary button reference</h2>
+    <div class="row"><span class="state-name">Default</span><span><button class="demo-btn" type="button">Confirm 7:10 a.m. flight</button></span></div>
+    <div class="row"><span class="state-name">Focus</span><span><button class="demo-btn focus" type="button">Confirm 7:10 a.m. flight</button></span></div>
+    <div class="row"><span class="state-name">Pressed</span><span><button class="demo-btn pressed" type="button">Confirm 7:10 a.m. flight</button></span></div>
+    <div class="row"><span class="state-name">Loading</span><span><button class="demo-btn loading" type="button" aria-busy="true">Checking seats...</button></span></div>
+    <div class="row"><span class="state-name">Error</span><span><button class="demo-btn error" type="button">Seats just taken - pick another</button></span></div>
+    <div class="row"><span class="state-name">Offline</span><span><button class="demo-btn offline" type="button">Offline - receipt still readable</button></span></div>
+  </section>
+
+  <!-- Live region for status updates from the sheet (entitlements claimed,
+       eligibility resolved, etc.). A11y §5: announce only the diff, not the
+       full strip text. -->
+  <div id="live-status" role="status" aria-live="polite" class="sr-only"></div>
+
+</main>
+
+<!--
+  Sheet behavior — A11y B2 focus-trap spec, §4.
+  Minimal, dependency-free implementation.
+
+  Contract:
+    - Buttons with data-opens-sheet="<id>" open the sheet with that id.
+    - On open: store the opener button, set aria-expanded="true" on it,
+      mark the underlying .surface inert, move focus to the sheet heading.
+    - While open: Tab cycles within the sheet; Esc closes; backdrop tap closes.
+    - On close: remove inert, restore aria-expanded="false", return focus to
+      the opener. Do NOT auto-close after claim — claims fire a polite live
+      announcement and update strip text statically.
+
+  Note: in this static prototype the sheet is rendered inline below Screen 2
+  for demo viewing. Production engineering will render it portaled at body
+  level over the active screen; the contract is the same.
+-->
+<script>
+(function () {
+  var FOCUSABLE = 'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  var openSheet = null;
+  var lastOpener = null;
+  var trapKeyHandler = null;
+
+  function focusableIn(el) {
+    return Array.prototype.filter.call(
+      el.querySelectorAll(FOCUSABLE),
+      function (n) { return n.offsetParent !== null && n.getAttribute('aria-disabled') !== 'true'; }
+    );
+  }
+
+  function open(sheetId, opener) {
+    var sheet = document.getElementById(sheetId);
+    if (!sheet) return;
+    openSheet = sheet;
+    lastOpener = opener;
+    opener.setAttribute('aria-expanded', 'true');
+
+    // Mark the underlying surface inert. Walk up from the opener to find
+    // its containing .surface; inert it for the duration of the sheet.
+    var surface = opener.closest('.surface');
+    if (surface) {
+      surface.setAttribute('inert', '');
+      surface.setAttribute('aria-hidden', 'true');
+    }
+
+    // Move focus to the sheet heading (a11y-preferred over first action).
+    var heading = sheet.querySelector('h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus();
+    } else {
+      sheet.focus();
+    }
+
+    trapKeyHandler = function (e) {
+      if (e.key === 'Escape') { close(); return; }
+      if (e.key !== 'Tab') return;
+      var items = focusableIn(sheet);
+      if (!items.length) return;
+      var first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', trapKeyHandler);
+  }
+
+  function close() {
+    if (!openSheet) return;
+    var surface = lastOpener && lastOpener.closest('.surface');
+    if (surface) {
+      surface.removeAttribute('inert');
+      surface.removeAttribute('aria-hidden');
+    }
+    if (lastOpener) {
+      lastOpener.setAttribute('aria-expanded', 'false');
+      lastOpener.focus();
+    }
+    document.removeEventListener('keydown', trapKeyHandler);
+    openSheet = null;
+    lastOpener = null;
+    trapKeyHandler = null;
+  }
+
+  // Wire up openers.
+  document.addEventListener('click', function (e) {
+    var opener = e.target.closest('[data-opens-sheet]');
+    if (opener) {
+      e.preventDefault();
+      open(opener.getAttribute('data-opens-sheet'), opener);
+      return;
+    }
+    var closer = e.target.closest('[data-sheet-close]');
+    if (closer) {
+      e.preventDefault();
+      close();
+      return;
+    }
+    // Backdrop tap — clicking outside the .sheet but inside .sheet-shell.
+    if (openSheet) {
+      var shell = openSheet.closest('.sheet-shell');
+      if (shell && shell.contains(e.target) && !openSheet.contains(e.target)) {
+        close();
+      }
+    }
+  });
+
+  // Eligibility gate — segmented control behavior.
+  // Toggles aria-pressed within a group; enables/disables hotel claim row.
+  document.addEventListener('click', function (e) {
+    var opt = e.target.closest('.eligibility-gate .seg-opt');
+    if (!opt) return;
+    var group = opt.parentElement;
+    Array.prototype.forEach.call(group.querySelectorAll('.seg-opt'), function (b) {
+      b.setAttribute('aria-pressed', b === opt ? 'true' : 'false');
+    });
+    var gate = opt.closest('.eligibility-gate');
+    var sheet = gate && gate.closest('.sheet');
+    if (!sheet) return;
+    var label = opt.textContent.trim().toLowerCase();
+    var hotelRow = sheet.querySelector('.entitlement-row.gate-blocked, .entitlement-row[data-row="hotel"]');
+    if (!hotelRow) return;
+    var hotelClaim = hotelRow.querySelector('.claim');
+    if (label.indexOf('already home') !== -1) {
+      hotelRow.classList.add('gate-blocked');
+      if (hotelClaim) hotelClaim.setAttribute('aria-disabled', 'true');
+    } else {
+      hotelRow.classList.remove('gate-blocked');
+      if (hotelClaim) hotelClaim.removeAttribute('aria-disabled');
+    }
+    var live = document.getElementById('live-status');
+    if (live) live.textContent = 'Eligibility updated. ' + opt.textContent.trim() + ' selected.';
+  });
+})();
+</script>
+
+</body>
+</html>
