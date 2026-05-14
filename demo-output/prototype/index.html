@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Canceled-flight recovery — mobile prototype</title>
+<style>
+  /* ---------- Design tokens ---------- */
+  :root {
+    /* Type */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    /* Type scale (mobile-first, calm) */
+    --t-display: 26px;     /* Screen 1 headline */
+    --t-h1: 22px;          /* Screen titles */
+    --t-h2: 17px;          /* Card titles, section heads */
+    --t-body: 16px;        /* Body */
+    --t-small: 14px;       /* Secondary */
+    --t-caption: 12.5px;   /* Labels, meta */
+    --lh-tight: 1.25;
+    --lh-body: 1.45;
+
+    /* Neutrals (warm-cool ink, not pure black) */
+    --ink-900: #0f1419;
+    --ink-700: #2a323b;
+    --ink-500: #5a6571;
+    --ink-400: #7d8893;
+    --ink-300: #b2bac3;
+    --ink-200: #d9dde2;
+    --ink-100: #eef1f4;
+    --ink-50:  #f6f8fa;
+    --paper:   #ffffff;
+
+    /* Brand — restrained navy. Used for primary action and key emphasis only. */
+    --brand-900: #0b2545;
+    --brand-700: #13315c;
+    --brand-500: #1f4e8a;
+    --brand-100: #e6edf6;
+
+    /* State — color is for state, never decoration */
+    --state-warn-ink: #6b3a00;
+    --state-warn-bg:  #fff4e0;
+    --state-warn-edge:#e9b873;
+    --state-pos-ink:  #14532d;
+    --state-pos-bg:   #e8f3ec;
+    --state-pos-edge: #9fc8af;
+    --state-info-ink: #173a5e;
+    --state-info-bg:  #e9f0f8;
+    --state-info-edge:#a8bfd9;
+
+    /* Spacing — 4pt rhythm */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+    --s-9: 56px;
+
+    /* Radius */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 22px;       /* card */
+    --r-phone: 36px;    /* phone frame */
+    --r-pill: 999px;
+
+    /* Shadow — quiet */
+    --sh-card: 0 1px 0 rgba(15,20,25,0.04), 0 1px 2px rgba(15,20,25,0.05);
+    --sh-frame: 0 8px 28px rgba(15,20,25,0.10), 0 2px 4px rgba(15,20,25,0.06);
+
+    /* Motion */
+    --ease: cubic-bezier(.2,.7,.2,1);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--ink-50);
+    color: var(--ink-900);
+    font-family: var(--font-sans);
+    font-size: var(--t-body);
+    line-height: var(--lh-body);
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Page-level reviewer chrome (not part of the product surface) */
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--s-7) var(--s-3) var(--s-9);
+  }
+  @media (min-width: 480px) {
+    .page { padding: var(--s-8) var(--s-5) var(--s-9); }
+  }
+  .page-intro {
+    max-width: 720px;
+    margin: 0 auto var(--s-7);
+    color: var(--ink-700);
+  }
+  .page-intro h1 {
+    font-size: 24px;
+    line-height: var(--lh-tight);
+    margin: 0 0 var(--s-2);
+    color: var(--ink-900);
+    letter-spacing: -0.01em;
+  }
+  .page-intro p { margin: 0; font-size: var(--t-small); color: var(--ink-500); }
+
+  /* Flow strip — stacked phone mockups. minmax(0,1fr) lets the track shrink below the
+     min-content of children so long tokens never force horizontal overflow. */
+  .strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-9);
+    justify-items: stretch;
+  }
+  @media (min-width: 1040px) {
+    .strip {
+      grid-template-columns: repeat(2, minmax(0, 480px));
+      gap: var(--s-9) var(--s-7);
+      justify-content: center;
+    }
+  }
+
+  .mock {
+    width: 100%;
+    max-width: 480px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .mock-caption {
+    font-size: var(--t-caption);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-500);
+    padding-left: var(--s-3);
+  }
+  .mock-caption strong {
+    color: var(--ink-900);
+    letter-spacing: -0.005em;
+    text-transform: none;
+    font-weight: 600;
+    font-size: var(--t-h2);
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ---------- Phone frame ---------- */
+  .phone {
+    width: 100%;
+    max-width: 480px;
+    min-width: 0;
+    background: #1a1f25;
+    border-radius: var(--r-phone);
+    padding: 10px;
+    box-shadow: var(--sh-frame);
+  }
+  @media (min-width: 480px) {
+    .phone { padding: 14px; }
+  }
+  .phone-screen {
+    background: var(--paper);
+    border-radius: 26px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    /* No overflow clipping here — inner surfaces wrap their own content via word-break + width:100%.
+       The rounded corners remain visually correct because the first/last children are inset by padding. */
+  }
+  /* status bar */
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 22px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-900);
+    letter-spacing: 0.01em;
+  }
+  .statusbar .right { display: inline-flex; gap: 6px; align-items: center; color: var(--ink-700); }
+  .statusbar svg { display: block; }
+
+  /* App bar */
+  .appbar {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-3) var(--s-4) var(--s-4);
+    flex-wrap: wrap;
+  }
+  @media (min-width: 480px) {
+    .appbar { padding: var(--s-3) var(--s-5) var(--s-4); }
+  }
+  .appbar .brandmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--brand-900);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+  }
+  .appbar .brandmark .dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--brand-900);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .appbar .brandmark .dot::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+    border-bottom-color: transparent;
+    border-right-color: transparent;
+    transform: rotate(-30deg);
+  }
+  .appbar .trip-context {
+    font-size: var(--t-caption);
+    color: var(--ink-500);
+    margin-left: auto;
+    text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .appbar .brandmark { min-width: 0; }
+
+  /* Body of each screen */
+  .screen-body {
+    padding: 0 var(--s-4) var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    min-width: 0;
+    /* The phone "content area" is intentionally fluid so that long tokens never force overflow. */
+  }
+  @media (min-width: 480px) {
+    .screen-body { padding: 0 var(--s-5) var(--s-6); gap: var(--s-5); }
+  }
+
+  /* ---------- Typography helpers ---------- */
+  .eyebrow {
+    font-size: var(--t-caption);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--ink-500);
+  }
+  .h-display {
+    font-size: var(--t-display);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.015em;
+    font-weight: 700;
+    color: var(--ink-900);
+    margin: 0;
+    word-break: break-word;
+  }
+  .h-screen {
+    font-size: var(--t-h1);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.01em;
+    font-weight: 700;
+    color: var(--ink-900);
+    margin: 0;
+    word-break: break-word;
+  }
+  .h-section {
+    font-size: var(--t-h2);
+    line-height: var(--lh-tight);
+    font-weight: 600;
+    color: var(--ink-900);
+    margin: 0;
+    word-break: break-word;
+  }
+  .p { margin: 0; color: var(--ink-700); word-break: break-word; }
+  .p-muted { margin: 0; color: var(--ink-500); font-size: var(--t-small); word-break: break-word; }
+
+  /* ---------- Token pill ---------- */
+  /* Inline (not inline-block) so a long {placeholder_token} wraps naturally inside its parent.
+     Background + padding still paint correctly across line breaks. */
+  .tok {
+    display: inline;
+    padding: 1px 6px;
+    border-radius: var(--r-sm);
+    background: var(--ink-100);
+    color: var(--ink-900);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .tok-strong {
+    background: var(--brand-100);
+    color: var(--brand-900);
+  }
+
+  /* ---------- Anchor / context strip ---------- */
+  .anchor {
+    background: var(--ink-50);
+    border: 1px solid var(--ink-100);
+    border-radius: var(--r-md);
+    padding: var(--s-3) var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+  }
+  .anchor .label { font-size: var(--t-caption); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .anchor .value { font-size: var(--t-small); color: var(--ink-900); word-break: break-word; }
+
+  /* ---------- Cards ---------- */
+  .card {
+    width: 100%;
+    background: var(--paper);
+    border: 1px solid var(--ink-200);
+    border-radius: var(--r-xl);
+    padding: var(--s-4) var(--s-4);
+    box-shadow: var(--sh-card);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+  .card.compact { padding: var(--s-4); border-radius: var(--r-lg); }
+
+  .choice {
+    width: 100%;
+    background: var(--paper);
+    border: 1.5px solid var(--ink-200);
+    border-radius: var(--r-xl);
+    padding: var(--s-4);
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: border-color .15s var(--ease), background-color .15s var(--ease), transform .1s var(--ease);
+  }
+  .choice:hover { border-color: var(--ink-400); }
+  .choice:focus-visible {
+    outline: 2px solid var(--brand-900);
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--brand-500);
+  }
+  .choice .title {
+    font-size: var(--t-h2);
+    font-weight: 600;
+    color: var(--ink-900);
+    word-break: break-word;
+  }
+  .choice .consequence {
+    font-size: var(--t-small);
+    color: var(--ink-500);
+    word-break: break-word;
+  }
+  .choice .standby-warn {
+    margin-top: 6px;
+    font-size: var(--t-caption);
+    color: var(--state-warn-ink);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ---------- Support banner (conditional, not a promise) ---------- */
+  .banner {
+    width: 100%;
+    background: var(--state-info-bg);
+    border: 1px solid var(--state-info-edge);
+    border-radius: var(--r-lg);
+    padding: var(--s-3) var(--s-4);
+    color: var(--state-info-ink);
+    font-size: var(--t-small);
+    display: flex;
+    gap: var(--s-3);
+    align-items: flex-start;
+  }
+  .banner .ico { flex: 0 0 18px; margin-top: 2px; color: var(--state-info-ink); }
+  .banner p { margin: 0; word-break: break-word; }
+
+  /* ---------- Filter bar ---------- */
+  .filters {
+    display: flex;
+    gap: var(--s-2);
+    flex-wrap: wrap;
+  }
+  .filter {
+    appearance: none;
+    border: 1px solid var(--ink-200);
+    background: var(--paper);
+    color: var(--ink-700);
+    border-radius: var(--r-pill);
+    padding: 10px 14px;
+    min-height: 44px;
+    font-size: var(--t-small);
+    font-weight: 500;
+    cursor: pointer;
+    line-height: 1.2;
+    max-width: 100%;
+    word-break: break-word;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .filter[aria-pressed="true"] {
+    background: var(--ink-900);
+    color: #fff;
+    border-color: var(--ink-900);
+  }
+  .filter:focus-visible {
+    outline: 2px solid var(--brand-900);
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--brand-500);
+  }
+
+  /* ---------- Flight card (A11y-B1: native radio-group pattern) ---------- */
+  /* Visually-hidden but accessible — the input remains focusable and Tab/Arrow-key
+     navigable; the visible label is what the user sees and interacts with. */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .flight-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px; height: 1px;
+    margin: 0;
+  }
+  .flights { position: relative; }
+  .flight {
+    width: 100%;
+    background: var(--paper);
+    border: 1.5px solid var(--ink-200);
+    border-radius: var(--r-lg);
+    padding: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    cursor: pointer;
+    transition: border-color .15s var(--ease), background-color .15s var(--ease);
+  }
+  .flight:hover { border-color: var(--ink-400); }
+  /* Selected state driven by the native radio's :checked. No JS sync needed. */
+  .flight-radio:checked + .flight {
+    border-color: var(--brand-700);
+    background: #fbfcfe;
+    box-shadow: inset 0 0 0 1px var(--brand-700);
+  }
+  /* Focus indicator surfaces on the visible label when the hidden radio is focused.
+     Two-color ring matches the global pattern (A11y-B2). */
+  .flight-radio:focus-visible + .flight {
+    outline: 2px solid var(--brand-900);
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--brand-500);
+  }
+  .flight-radio:focus-visible:checked + .flight {
+    outline: 2px solid var(--brand-900);
+    box-shadow: inset 0 0 0 1px var(--brand-700), 0 0 0 4px var(--brand-500);
+  }
+  .flight .times {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-3);
+    flex-wrap: wrap;
+  }
+  .flight .time-block {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 110px;
+    overflow-wrap: anywhere;
+  }
+  .flight .time-block .when {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ink-900);
+    line-height: 1.3;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+  .flight .time-block .where {
+    font-size: var(--t-caption);
+    color: var(--ink-500);
+    margin-top: 2px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+  .flight .time-block .when .tok,
+  .flight .time-block .where .tok {
+    display: inline-block;
+    max-width: 100%;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+  .flight .arrow {
+    flex: 0 0 auto;
+    color: var(--ink-300);
+    font-size: 18px;
+    line-height: 1;
+  }
+  .flight .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-3);
+    font-size: var(--t-small);
+    color: var(--ink-500);
+    min-width: 0;
+  }
+  .flight .meta > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .flight .meta .sep { color: var(--ink-300); }
+  .flight .why {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--t-caption);
+    color: var(--state-pos-ink);
+    background: var(--state-pos-bg);
+    border: 1px solid var(--state-pos-edge);
+    border-radius: var(--r-pill);
+    padding: 3px 10px;
+    align-self: flex-start;
+    max-width: 100%;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+
+  /* ---------- Accept/decline row ---------- */
+  .offer {
+    width: 100%;
+    border: 1px solid var(--ink-200);
+    border-radius: var(--r-lg);
+    padding: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    background: var(--paper);
+  }
+  .offer .head {
+    display: flex;
+    gap: var(--s-3);
+    align-items: flex-start;
+  }
+  .offer .head .glyph {
+    flex: 0 0 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--ink-100);
+    color: var(--ink-700);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .offer .head .text { flex: 1 1 0; min-width: 0; }
+  .offer .head .text .label {
+    font-size: var(--t-h2);
+    font-weight: 600;
+    color: var(--ink-900);
+    word-break: break-word;
+  }
+  .offer .head .text .sub {
+    font-size: var(--t-small);
+    color: var(--ink-500);
+    margin-top: 2px;
+    word-break: break-word;
+  }
+  .offer .actions {
+    display: flex;
+    gap: var(--s-2);
+    flex-wrap: wrap;
+  }
+  .offer .actions .toggle {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+
+  /* Toggle pair */
+  .toggle {
+    appearance: none;
+    border: 1.5px solid var(--ink-200);
+    background: var(--paper);
+    color: var(--ink-700);
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    min-height: 44px;
+    font-size: var(--t-small);
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    word-break: break-word;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .toggle[aria-pressed="true"] {
+    border-color: var(--brand-700);
+    background: var(--brand-100);
+    color: var(--brand-900);
+  }
+  .toggle:focus-visible {
+    outline: 2px solid var(--brand-900);
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--brand-500);
+  }
+
+  /* ---------- Summary rows (Screen 5) ---------- */
+  .summary {
+    border: 1px solid var(--ink-200);
+    border-radius: var(--r-lg);
+    background: var(--paper);
+    overflow: visible;
+    width: 100%;
+  }
+  .summary-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--ink-100);
+    align-items: start;
+  }
+  @media (min-width: 420px) {
+    .summary-row { grid-template-columns: 96px 1fr; gap: var(--s-3); }
+  }
+  .summary-row:last-child { border-bottom: 0; }
+  .summary-row .k {
+    font-size: var(--t-caption);
+    color: var(--ink-500);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    word-break: break-word;
+  }
+  .summary-row .v {
+    font-size: var(--t-small);
+    color: var(--ink-900);
+    word-break: break-word;
+    min-width: 0;
+  }
+  .summary-row .v strong { font-weight: 600; }
+
+  /* Beh-B2: pending vs confirmed status pills on the Screen 5 summary.
+     A row whose value is a pending-state token must be visually distinct from a
+     confirmed value. State colors below already pass 4.5:1 on their backgrounds and
+     are intentionally NOT the focus-ring color. */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: var(--r-pill);
+    font-size: var(--t-caption);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    max-width: 100%;
+    word-break: break-word;
+  }
+  .status-pill .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-pill.is-confirmed {
+    background: var(--state-pos-bg);
+    color: var(--state-pos-ink);
+    border: 1px solid var(--state-pos-edge);
+  }
+  .status-pill.is-confirmed .dot { background: var(--state-pos-ink); }
+  .status-pill.is-pending {
+    background: var(--state-warn-bg);
+    color: var(--state-warn-ink);
+    border: 1px solid var(--state-warn-edge);
+  }
+  .status-pill.is-pending .dot { background: var(--state-warn-ink); }
+
+  .status-line {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-2);
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+  .status-line:first-child { margin-top: 0; }
+  .status-line .label {
+    font-weight: 600;
+    color: var(--ink-900);
+    flex-shrink: 0;
+  }
+  .status-line .detail {
+    color: var(--ink-700);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    appearance: none;
+    border: 0;
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+    min-height: 44px; /* A11y-B3 defensive — computed height is already ~48 */
+    font: inherit;
+    font-weight: 600;
+    font-size: var(--t-body);
+    cursor: pointer;
+    width: 100%;
+    line-height: 1.25;
+    word-break: break-word;
+    text-align: center;
+    transition: background-color .15s var(--ease), transform .05s var(--ease);
+  }
+  .btn-primary {
+    background: var(--brand-900);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--brand-700); }
+  .btn-primary:active { transform: translateY(1px); }
+  /* Two-color focus ring (A11y-B2): inner white outline survives against any button color
+     (white-on-navy = 18.5:1); outer brand-500 ring survives against page background
+     (brand-500-on-white = 7.8:1). Pattern is applied uniformly across all focusable
+     interactive elements below so future button colors do not break the indicator. */
+  .btn-primary:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--brand-500);
+  }
+
+  /* Disabled primary — non-text contrast for the border is 3.0:1 (ink-300 on white).
+     A11y note: this is a true disabled control (not aria-disabled) because it carries
+     no meaning when fired; per Beh-B3 the user must select first. */
+  .btn-primary[disabled],
+  .btn-primary:disabled {
+    background: var(--ink-200);
+    color: var(--ink-500);
+    cursor: not-allowed;
+  }
+  .btn-primary[disabled]:hover,
+  .btn-primary:disabled:hover { background: var(--ink-200); }
+
+  .primary-with-helper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+  .primary-helper {
+    margin: 0;
+    font-size: var(--t-small);
+    color: var(--state-warn-ink);
+    text-align: center;
+    word-break: break-word;
+  }
+  /* When the primary is enabled, the helper hides. :has() drives this with no JS. */
+  .primary-with-helper:has(.btn-primary:not([disabled])) .primary-helper { display: none; }
+
+  .btn-ghost {
+    background: var(--paper);
+    color: var(--ink-900);
+    border: 1.5px solid var(--ink-200);
+  }
+  .btn-ghost:hover { border-color: var(--ink-400); }
+  .btn-ghost:focus-visible {
+    outline: 2px solid var(--brand-900);
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--brand-500);
+  }
+
+  /* ---------- Footer / persistent help ---------- */
+  .help {
+    border-top: 1px solid var(--ink-100);
+    padding: var(--s-3) var(--s-4) var(--s-4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    flex-wrap: wrap;
+  }
+  @media (min-width: 480px) {
+    .help { padding: var(--s-3) var(--s-5) var(--s-5); }
+  }
+  .help a {
+    color: var(--brand-900);
+    font-weight: 600;
+    font-size: var(--t-small);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    word-break: break-word;
+    /* A11y-B3 — wrap the link into a real tap target (>=44 CSS px) without changing its
+       visual identity. Padding gives the hit area; inline-flex centers the text vertically. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 6px;
+    margin: -10px -6px;
+    border-radius: 6px;
+  }
+  .help a:focus-visible {
+    outline: 2px solid var(--brand-900);
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--brand-500);
+  }
+  .help .meta {
+    font-size: var(--t-caption);
+    color: var(--ink-500);
+    word-break: break-word;
+  }
+
+  /* ---------- Variant sketch on Screen 3 ---------- */
+  .variant-sketch {
+    border: 1px dashed var(--ink-300);
+    border-radius: var(--r-md);
+    background: var(--ink-50);
+    padding: var(--s-3) var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .variant-sketch .vh {
+    font-size: var(--t-caption);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-500);
+    font-weight: 600;
+  }
+  .variant-sketch p { margin: 0; font-size: var(--t-small); color: var(--ink-700); }
+
+  /* ---------- Confirmation header (Screen 5) ---------- */
+  .confirm-head {
+    display: flex;
+    gap: var(--s-3);
+    align-items: flex-start;
+  }
+  .confirm-head .check {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--state-pos-bg);
+    border: 1px solid var(--state-pos-edge);
+    color: var(--state-pos-ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-head .text { min-width: 0; flex: 1 1 0; }
+
+  /* ---------- Misc ---------- */
+  .stack-sm { display: flex; flex-direction: column; gap: var(--s-2); }
+  .stack-md { display: flex; flex-direction: column; gap: var(--s-3); }
+  .row { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+  .row .btn { flex: 1 1 140px; }
+  .hr { border: 0; border-top: 1px solid var(--ink-100); margin: var(--s-2) 0; }
+
+  /* Print/screenshot helper */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <header class="page-intro">
+      <h1>Canceled-flight recovery — mobile prototype</h1>
+      <p>Five mobile screens, presented as stacked phone mockups. Reading order matches a traveler holding the phone moments after a cancellation. Bracketed values like <span class="tok">{flight_number}</span> are filled in by the system.</p>
+    </header>
+
+    <section class="strip" aria-label="Five mobile screens, in order">
+
+      <!-- ====================================================== -->
+      <!-- SCREEN 1 — What happened                                -->
+      <!-- ====================================================== -->
+      <article class="mock" aria-label="Screen 1 of 5: What happened">
+        <div class="mock-caption">Screen 1 of 5 <strong id="s1-title">What happened</strong></div>
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="statusbar" aria-hidden="true">
+              <span>9:41</span>
+              <span class="right">
+                <svg width="16" height="10" viewBox="0 0 16 10"><path fill="currentColor" d="M1 7h2v2H1zm4-2h2v4H5zm4-2h2v6H9zm4-2h2v8h-2z"/></svg>
+                <svg width="14" height="10" viewBox="0 0 14 10"><path fill="currentColor" d="M7 0a7 7 0 0 0-5.66 2.88l1.4 1.4A5 5 0 0 1 7 2a5 5 0 0 1 4.26 2.28l1.4-1.4A7 7 0 0 0 7 0Zm0 4a3 3 0 0 0-2.5 1.34l1.5 1.5A1 1 0 0 1 7 6a1 1 0 0 1 1 .84l1.5-1.5A3 3 0 0 0 7 4Zm0 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/></svg>
+                <svg width="22" height="10" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/><rect x="19" y="3" width="2" height="4" fill="currentColor"/></svg>
+              </span>
+            </div>
+
+            <div class="appbar">
+              <span class="brandmark"><span class="dot" aria-hidden="true"></span>Northstar Air</span>
+              <span class="trip-context">Trip <span class="tok">{trip_id}</span></span>
+            </div>
+
+            <div class="screen-body">
+              <div class="stack-sm">
+                <span class="eyebrow">Update on your trip</span>
+                <h2 class="h-display">Your <span class="tok tok-strong">{depart_time}</span> flight to <span class="tok tok-strong">{destination_city}</span> was canceled.</h2>
+              </div>
+
+              <p class="p">The cause was <span class="tok">{cause_plain}</span>. This was not anything you did.</p>
+
+              <p class="p">We'll help you book a new flight. We'll also check whether tonight's stay or a meal credit applies to your case, and show you the result on the support step.</p>
+
+              <button class="btn btn-primary" type="button">See my options</button>
+            </div>
+
+            <div class="help">
+              <a href="#">Talk to a person</a>
+              <span class="meta">Flight <span class="tok">{flight_number}</span></span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- ====================================================== -->
+      <!-- SCREEN 2 — Choose how to recover                        -->
+      <!-- ====================================================== -->
+      <article class="mock" aria-label="Screen 2 of 5: Choose how to recover">
+        <div class="mock-caption">Screen 2 of 5 <strong id="s2-title">Choose how to recover</strong></div>
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="statusbar" aria-hidden="true">
+              <span>9:41</span>
+              <span class="right">
+                <svg width="16" height="10" viewBox="0 0 16 10"><path fill="currentColor" d="M1 7h2v2H1zm4-2h2v4H5zm4-2h2v6H9zm4-2h2v8h-2z"/></svg>
+                <svg width="22" height="10" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/><rect x="19" y="3" width="2" height="4" fill="currentColor"/></svg>
+              </span>
+            </div>
+
+            <div class="appbar">
+              <span class="brandmark"><span class="dot" aria-hidden="true"></span>Northstar Air</span>
+              <span class="trip-context">Trip <span class="tok">{trip_id}</span></span>
+            </div>
+
+            <div class="screen-body">
+              <div class="stack-sm">
+                <span class="eyebrow">Step 1 of 3 · Pick a path</span>
+                <h2 class="h-screen">How would you like to recover?</h2>
+              </div>
+
+              <div class="anchor" aria-label="What was canceled">
+                <span class="label">Canceled</span>
+                <span class="value">
+                  Flight <span class="tok">{flight_number}</span> · <span class="tok">{depart_time}</span> to <span class="tok">{destination_city}</span>
+                </span>
+              </div>
+
+              <div class="stack-md" role="group" aria-label="Three recovery paths">
+                <button class="choice" type="button">
+                  <span class="title">Rebook on another Northstar flight</span>
+                  <span class="consequence">Confirmed seat. New departure time on the next screen.</span>
+                </button>
+
+                <button class="choice" type="button">
+                  <span class="title">Get a refund or travel credit</span>
+                  <span class="consequence">Cancel the trip. Money back or credit — you choose on the next screen.</span>
+                </button>
+
+                <button class="choice" type="button">
+                  <span class="title">Wait for a seat (standby)</span>
+                  <span class="consequence">Not a confirmed seat. You may not fly today.</span>
+                  <span class="standby-warn">Not guaranteed</span>
+                </button>
+              </div>
+
+              <div class="banner" role="note">
+                <span class="ico" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-6 9 6v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2z"/></svg>
+                </span>
+                <p>Tonight's hotel and meal support may be available. We'll show what you qualify for after you pick a path.</p>
+              </div>
+
+              <p class="p-muted">Travelers booked together will be moved together unless you call.</p>
+            </div>
+
+            <div class="help">
+              <a href="#">Talk to a person</a>
+              <span class="meta">Flight <span class="tok">{flight_number}</span></span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- ====================================================== -->
+      <!-- SCREEN 3 — Pick your flight (rebook variant)            -->
+      <!-- ====================================================== -->
+      <article class="mock" aria-label="Screen 3 of 5: Pick your flight, rebook variant">
+        <div class="mock-caption">Screen 3 of 5 · Rebook variant <strong id="s3-title">Pick your flight</strong></div>
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="statusbar" aria-hidden="true">
+              <span>9:41</span>
+              <span class="right">
+                <svg width="16" height="10" viewBox="0 0 16 10"><path fill="currentColor" d="M1 7h2v2H1zm4-2h2v4H5zm4-2h2v6H9zm4-2h2v8h-2z"/></svg>
+                <svg width="22" height="10" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/><rect x="19" y="3" width="2" height="4" fill="currentColor"/></svg>
+              </span>
+            </div>
+
+            <div class="appbar">
+              <span class="brandmark"><span class="dot" aria-hidden="true"></span>Northstar Air</span>
+              <span class="trip-context">Trip <span class="tok">{trip_id}</span></span>
+            </div>
+
+            <div class="screen-body">
+              <div class="stack-sm">
+                <span class="eyebrow">Step 2 of 3 · Rebook</span>
+                <h2 class="h-screen">Pick your flight to <span class="tok tok-strong">{destination_city}</span></h2>
+                <p class="p-muted">Sorted by earliest arrival. Showing Northstar flights only.</p>
+              </div>
+
+              <div class="filters" role="group" aria-label="Filters">
+                <button class="filter" type="button" aria-pressed="true">Earliest arrival</button>
+                <button class="filter" type="button" aria-pressed="false">Nonstop only</button>
+                <button class="filter" type="button" aria-pressed="false">Arrive by <span class="tok">{arrive_by}</span></button>
+              </div>
+
+              <!-- A11y-B1: native radio-group pattern. Inputs are visually hidden but
+                   keyboard-reachable; labels carry the card visual. Selected state is driven
+                   by :has(:checked) so no JS is required to sync selection. -->
+              <div class="stack-md flights" role="radiogroup" aria-label="Available flights">
+
+                <input type="radio" name="flight" id="flight-1" class="flight-radio" checked />
+                <label for="flight-1" class="flight">
+                  <span class="why"><span aria-hidden="true">Earliest arrival</span><span class="sr-only">Reason: earliest arrival</span></span>
+                  <div class="times">
+                    <div class="time-block" aria-label="Departure">
+                      <span class="when"><span class="tok">{depart_time_1}</span></span>
+                      <span class="where"><span class="tok">{origin_iata}</span></span>
+                    </div>
+                    <span class="arrow" aria-hidden="true">&rarr;</span>
+                    <div class="time-block" aria-label="Arrival">
+                      <span class="when"><span class="tok">{arrive_time_1}</span></span>
+                      <span class="where"><span class="tok">{destination_iata}</span></span>
+                    </div>
+                  </div>
+                  <div class="meta">
+                    <span>Flight <span class="tok">{flight_number_1}</span></span>
+                    <span class="sep" aria-hidden="true">·</span>
+                    <span><span class="tok">{stops_1}</span></span>
+                    <span class="sep" aria-hidden="true">·</span>
+                    <span><span class="tok">{duration_1}</span></span>
+                  </div>
+                </label>
+
+                <input type="radio" name="flight" id="flight-2" class="flight-radio" />
+                <label for="flight-2" class="flight">
+                  <div class="times">
+                    <div class="time-block" aria-label="Departure">
+                      <span class="when"><span class="tok">{depart_time_2}</span></span>
+                      <span class="where"><span class="tok">{origin_iata}</span></span>
+                    </div>
+                    <span class="arrow" aria-hidden="true">&rarr;</span>
+                    <div class="time-block" aria-label="Arrival">
+                      <span class="when"><span class="tok">{arrive_time_2}</span></span>
+                      <span class="where"><span class="tok">{destination_iata}</span></span>
+                    </div>
+                  </div>
+                  <div class="meta">
+                    <span>Flight <span class="tok">{flight_number_2}</span></span>
+                    <span class="sep" aria-hidden="true">·</span>
+                    <span><span class="tok">{stops_2}</span></span>
+                    <span class="sep" aria-hidden="true">·</span>
+                    <span><span class="tok">{duration_2}</span></span>
+                  </div>
+                </label>
+
+                <input type="radio" name="flight" id="flight-3" class="flight-radio" />
+                <label for="flight-3" class="flight">
+                  <span class="why"><span aria-hidden="true">Closest to original time</span><span class="sr-only">Reason: closest to original time</span></span>
+                  <div class="times">
+                    <div class="time-block" aria-label="Departure">
+                      <span class="when"><span class="tok">{depart_time_3}</span></span>
+                      <span class="where"><span class="tok">{origin_iata}</span></span>
+                    </div>
+                    <span class="arrow" aria-hidden="true">&rarr;</span>
+                    <div class="time-block" aria-label="Arrival">
+                      <span class="when"><span class="tok">{arrive_time_3}</span></span>
+                      <span class="where"><span class="tok">{destination_iata}</span></span>
+                    </div>
+                  </div>
+                  <div class="meta">
+                    <span>Flight <span class="tok">{flight_number_3}</span></span>
+                    <span class="sep" aria-hidden="true">·</span>
+                    <span><span class="tok">{stops_3}</span></span>
+                    <span class="sep" aria-hidden="true">·</span>
+                    <span><span class="tok">{duration_3}</span></span>
+                  </div>
+                </label>
+
+              </div>
+
+              <button class="btn btn-primary" type="button">Confirm this flight</button>
+
+              <div class="variant-sketch">
+                <span class="vh">Same screen, other paths</span>
+                <p><strong>Refund or credit:</strong> two equally-weighted choices — refund to original payment or travel credit. Plain consequence under each. Primary button reads "Get my refund" or "Get travel credit".</p>
+                <p><strong>Standby:</strong> single confirmation card restating "You may not fly today." Primary button reads "Join standby".</p>
+              </div>
+            </div>
+
+            <div class="help">
+              <a href="#">Talk to a person</a>
+              <span class="meta">Canceled: <span class="tok">{flight_number}</span></span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- ====================================================== -->
+      <!-- SCREEN 4 — Tonight and tomorrow                         -->
+      <!-- ====================================================== -->
+      <article class="mock" aria-label="Screen 4 of 5: Tonight and tomorrow">
+        <div class="mock-caption">Screen 4 of 5 <strong id="s4-title">Tonight and tomorrow</strong></div>
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="statusbar" aria-hidden="true">
+              <span>9:41</span>
+              <span class="right">
+                <svg width="16" height="10" viewBox="0 0 16 10"><path fill="currentColor" d="M1 7h2v2H1zm4-2h2v4H5zm4-2h2v6H9zm4-2h2v8h-2z"/></svg>
+                <svg width="22" height="10" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/><rect x="19" y="3" width="2" height="4" fill="currentColor"/></svg>
+              </span>
+            </div>
+
+            <div class="appbar">
+              <span class="brandmark"><span class="dot" aria-hidden="true"></span>Northstar Air</span>
+              <span class="trip-context">Trip <span class="tok">{trip_id}</span></span>
+            </div>
+
+            <div class="screen-body">
+              <div class="stack-sm">
+                <span class="eyebrow">Step 3 of 3 · Tonight</span>
+                <h2 class="h-screen">Tonight and tomorrow</h2>
+                <p class="p">Based on this cancellation, here's the support we can arrange for you. Accept what you want; decline what you don't need.</p>
+              </div>
+
+              <div class="offer">
+                <div class="head">
+                  <span class="glyph" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21V10l9-7 9 7v11"/><path d="M9 21v-6h6v6"/></svg>
+                  </span>
+                  <div class="text">
+                    <div class="label">A place to sleep tonight</div>
+                    <div class="sub">Status: <span class="tok">{hotel_status}</span></div>
+                  </div>
+                </div>
+                <div class="actions" role="group" aria-label="Hotel decision">
+                  <button class="toggle" type="button" aria-pressed="false">Accept</button>
+                  <button class="toggle" type="button" aria-pressed="false">Decline</button>
+                </div>
+              </div>
+
+              <div class="offer">
+                <div class="head">
+                  <span class="glyph" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16"/><path d="M5 19v-7a7 7 0 0 1 14 0v7"/><path d="M12 5V3"/></svg>
+                  </span>
+                  <div class="text">
+                    <div class="label">A meal credit</div>
+                    <div class="sub">Status: <span class="tok">{meal_status}</span></div>
+                  </div>
+                </div>
+                <div class="actions" role="group" aria-label="Meal decision">
+                  <button class="toggle" type="button" aria-pressed="false">Accept</button>
+                  <button class="toggle" type="button" aria-pressed="false">Decline</button>
+                </div>
+              </div>
+
+              <div class="offer">
+                <div class="head">
+                  <span class="glyph" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V4h6v3"/></svg>
+                  </span>
+                  <div class="text">
+                    <div class="label">Your bags</div>
+                    <div class="sub"><span class="tok">{baggage_instructions}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="banner" role="note">
+                <span class="ico" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>
+                </span>
+                <p>If your eligibility isn't confirmed yet, tap "Talk to a person" — we'll sort it without delaying your rebooking.</p>
+              </div>
+
+              <!-- Beh-B3: primary disabled until each row has a selection. The helper line
+                   is rendered when the button is disabled, becomes hidden when it isn't.
+                   Disabled-button contrast meets non-text minimum (ink-300 on white = 3:1+). -->
+              <div class="primary-with-helper" data-confirm-group="tonight">
+                <button class="btn btn-primary"
+                        type="button"
+                        id="confirm-tonight"
+                        aria-describedby="confirm-tonight-helper"
+                        disabled>Confirm tonight's plan</button>
+                <p class="primary-helper" id="confirm-tonight-helper">Choose accept or decline for each row to continue.</p>
+              </div>
+            </div>
+
+            <div class="help">
+              <a href="#">Talk to a person</a>
+              <span class="meta">Trip <span class="tok">{trip_id}</span></span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- ====================================================== -->
+      <!-- SCREEN 5 — Your updated trip                            -->
+      <!-- ====================================================== -->
+      <article class="mock" aria-label="Screen 5 of 5: Your updated trip">
+        <div class="mock-caption">Screen 5 of 5 <strong id="s5-title">Your updated trip</strong></div>
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="statusbar" aria-hidden="true">
+              <span>9:41</span>
+              <span class="right">
+                <svg width="16" height="10" viewBox="0 0 16 10"><path fill="currentColor" d="M1 7h2v2H1zm4-2h2v4H5zm4-2h2v6H9zm4-2h2v8h-2z"/></svg>
+                <svg width="22" height="10" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/><rect x="19" y="3" width="2" height="4" fill="currentColor"/></svg>
+              </span>
+            </div>
+
+            <div class="appbar">
+              <span class="brandmark"><span class="dot" aria-hidden="true"></span>Northstar Air</span>
+              <span class="trip-context">Trip <span class="tok">{trip_id}</span></span>
+            </div>
+
+            <div class="screen-body">
+              <div class="confirm-head">
+                <span class="check" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg>
+                </span>
+                <div class="text">
+                  <span class="eyebrow">Confirmation</span>
+                  <h2 class="h-screen">You're rebooked to <span class="tok tok-strong">{destination_city}</span>.</h2>
+                </div>
+              </div>
+
+              <div class="summary" aria-label="Updated trip details">
+                <div class="summary-row">
+                  <span class="k">New flight</span>
+                  <span class="v">
+                    <strong><span class="tok">{flight_number_new}</span></strong><br/>
+                    <span class="tok">{depart_time_new}</span> from <span class="tok">{origin_iata}</span><br/>
+                    arrives <span class="tok">{arrive_time_new}</span> at <span class="tok">{destination_iata}</span><br/>
+                    <span class="p-muted">Gate: <span class="tok">{gate_status}</span></span>
+                  </span>
+                </div>
+                <div class="summary-row">
+                  <span class="k">Tonight</span>
+                  <span class="v">
+                    <!-- Beh-B2: pending and confirmed states render distinctly.
+                         The status pill is the load-bearing visual; the token is the detail. -->
+                    <div class="status-line">
+                      <span class="label">Hotel</span>
+                      <span class="status-pill is-pending" aria-label="Pending">
+                        <span class="dot" aria-hidden="true"></span>Pending &mdash; we'll text you when it's ready
+                      </span>
+                      <span class="detail"><span class="tok">{hotel_status}</span></span>
+                    </div>
+                    <div class="status-line">
+                      <span class="label">Meal credit</span>
+                      <span class="status-pill is-confirmed" aria-label="Confirmed">
+                        <span class="dot" aria-hidden="true"></span>Confirmed
+                      </span>
+                      <span class="detail"><span class="tok">{meal_status}</span></span>
+                    </div>
+                  </span>
+                </div>
+                <div class="summary-row">
+                  <span class="k">Bags</span>
+                  <span class="v"><span class="tok">{baggage_instructions}</span></span>
+                </div>
+                <div class="summary-row">
+                  <span class="k">At the airport</span>
+                  <span class="v">
+                    Arrive by <span class="tok">{airport_arrival_time}</span>.<br/>
+                    Check in: <span class="tok">{checkin_instructions}</span><br/>
+                    Boarding pass: <span class="tok">{boarding_pass_location}</span>
+                  </span>
+                </div>
+                <div class="summary-row">
+                  <span class="k">If plans change</span>
+                  <span class="v">Tap "Talk to a person" — your trip ID and rebooking choices come with you on the call.</span>
+                </div>
+              </div>
+
+              <div class="row">
+                <button class="btn btn-primary" type="button">Save offline</button>
+                <button class="btn btn-ghost" type="button">Share trip</button>
+              </div>
+
+              <p class="p-muted">This page works without signal once saved. Re-open from your trips list.</p>
+            </div>
+
+            <div class="help">
+              <a href="#">Plans changed again? Talk to a person.</a>
+              <span class="meta">Trip <span class="tok">{trip_id}</span></span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+    </section>
+  </main>
+
+<script>
+  // Minimal interactivity for state demonstration only.
+  // Toggle behavior on filter pills and accept/decline pairs.
+  (function(){
+    // Filter pills — single-select within a group
+    document.querySelectorAll('.filters').forEach(function(group){
+      group.addEventListener('click', function(e){
+        var btn = e.target.closest('.filter');
+        if(!btn) return;
+        group.querySelectorAll('.filter').forEach(function(b){
+          if(b !== btn) b.setAttribute('aria-pressed','false');
+        });
+        var pressed = btn.getAttribute('aria-pressed') === 'true';
+        btn.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+      });
+    });
+
+    // Accept/Decline — mutually exclusive within a row.
+    // Beh-B3: after any toggle change, re-evaluate whether the "Confirm tonight's plan"
+    // primary should be enabled. The button is disabled until every actions group has
+    // exactly one pressed toggle.
+    function refreshConfirmTonight(){
+      var primary = document.getElementById('confirm-tonight');
+      if(!primary) return;
+      var groups = document.querySelectorAll('.offer .actions');
+      var allSelected = groups.length > 0 && Array.prototype.every.call(groups, function(g){
+        return g.querySelector('.toggle[aria-pressed="true"]');
+      });
+      primary.disabled = !allSelected;
+    }
+    document.querySelectorAll('.offer .actions').forEach(function(group){
+      group.addEventListener('click', function(e){
+        var btn = e.target.closest('.toggle');
+        if(!btn) return;
+        group.querySelectorAll('.toggle').forEach(function(b){
+          b.setAttribute('aria-pressed','false');
+        });
+        btn.setAttribute('aria-pressed','true');
+        refreshConfirmTonight();
+      });
+    });
+    refreshConfirmTonight();
+
+    // Flight card selection (A11y-B1) is now driven natively by <input type="radio">
+    // + :has/:checked CSS. No JS sync required. Keyboard, screen-reader, Switch Control,
+    // and Voice Control all work for free.
+  })();
+</script>
+</body>
+</html>
