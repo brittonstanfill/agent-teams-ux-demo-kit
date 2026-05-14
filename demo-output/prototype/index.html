@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Northstar Air — Trip Recovery</title>
+<style>
+  /* ---------- Tokens ---------- */
+  :root {
+    /* Neutral dark palette. AA at small, AAA where feasible.
+       ink-1 on bg-1 = ~16.5:1. ink-2 on bg-1 = ~9.8:1. ink-3 on bg-1 = ~6.1:1. */
+    --bg-0: #000000;
+    --bg-1: #0c0e10;        /* viewport canvas */
+    --bg-2: #15181b;        /* card / surface */
+    --bg-3: #1c2024;        /* inset surface */
+    --line-1: #2a2f34;      /* hairlines */
+    --line-2: #3a4047;      /* focused hairlines */
+    --ink-1: #f4f5f6;       /* primary text */
+    --ink-2: #c8ccd1;       /* secondary text */
+    --ink-3: #8b9197;       /* tertiary / metadata */
+    --ink-inverse: #0c0e10;
+    --accent: #e8ecef;      /* near-white; used only on primary buttons */
+    --focus: #7fb3ff;       /* visible focus ring */
+    --status: #c8ccd1;      /* held / eligible status text — same weight as ink-2 */
+    --warn-ink: #f1d8a8;    /* used sparingly on standby flag */
+
+    /* Type scale — modest, type-led, no shouting. */
+    --t-headline: 30px;
+    --t-headline-lh: 38px;
+    --t-title: 20px;
+    --t-title-lh: 28px;
+    --t-body: 17px;
+    --t-body-lh: 26px;
+    --t-meta: 14px;
+    --t-meta-lh: 20px;
+
+    /* Spacing — 4pt rhythm. */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+
+    --radius-1: 10px;
+    --radius-2: 14px;
+
+    --viewport-w: 390px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-0);
+    color: var(--ink-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Reduced motion: respect it even though motion is near-zero. */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  /* ---------- Reviewer chrome ---------- */
+  .stage {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--s-6) var(--s-4) var(--s-7);
+  }
+  .stage-header {
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    padding: 0 var(--s-2) var(--s-5);
+    border-bottom: 1px solid var(--line-1);
+    margin-bottom: var(--s-6);
+  }
+  .stage-header h1 {
+    font-size: var(--t-title);
+    line-height: var(--t-title-lh);
+    color: var(--ink-1);
+    margin: 0 0 var(--s-2);
+    font-weight: 500;
+  }
+  .stage-header nav ul {
+    list-style: none;
+    padding: 0;
+    margin: var(--s-3) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-4);
+  }
+  .stage-header nav a {
+    color: var(--ink-2);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .stage-header nav a:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .screen-label {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg-0);
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    padding: var(--s-3) var(--s-2);
+    border-bottom: 1px solid var(--line-1);
+    margin-bottom: var(--s-4);
+  }
+  .screen-label strong {
+    color: var(--ink-1);
+    font-weight: 500;
+    margin-right: var(--s-2);
+  }
+
+  /* ---------- Mobile viewport frame ---------- */
+  .viewport {
+    width: var(--viewport-w);
+    max-width: 100%;
+    margin: 0 auto var(--s-7);
+    background: var(--bg-1);
+    border: 1px solid var(--line-1);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--s-3) var(--s-5) var(--s-2);
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .status-bar .right { display: flex; gap: 6px; align-items: center; }
+
+  /* ---------- Common screen ---------- */
+  main.screen {
+    padding: var(--s-3) var(--s-5) var(--s-6);
+  }
+
+  h1.event {
+    font-size: var(--t-headline);
+    line-height: var(--t-headline-lh);
+    font-weight: 500;
+    margin: var(--s-4) 0 var(--s-3);
+    letter-spacing: -0.01em;
+    color: var(--ink-1);
+  }
+  p.support {
+    margin: 0 0 var(--s-5);
+    color: var(--ink-2);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+  }
+
+  /* ---------- Status / held block ---------- */
+  .held {
+    border-top: 1px solid var(--line-1);
+    border-bottom: 1px solid var(--line-1);
+    padding: var(--s-4) 0;
+    margin: 0 0 var(--s-5);
+  }
+  .held h2 {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 var(--s-3);
+    font-weight: 500;
+  }
+  .held ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .held li {
+    color: var(--ink-1);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    padding: var(--s-1) 0;
+  }
+  .held li .meta {
+    display: block;
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: block;
+    width: 100%;
+    min-height: 56px;
+    padding: var(--s-3) var(--s-4);
+    font: inherit;
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    text-align: left;
+    border-radius: var(--radius-2);
+    border: 1px solid var(--line-2);
+    background: var(--bg-2);
+    color: var(--ink-1);
+    cursor: pointer;
+    -webkit-appearance: none;
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .btn .label {
+    display: block;
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--ink-1);
+  }
+  .btn .sub {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--ink-inverse);
+    border-color: var(--accent);
+  }
+  .btn-primary .sub { color: #3b4045; }
+  /* Primary buttons need a dark inner ring against the near-white fill plus
+     the standard focus color outside — keeps 3:1 against both surfaces. */
+  .btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ink-inverse) inset, 0 0 0 4px var(--focus);
+  }
+  .btn-stack > * + * { margin-top: var(--s-3); }
+
+  /* Inline secondary action (decline) — real buttons, ≥44px tap target, never just a link. */
+  .row-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 44px;
+    padding: var(--s-2) var(--s-4);
+    background: transparent;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-1);
+    color: var(--ink-1);
+    font: inherit;
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    cursor: pointer;
+  }
+  .row-action:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .row-action[aria-pressed="true"] {
+    background: var(--bg-3);
+    border-color: var(--ink-3);
+    color: var(--ink-1);
+  }
+
+  /* Support link — used on screens 1, 3, 4. Real link, underlined, ≥44px tap target. */
+  .support-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--ink-1);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+  }
+  .support-link:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  .support-link .icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-right: var(--s-2);
+    border: 1px solid var(--ink-2);
+    border-radius: 50%;
+    text-align: center;
+    line-height: 16px;
+    font-size: 12px;
+    color: var(--ink-2);
+    flex: 0 0 auto;
+  }
+  .support-row {
+    margin-top: var(--s-5);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--line-1);
+  }
+
+  /* ---------- SMS preview ---------- */
+  .sms {
+    padding: var(--s-5);
+  }
+  .sms-meta {
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    margin: 0 0 var(--s-3);
+  }
+  .sms-meta strong { color: var(--ink-1); font-weight: 500; }
+  .sms-bubble {
+    background: var(--bg-2);
+    border-radius: 18px;
+    padding: var(--s-4);
+    color: var(--ink-1);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+  }
+  .sms-bubble p { margin: 0 0 var(--s-2); }
+  .sms-bubble p:last-child { margin-bottom: 0; }
+  .sms-bubble a {
+    color: var(--ink-1);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .sms-time {
+    display: block;
+    margin-top: var(--s-2);
+    color: var(--ink-3);
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  /* ---------- Filters (screen 2) ---------- */
+  .filters {
+    margin: var(--s-4) 0 var(--s-5);
+    padding: var(--s-4);
+    background: var(--bg-2);
+    border-radius: var(--radius-2);
+  }
+  .filters legend {
+    padding: 0;
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: var(--s-3);
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--s-3);
+  }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    color: var(--ink-2);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    margin-bottom: var(--s-1);
+  }
+  .field select,
+  .field input[type="number"] {
+    min-height: 44px;
+    padding: var(--s-2) var(--s-3);
+    background: var(--bg-3);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-1);
+    color: var(--ink-1);
+    font: inherit;
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .field select:focus-visible,
+  .field input:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .checkbox-row {
+    flex-direction: row;
+    align-items: center;
+  }
+  .checkbox-row input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    margin-right: var(--s-3);
+    accent-color: var(--ink-1);
+  }
+  .checkbox-row label { margin-bottom: 0; color: var(--ink-1); font-size: var(--t-body); line-height: var(--t-body-lh); }
+
+  /* ---------- Flight list ---------- */
+  .flights {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .flights li + li { border-top: 1px solid var(--line-1); }
+  .flight {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: var(--s-4) 0;
+    background: transparent;
+    border: 0;
+    color: var(--ink-1);
+    font: inherit;
+    cursor: pointer;
+  }
+  .flight:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .flight .row-1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s-3);
+  }
+  .flight .times {
+    font-size: var(--t-title);
+    line-height: var(--t-title-lh);
+    color: var(--ink-1);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .flight .duration {
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    font-variant-numeric: tabular-nums;
+  }
+  .flight .row-2 {
+    margin-top: var(--s-2);
+    color: var(--ink-2);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+  .flight .row-3 {
+    margin-top: var(--s-2);
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+  }
+  .flight .flag {
+    display: inline-block;
+    margin-top: var(--s-2);
+    padding: 2px var(--s-2);
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--warn-ink);
+    border: 1px solid var(--warn-ink);
+    border-radius: 4px;
+  }
+  .flight .flag.held-flag {
+    color: var(--ink-1);
+    border-color: var(--ink-2);
+    border-style: solid;
+  }
+  /* Standby flag — non-color shape difference from held flag. */
+  .flight .flag.standby {
+    border-style: dashed;
+  }
+
+  /* ---------- Confirm screen ---------- */
+  .summary {
+    background: var(--bg-2);
+    border-radius: var(--radius-2);
+    padding: var(--s-4);
+    margin-bottom: var(--s-5);
+  }
+  .summary h2 {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0 0 var(--s-2);
+    font-weight: 500;
+  }
+  .summary .leg {
+    font-size: var(--t-title);
+    line-height: var(--t-title-lh);
+    color: var(--ink-1);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: var(--s-1);
+  }
+  .summary .meta {
+    color: var(--ink-2);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+  }
+
+  .support-item {
+    padding: var(--s-4) 0;
+    border-bottom: 1px solid var(--line-1);
+  }
+  .support-item:first-of-type { border-top: 1px solid var(--line-1); }
+  .support-item .item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s-3);
+  }
+  .support-item .name {
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    color: var(--ink-1);
+    margin: 0;
+    font-weight: 500;
+  }
+  .support-item .value {
+    color: var(--ink-2);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    margin: var(--s-1) 0 var(--s-3);
+  }
+  .support-item .controls {
+    display: flex;
+    gap: var(--s-2);
+  }
+
+  .pax {
+    list-style: none;
+    padding: 0;
+    margin: var(--s-5) 0;
+  }
+  .pax li {
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--line-1);
+  }
+  .pax li:first-child { border-top: 1px solid var(--line-1); }
+  .pax .pax-name {
+    color: var(--ink-1);
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+  }
+  .pax .pax-status {
+    color: var(--ink-2);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ---------- Receipt ---------- */
+  .receipt section {
+    padding: var(--s-4) 0;
+    border-bottom: 1px solid var(--line-1);
+  }
+  .receipt section:first-of-type { border-top: 1px solid var(--line-1); }
+  .receipt h2 {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0 0 var(--s-2);
+    font-weight: 500;
+  }
+  .receipt .leg {
+    font-size: var(--t-title);
+    line-height: var(--t-title-lh);
+    color: var(--ink-1);
+    margin-bottom: var(--s-1);
+    font-variant-numeric: tabular-nums;
+  }
+  .receipt .meta { color: var(--ink-2); font-size: var(--t-body); line-height: var(--t-body-lh); }
+  .receipt .ref {
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    margin-top: var(--s-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .actions-row {
+    display: flex;
+    gap: var(--s-3);
+    margin-top: var(--s-5);
+  }
+  .actions-row .btn { flex: 1; text-align: center; }
+  .actions-row .btn .label { text-align: center; }
+
+  /* ---------- Support radiogroup (Screen 3) ---------- */
+  .support-radios {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: var(--s-3);
+  }
+  .support-radios label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 44px;
+    min-width: 44px;
+    padding: var(--s-2) var(--s-4);
+    background: transparent;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-1);
+    color: var(--ink-1);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    cursor: pointer;
+  }
+  .support-radios input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin-right: var(--s-2);
+    accent-color: var(--ink-1);
+    flex: 0 0 auto;
+  }
+  .support-radios input[type="radio"]:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 50%;
+  }
+  .support-radios label:has(input:checked) {
+    background: var(--bg-3);
+    border-color: var(--ink-3);
+  }
+  .support-status {
+    margin: var(--s-3) 0 0;
+    color: var(--ink-2);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+  }
+
+  /* ---------- Form hint (filter party size) ---------- */
+  .hint {
+    display: block;
+    margin-top: var(--s-1);
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+  }
+
+  /* ---------- Skip link (top of body) ---------- */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+    padding: var(--s-3) var(--s-4);
+    background: var(--ink-1);
+    color: var(--ink-inverse);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-size: var(--t-body);
+    line-height: var(--t-body-lh);
+    border-radius: var(--radius-1);
+  }
+  .skip-link:focus-visible {
+    left: var(--s-3);
+    top: var(--s-3);
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Standby section (Screen 2) ---------- */
+  .standby-section {
+    margin-top: var(--s-5);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--line-1);
+  }
+  .standby-section h3 {
+    font-size: var(--t-meta);
+    line-height: var(--t-meta-lh);
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0 0 var(--s-2);
+    font-weight: 500;
+  }
+  .standby-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* ---------- Visually hidden (a11y) ---------- */
+  .vh {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#screen-1">Skip to trip status</a>
+
+<div class="stage">
+
+  <header class="stage-header" role="banner">
+    <h1>Trip recovery — mobile prototype</h1>
+    <p>Five stacked screens at 390px width. Scroll to walk the flow.</p>
+    <nav aria-label="Jump to screen">
+      <ul>
+        <li><a href="#screen-0">0. SMS</a></li>
+        <li><a href="#screen-1">1. Situation + fork</a></li>
+        <li><a href="#screen-2">2. Replacement flights</a></li>
+        <li><a href="#screen-3">3. Confirm + support</a></li>
+        <li><a href="#screen-4">4. Receipt</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- ================= SCREEN 0 — SMS ================= -->
+  <div class="screen-label" id="screen-0"><strong>Screen 0</strong> SMS entry — preview of the inbound text</div>
+  <div class="viewport" aria-label="SMS preview viewport">
+    <div class="status-bar" aria-hidden="true">
+      <span>10:46</span>
+      <span class="right"><span>5G</span><span>78%</span></span>
+    </div>
+    <main class="screen sms" id="sms" aria-label="Text message from Northstar Air">
+      <p class="sms-meta"><strong>Northstar Air</strong> · Text message</p>
+      <div class="sms-bubble">
+        <p>Flight NS482, 6:15a DEN to LGA on May 15, is canceled. Crew availability.</p>
+        <p>A seat on the next eligible flight is being held in your name. Open your trip to keep it or choose another option:</p>
+        <p><a href="#screen-1">northstar.example/t/NS482</a></p>
+        <span class="sms-time">10:46 PM</span>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= SCREEN 1 — Situation + fork ================= -->
+  <div class="screen-label" id="screen-1"><strong>Screen 1</strong> Situation + fork — one decision: travel or not</div>
+  <div class="viewport">
+    <div class="status-bar" aria-hidden="true">
+      <span>10:47</span>
+      <span class="right"><span>5G</span><span>78%</span></span>
+    </div>
+    <main class="screen" id="situation" aria-labelledby="s1-h1">
+      <p class="sms-meta" style="margin-bottom: var(--s-3);"><strong>Northstar Air</strong> · Trip NS482</p>
+
+      <h2 class="event" id="s1-h1">Flight NS482 to LGA tomorrow morning is canceled.</h2>
+      <p class="support">Cause: crew availability. The departure airline is responsible for rebooking and overnight support.</p>
+
+      <section class="held" aria-labelledby="s1-held">
+        <h2 id="s1-held">Already held for you</h2>
+        <ul>
+          <li>
+            Protected seat on the next eligible flight
+            <span class="meta">Held until you choose or decline below</span>
+          </li>
+          <li>
+            Hotel night covered — [hotel name]
+            <span class="meta">Eligible because the next departure is after midnight</span>
+          </li>
+          <li>
+            [meal credit] available at the gate
+            <span class="meta">Applies to all travelers on this booking</span>
+          </li>
+        </ul>
+      </section>
+
+      <div class="btn-stack" role="group" aria-label="Choose a path">
+        <button class="btn btn-primary" type="button">
+          <span class="label">Find me another flight</span>
+          <span class="sub">See options for tomorrow. Nothing is final until you confirm.</span>
+        </button>
+        <button class="btn" type="button">
+          <span class="label">I'm not traveling — refund or credit</span>
+          <span class="sub">Choose how you want the fare returned. Reversible until you confirm.</span>
+        </button>
+      </div>
+
+      <div class="support-row">
+        <a class="support-link" href="tel:" aria-label="Call Northstar support">
+          <span class="icon" aria-hidden="true">i</span>
+          Talk to a person — [support line]
+        </a>
+      </div>
+
+      <p id="screen-1-refund" class="vh">Refund or credit path continues on the next screen under the same slot.</p>
+    </main>
+  </div>
+
+  <!-- ================= SCREEN 2 — Replacement flights ================= -->
+  <div class="screen-label" id="screen-2"><strong>Screen 2</strong> Replacement flights — chronological, no fare delta, no Recommended badge</div>
+  <div class="viewport">
+    <div class="status-bar" aria-hidden="true">
+      <span>10:48</span>
+      <span class="right"><span>5G</span><span>77%</span></span>
+    </div>
+    <main class="screen" id="flights" aria-labelledby="s2-h1">
+      <p class="sms-meta" style="margin-bottom: var(--s-3);"><strong>Northstar Air</strong> · DEN to LGA · 2 travelers</p>
+      <h2 class="event" id="s2-h1">Pick a replacement flight.</h2>
+      <p class="support">Listed in departure order. Your protected seat is on the first row unless you choose another.</p>
+
+      <fieldset class="filters">
+        <legend>Filter flights</legend>
+        <div class="field">
+          <label for="arrive-by">Arrive by</label>
+          <select id="arrive-by" name="arrive-by">
+            <option>Any time</option>
+            <option>By 12:00 PM</option>
+            <option>By 3:00 PM</option>
+            <option>By 6:00 PM</option>
+          </select>
+        </div>
+        <div class="field checkbox-row">
+          <input id="nonstop" type="checkbox" name="nonstop" />
+          <label for="nonstop">Nonstop only</label>
+        </div>
+        <div class="field">
+          <label for="party-size">Seats together for</label>
+          <input id="party-size" type="number" min="1" max="9" value="2" inputmode="numeric" aria-describedby="party-size-hint" />
+          <span id="party-size-hint" class="hint">1–9 travelers</span>
+        </div>
+      </fieldset>
+
+      <ul class="flights" aria-label="Available flights">
+        <li>
+          <button class="flight" type="button" aria-describedby="f1-flag">
+            <span class="row-1">
+              <span class="times">7:10a — 1:42p</span>
+              <span class="duration">4h 32m</span>
+            </span>
+            <span class="row-2">
+              <span>1 stop · ORD</span>
+              <span>NS214 / NS118</span>
+            </span>
+            <span class="row-3">DEN → LGA · arrives tomorrow</span>
+            <span class="flag held-flag" id="f1-flag">Your seat is held here</span>
+          </button>
+        </li>
+        <li>
+          <button class="flight" type="button">
+            <span class="row-1">
+              <span class="times">2:40p — 8:55p</span>
+              <span class="duration">4h 15m</span>
+            </span>
+            <span class="row-2">
+              <span>Nonstop</span>
+              <span>NS602</span>
+            </span>
+            <span class="row-3">DEN → LGA · arrives tomorrow</span>
+          </button>
+        </li>
+        <li>
+          <button class="flight" type="button">
+            <span class="row-1">
+              <span class="times">6:30p — 12:48a</span>
+              <span class="duration">4h 18m</span>
+            </span>
+            <span class="row-2">
+              <span>1 stop · DTW</span>
+              <span>NS441 / NS207</span>
+            </span>
+            <span class="row-3">DEN → LGA · arrives day after</span>
+          </button>
+        </li>
+      </ul>
+
+      <section class="standby-section" aria-labelledby="standby-h3">
+        <h3 id="standby-h3">Standby option (not a confirmed seat)</h3>
+        <ul class="flights">
+          <li>
+            <button class="flight" type="button" aria-describedby="f4-flag">
+              <span class="row-1">
+                <span class="times">9:10p — 3:24a</span>
+                <span class="duration">4h 14m</span>
+              </span>
+              <span class="row-2">
+                <span>Nonstop</span>
+                <span>NS608</span>
+              </span>
+              <span class="row-3">DEN → LGA · arrives day after</span>
+              <span class="flag standby" id="f4-flag">Standby — not a confirmed seat</span>
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <div class="support-row">
+        <a class="support-link" href="tel:">
+          <span class="icon" aria-hidden="true">i</span>
+          Talk to a person — [support line]
+        </a>
+      </div>
+
+      <p style="margin-top: var(--s-5); color: var(--ink-3); font-size: var(--t-meta); line-height: var(--t-meta-lh);">
+        Choosing a flight does not finalize it. You confirm on the next screen.
+      </p>
+    </main>
+  </div>
+
+  <!-- ================= SCREEN 3 — Confirm + support ================= -->
+  <div class="screen-label" id="screen-3"><strong>Screen 3</strong> Confirm + support — per-passenger, explicit decline controls</div>
+  <div class="viewport">
+    <div class="status-bar" aria-hidden="true">
+      <span>10:49</span>
+      <span class="right"><span>5G</span><span>77%</span></span>
+    </div>
+    <main class="screen" id="confirm" aria-labelledby="s3-h1">
+      <p class="sms-meta" style="margin-bottom: var(--s-3);"><strong>Northstar Air</strong> · Confirm changes</p>
+      <h2 class="event" id="s3-h1">Confirm your rebooking and support.</h2>
+      <p class="support">Review each item. Decline anything you don't want. Nothing is charged.</p>
+
+      <section class="summary" aria-labelledby="s3-flight">
+        <h2 id="s3-flight">New flight</h2>
+        <p class="leg">7:10a — 1:42p · DEN → LGA</p>
+        <p class="meta">1 stop · ORD · 4h 32m · NS214 / NS118</p>
+      </section>
+
+      <section aria-labelledby="s3-pax">
+        <h2 style="font-size: var(--t-meta); line-height: var(--t-meta-lh); color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 var(--s-2); font-weight: 500;" id="s3-pax">Travelers (2)</h2>
+        <ul class="pax">
+          <li>
+            <span class="pax-name">A. Rivera (you)</span>
+            <span class="pax-status">Rebooking protected. Hotel and meal eligible.</span>
+          </li>
+          <li>
+            <span class="pax-name">J. Rivera</span>
+            <span class="pax-status">Rebooking protected. Hotel and meal eligible.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="s3-support">
+        <h2 style="font-size: var(--t-meta); line-height: var(--t-meta-lh); color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; margin: var(--s-3) 0 0; font-weight: 500;" id="s3-support">Support items</h2>
+
+        <div class="support-item">
+          <div class="item-head">
+            <p class="name">Hotel for tonight</p>
+          </div>
+          <p class="value">[hotel name] · covered for both travelers</p>
+          <fieldset class="support-radios">
+            <legend class="vh">Hotel for tonight — Accept or decline</legend>
+            <label><input type="radio" name="support-hotel" value="accept" checked> Accept</label>
+            <label><input type="radio" name="support-hotel" value="decline"> Decline hotel</label>
+          </fieldset>
+          <p class="support-status" aria-live="polite" data-for="support-hotel">Accepted — included in your receipt.</p>
+        </div>
+
+        <div class="support-item">
+          <div class="item-head">
+            <p class="name">Meal credit at the gate</p>
+          </div>
+          <p class="value">[meal credit] per traveler, used at any gate vendor</p>
+          <fieldset class="support-radios">
+            <legend class="vh">Meal credit at the gate — Accept or decline</legend>
+            <label><input type="radio" name="support-meal" value="accept" checked> Accept</label>
+            <label><input type="radio" name="support-meal" value="decline"> Decline meal credit</label>
+          </fieldset>
+          <p class="support-status" aria-live="polite" data-for="support-meal">Accepted — included in your receipt.</p>
+        </div>
+
+        <div class="support-item">
+          <div class="item-head">
+            <p class="name">Ride to the hotel</p>
+          </div>
+          <p class="value">Shuttle from terminal · pickup posted on the receipt</p>
+          <fieldset class="support-radios">
+            <legend class="vh">Ride to the hotel — Accept or decline</legend>
+            <label><input type="radio" name="support-ride" value="accept" checked> Accept</label>
+            <label><input type="radio" name="support-ride" value="decline"> Decline ride</label>
+          </fieldset>
+          <p class="support-status" aria-live="polite" data-for="support-ride">Accepted — included in your receipt.</p>
+        </div>
+      </section>
+
+      <div class="btn-stack" style="margin-top: var(--s-6);">
+        <button class="btn btn-primary" type="button">
+          <span class="label">Confirm rebooking and support</span>
+          <span class="sub">You can change support choices until departure.</span>
+        </button>
+        <button class="btn" type="button">
+          <span class="label">Back to flight list</span>
+          <span class="sub">Pick a different time. Nothing is locked yet.</span>
+        </button>
+      </div>
+
+      <div class="support-row">
+        <a class="support-link" href="tel:">
+          <span class="icon" aria-hidden="true">i</span>
+          Talk to a person — [support line]
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= SCREEN 4 — Receipt ================= -->
+  <div class="screen-label" id="screen-4"><strong>Screen 4</strong> Receipt — offline-viewable, no Done dead-end</div>
+  <div class="viewport">
+    <div class="status-bar" aria-hidden="true">
+      <span>10:50</span>
+      <span class="right"><span>5G</span><span>76%</span></span>
+    </div>
+    <main class="screen receipt" id="receipt" aria-labelledby="s4-h1">
+      <p class="sms-meta" style="margin-bottom: var(--s-3);"><strong>Northstar Air</strong> · Saved to your trip</p>
+      <h2 class="event" id="s4-h1">Your rebooking is confirmed.</h2>
+      <p class="support">Save this page. It works without a signal at the gate or hotel desk.</p>
+
+      <section aria-labelledby="r-flight">
+        <h2 id="r-flight">New flight</h2>
+        <p class="leg">7:10a — 1:42p · DEN → LGA</p>
+        <p class="meta">1 stop · ORD · 4h 32m · NS214 / NS118 · Tomorrow, May 15</p>
+        <p class="ref">Confirmation [PNR]</p>
+      </section>
+
+      <section aria-labelledby="r-hotel">
+        <h2 id="r-hotel">Hotel tonight</h2>
+        <p class="leg">[hotel name]</p>
+        <p class="meta">Show this screen at check-in. Shuttle pickup: [pickup location], every [interval] minutes.</p>
+        <p class="ref">Voucher [voucher id]</p>
+      </section>
+
+      <section aria-labelledby="r-bags">
+        <h2 id="r-bags">Checked bags</h2>
+        <p class="meta">Your bags are being moved to NS214. Pick up at LGA carousel on arrival. If you need a bag tonight, ask at the Northstar desk in baggage claim before midnight.</p>
+      </section>
+
+      <section aria-labelledby="r-meal">
+        <h2 id="r-meal">Meal credit</h2>
+        <p class="meta">[meal credit] per traveler. Show this screen to any gate vendor at DEN before boarding.</p>
+      </section>
+
+      <div class="actions-row">
+        <button class="btn" type="button">
+          <span class="label">Save offline</span>
+        </button>
+        <button class="btn" type="button">
+          <span class="label">Share</span>
+        </button>
+      </div>
+
+      <div class="support-row">
+        <a class="support-link" href="tel:">
+          <span class="icon" aria-hidden="true">i</span>
+          Talk to a person — [support line]
+        </a>
+        <p style="margin-top: var(--s-3); color: var(--ink-3); font-size: var(--t-meta); line-height: var(--t-meta-lh);">
+          Plans change? Reopen this trip from the same SMS link or your email receipt to rebook again.
+        </p>
+      </div>
+    </main>
+  </div>
+
+</div>
+
+<script>
+  // Live status update for Screen 3 Accept/Decline radiogroups.
+  // The status node is announced via aria-live="polite" on change.
+  (function () {
+    var groups = document.querySelectorAll('.support-radios');
+    groups.forEach(function (group) {
+      group.addEventListener('change', function (e) {
+        var t = e.target;
+        if (!t || t.type !== 'radio') return;
+        var name = t.name;
+        var status = document.querySelector('.support-status[data-for="' + name + '"]');
+        if (!status) return;
+        status.textContent = t.value === 'accept'
+          ? 'Accepted — included in your receipt.'
+          : 'Declined — not included.';
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
