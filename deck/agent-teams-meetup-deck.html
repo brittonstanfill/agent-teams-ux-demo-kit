@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+  Agent Teams — Meetup Deck
+  Framing version: v3+ (champion-challenger compact team is the current default).
+  The deck lags the kit. If the kit's recommended workflow, scoring rubric, or
+  "team wins on / single wins on" framing has changed since you last touched the
+  deck, sync to README.md and START_HERE.md before presenting. See CHANGELOG.md
+  for the kit's evolution.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -1910,7 +1918,7 @@
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Prompt A · the baseline</div>
-        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">03-single-agent-baseline-prompt.md</div>
+        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">prompts/single-baseline.md</div>
       </div>
       <div class="h1" style="max-width: 1200px; line-height: 1.1;">
         One session. <span style="color: var(--muted); font-weight: 500;">Seven disciplines crammed into one head.</span>
@@ -1920,22 +1928,38 @@
 <button class="copy-btn" data-copy-target="prompt-baseline" type="button">Copy</button>
 <code id="prompt-baseline">Review the canceled-flight recovery experience in:
 
-Agent Teams UX Demo Kit/demo-inputs/northstar-canceled-flight-brief.md
+demo-inputs/northstar-canceled-flight-brief.md
 
-Create a meeting-ready recommendation for improving the experience. Cover UX research, information architecture, interaction design, UX writing, accessibility, visual/UI design, and behavioral science.
+Clean-room rule:
+- Do not open, search, or reuse anything in demo-output/ except to create the files below.
+- Do not inspect prior branches, PRs, or past Northstar outputs before writing this baseline.
 
-Write the result to:
-Agent Teams UX Demo Kit/demo-output/single-agent-baseline.md
+Create a meeting-ready recommendation. Cover UX research, IA, interaction, content, accessibility, visual/UI, and behavioral science.
 
-Include:
-1. Executive recommendation
-2. Redesigned flow in 5 screens or fewer
-3. Main issues found
-4. Recommended copy
-5. Accessibility and trust risks
-6. Experiment plan
+Ship two things:
 
-Label assumptions. Do not invent metrics or user quotes.</code>
+1. A working HTML prototype at:
+   demo-output/single-agent-baseline/index.html
+   - Mobile-first, self-contained (inline CSS + JS).
+   - Render the redesigned flow as actual screens, not as a description.
+   - Respect prefers-color-scheme and prefers-reduced-motion.
+   - Hit WCAG 2.1 AA where possible.
+
+2. A meeting-ready doc at:
+   demo-output/single-agent-baseline.md
+   - Executive recommendation
+   - Redesigned flow (4–5 screens, target not cap)
+   - Main issues, recommended copy verbatim
+   - Accessibility / trust risks + mitigations
+   - Experiment plan (hypothesis + primary metric + guardrail + exit rule)
+
+Quality bar:
+- Distinguishable as the work of a designer who cares about craft.
+- Distinctiveness over completeness.
+
+Label assumptions ([observed], [inferred], [assumption], [recommendation]).
+Do not invent metrics, user quotes, airline policies, wait times, voucher amounts,
+or other operational facts not in the brief.</code>
       </div>
     </div>
     <div class="notes" hidden>
@@ -1949,7 +1973,7 @@ Label assumptions. Do not invent metrics or user quotes.</code>
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Prompt B · the team</div>
-        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">02-master-agent-team-prompt.md</div>
+        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">prompts/team-relay.md</div>
       </div>
       <div class="h1" style="max-width: 1200px; line-height: 1.1;">
         Seven teammates. <span style="color: var(--muted); font-weight: 500;">Named owners, named handoffs, named output.</span>
@@ -1957,68 +1981,64 @@ Label assumptions. Do not invent metrics or user quotes.</code>
       <div class="prompt-meta">Same brief. Same deliverable shape. Compare the two outputs side-by-side.</div>
       <div class="prompt-card">
 <button class="copy-btn" data-copy-target="prompt-team" type="button">Copy</button>
-<code id="prompt-team">Create an agent team named "Northstar UX Recovery Team" to redesign the canceled-flight recovery experience described in:
+<code id="prompt-team">Create an agent team named "Northstar UX Recovery Team" to redesign the canceled-flight recovery experience in:
 
-Agent Teams UX Demo Kit/demo-inputs/northstar-canceled-flight-brief.md
+demo-inputs/northstar-canceled-flight-brief.md
 
-Use these seven teammates. If matching subagent definitions are available, use them. Otherwise create teammates with these roles and instructions:
+Clean-room rule:
+- Do not open or reuse anything in demo-output/ except to create deliverables.
+- Do not inspect prior outputs before team deliverables are sealed.
+- The lead may read the baseline only after both sides are sealed, when scoring begins.
 
-1. UX Researcher
-2. Information Architect
-3. Interaction Designer
-4. Content Designer / UX Writer
-5. Accessibility Specialist
-6. Visual / UI Designer
-7. Behavioral Scientist
+Use these eight teammates. If matching subagent definitions are available, use them:
+
+1. Creative Director — sets aesthetic anchor and quality bar BEFORE authoring
+2. UX Researcher
+3. Information Architect
+4. Interaction Designer
+5. Content Designer / UX Writer
+6. Accessibility Specialist
+7. Visual / UI Designer
+8. Behavioral Scientist
 
 Goal:
-Create a meeting-ready recommendation for a better canceled-flight recovery flow. The output should show how the team improved the product decision through role-specific analysis and teammate communication.
+Create a meeting-ready recommendation AND an authored HTML artifact — not a doc
+describing a design. The output should show how the team improved the decision
+through role-specific analysis, teammate communication, and at least two visible
+debates that materially changed a decision.
+
+Quality bar:
+- Distinguishable as the work of seven specialists who care about craft.
+- Distinctiveness over completeness. Could it survive a portfolio review?
 
 Working rules:
-- Each teammate owns one file in `Agent Teams UX Demo Kit/demo-output/role-reports/`.
-- No teammate should edit another teammate's role report.
-- The lead owns the final synthesis file: `Agent Teams UX Demo Kit/demo-output/final-recommendation.md`.
-- Label every major claim as one of: observed from brief, inferred, assumption, or recommendation.
-- Do not invent research data, metrics, laws, airline policies, or user quotes.
-- Make the teammate messages visible in the final recommendation.
+- Each teammate owns one file in demo-output/role-reports/.
+- Lead owns demo-output/final-recommendation.md, process-appendix.md, run-metadata.md.
+- Visual/UI authors demo-output/prototype/index.html; others refine in their domain.
+- Label every claim as observed, inferred, assumption, or recommendation.
+- Do not invent metrics, airline policies, wait times, voucher amounts, or other
+  operational facts not in the brief.
 
-Required role outputs:
-- UX Researcher: user needs, emotional state, research questions, assumptions to validate.
-- Information Architect: revised flow structure, content hierarchy, decision points, navigation labels.
-- Interaction Designer: step-by-step interaction model, states, error recovery, handoff moments.
-- Content Designer / UX Writer: screen-level copy, notification copy, plain-language guidance, tone rules.
-- Accessibility Specialist: blockers, WCAG-style concerns, assistive tech implications, inclusive design fixes.
-- Visual / UI Designer: layout direction, hierarchy, component suggestions, visual system notes.
-- Behavioral Scientist: trust risks, choice architecture, ethical nudges, experiment ideas.
+Sequence (visual goes EARLY, not late):
+1. Creative Director briefs the anchor and quality bar.
+2. UX Researcher + IA set the spine.
+3. Visual/UI authors the prototype from a clean canvas.
+4. Interaction adds states; Content writes copy; Behavioral + Accessibility audit.
+5. Devil's advocate (optional) stress-tests before synthesis.
+6. Lead synthesizes.
 
-Required peer handoffs:
-- UX Researcher must message Information Architect and Content Designer with top user needs.
-- Information Architect must message Interaction Designer and Content Designer with the proposed flow model.
-- Interaction Designer must message Accessibility Specialist and Visual/UI Designer with proposed states.
-- Accessibility Specialist must message Interaction Designer, Visual/UI Designer, and Content Designer with blockers.
-- Behavioral Scientist must message Content Designer and Interaction Designer with ethical choice-architecture risks.
-- Visual/UI Designer must message Accessibility Specialist before finalizing the UI direction.
-- Content Designer must message Information Architect and Accessibility Specialist before finalizing copy.
+Required debates (do not skip):
+At least 2 decisions where ≥2 specialists disagree. Each affected specialist takes
+a position in parallel (≤120 words, no peer-reading). Counter-argument round runs.
+Resolution preserves the winning argument AND the dissent.
 
-Synthesis requirements:
-Before writing the final recommendation, the lead should show:
-1. Top 3 findings from each teammate.
-2. The most important disagreement or tension.
-3. Which teammate message changed another teammate's recommendation.
+Final deliverables:
+- demo-output/final-recommendation.md (≤900 words, meeting-ready)
+- demo-output/process-appendix.md (debates, dissent, handoffs that changed output)
+- demo-output/run-metadata.md
+- demo-output/prototype/index.html
 
-Final deliverable:
-Write `Agent Teams UX Demo Kit/demo-output/final-recommendation.md` with these sections:
-
-1. Executive recommendation
-2. Redesigned flow in 5 screens or fewer
-3. What each role contributed
-4. Cross-agent handoffs that changed the answer
-5. Key tradeoffs and rejected alternatives
-6. Accessibility and trust guardrails
-7. Experiment plan
-8. Scorecard-ready comparison against a single-agent baseline
-
-Keep the final synthesis crisp and meeting-ready.</code>
+Keep the final memo crisp; the appendix carries evidence and dissent.</code>
       </div>
     </div>
     <div class="notes" hidden>
@@ -2284,11 +2304,11 @@ Keep the final synthesis crisp and meeting-ready.</code>
         <div class="annotated-prompt">
           <div class="pline">
             <div class="tag">01</div>
-            <div class="code">Create a team with <span class="hl">8 teammates</span> — 7 UX specialties + a devil's advocate.</div>
+            <div class="code">Create a team with <span class="hl">9 teammates</span> — a creative director, 7 UX specialties, and a devil's advocate.</div>
           </div>
           <div class="pline">
             <div class="tag">02</div>
-            <div class="code">Name them <span class="hl">ux-researcher · information-architect · interaction-designer · content-designer · accessibility-specialist · visual-designer · behavioral-scientist · devils-advocate</span>.</div>
+            <div class="code">Name them <span class="hl">creative-director · ux-researcher · information-architect · interaction-designer · content-designer · accessibility-specialist · visual-designer · behavioral-scientist · devils-advocate</span>.</div>
           </div>
           <div class="pline">
             <div class="tag">03</div>
@@ -2451,7 +2471,7 @@ Keep the final synthesis crisp and meeting-ready.</code>
           <div class="resource">
             <div class="resource-label">The UX agent team kit</div>
             <div class="resource-url">github.com/brittonstanfill/agent-teams-ux-demo-kit</div>
-            <div class="resource-note">8 reusable UX subagent definitions (incl. devil's advocate), Northstar demo scenario, master team-debate prompt, single-agent quick prompt, judging rubric.</div>
+            <div class="resource-note">9 reusable UX subagent definitions (incl. creative director + devil's advocate), Northstar demo scenario, compact / relay / parallel-author team prompts, single-agent quick prompt, layered evaluation rubric.</div>
           </div>
           <div class="resource">
             <div class="resource-label">Subagent comparison</div>
@@ -2461,14 +2481,14 @@ Keep the final synthesis crisp and meeting-ready.</code>
         </div>
         <div>
           <div class="resource">
-            <div class="resource-label">Prompt library (11 patterns)</div>
-            <div class="resource-url">agent-teams-meetup-plan.md</div>
-            <div class="resource-note">PR review · TDD loop · competing hypotheses · cross-layer build · UX critique · dual-surface · 5 more.</div>
+            <div class="resource-label">Where to start</div>
+            <div class="resource-url">START_HERE.md</div>
+            <div class="resource-note">The canonical run order. Names the current default prompt, the clean-room protocol, and which experiment branches are intentionally left unmerged.</div>
           </div>
           <div class="resource">
-            <div class="resource-label">The 8 UX subagents</div>
-            <div class="resource-url">~/.claude/agents/</div>
-            <div class="resource-note">UX Researcher · IA · Interaction · Content · Accessibility · Visual · Behavioral Scientist · Devil's Advocate — drop-in definitions, reusable in any project.</div>
+            <div class="resource-label">The 9 UX subagents</div>
+            <div class="resource-url">bin/install-agents.sh</div>
+            <div class="resource-note">Creative Director · UX Researcher · IA · Interaction · Content · Accessibility · Visual · Behavioral Scientist · Devil's Advocate. The install script overwrites kit-owned filenames and supports <code style="font-family:'JetBrains Mono',monospace;">--dry-run</code> and <code style="font-family:'JetBrains Mono',monospace;">--project</code>.</div>
           </div>
           <div class="resource">
             <div class="resource-label">The Reddit thread</div>
