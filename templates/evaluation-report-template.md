@@ -33,6 +33,13 @@ What result would have disproved the hypothesis?
 
 Promotion blocked? `yes/no`
 
+Responsive render evidence:
+
+- Top-level mobile / desktop overflow result:
+- No-mask result, if applicable:
+- Fixed-format container inspection result:
+- Screenshot or artifact reference:
+
 ## Blind Outcome Scores
 
 Score this section before revealing which artifact is single-agent vs. team.
