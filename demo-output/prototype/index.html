@@ -1,0 +1,1455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northstar Air — Trip Recovery</title>
+<style>
+  /* ---------- Tokens ---------- */
+  :root {
+    --surface: #FAFAF7;
+    --paper: #FFFFFF;
+    --ink: #0F1419;
+    --ink-dim: #5A6470;
+    --ink-quiet: #8B95A0;
+    --hairline: #E5E2DA;
+    --hairline-strong: #CFCABE;
+    --accent: #1D4A6B;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #EAF0F4;
+    --warn-ink: #7A2E1F;
+    --warn-tint: #FBEEEA;
+    --confirm-ink: #1F4A36;
+    --confirm-tint: #E8F0EA;
+    --caution-ink: #6B5316;
+    --caution-tint: #F6EFD8;
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 20px;
+
+    --shadow-card: 0 1px 0 rgba(15,20,25,0.04), 0 1px 2px rgba(15,20,25,0.04);
+    --shadow-lift: 0 1px 0 rgba(15,20,25,0.05), 0 4px 16px rgba(15,20,25,0.06);
+
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* ---------- Reset / base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  img, svg { max-width: 100%; display: block; }
+  h1, h2, h3, h4, p, ul, ol { margin: 0; }
+  ul { padding: 0; list-style: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+
+  /* Long codes & route strings must not overflow */
+  .wrap { overflow-wrap: anywhere; word-break: normal; }
+
+  /* Visible-on-focus skip link */
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    left: 8px;
+    background: var(--ink);
+    color: #FFFFFF;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    z-index: 1000;
+    transition: top 120ms ease;
+  }
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    top: 8px;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Global focus indicator on every interactive surface */
+  .btn:focus-visible,
+  .chip:focus-visible,
+  .support-link:focus-visible,
+  .toggle:focus-visible,
+  .change-sort:focus-visible,
+  .agent-row .btn:focus-visible,
+  .support-link-strong:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  /* Visually hidden — preserved in AT */
+  .sr-only {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+  /* Sub-headings used inside screens (h3) — visually quiet, AT-loud */
+  .group-h {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink-quiet);
+    margin-top: 18px;
+    margin-bottom: 2px;
+  }
+
+  /* ---------- Layout ---------- */
+  .page {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 20px 96px;
+  }
+  @media (max-width: 640px) {
+    .page { padding: 20px 16px 64px; }
+  }
+
+  /* ---------- Page masthead ---------- */
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .brand-mark {
+    width: 26px; height: 26px;
+    flex: 0 0 26px;
+    display: grid; place-items: center;
+    color: var(--accent);
+  }
+  .brand-name {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .brand-name em {
+    font-style: normal;
+    color: var(--ink-dim);
+    font-weight: 400;
+  }
+  .doc-meta {
+    font-size: 12px;
+    color: var(--ink-quiet);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- Page intro: SMS rewrite ---------- */
+  .intro {
+    margin-bottom: 36px;
+  }
+  .intro h1 {
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+  }
+  .intro p.lede {
+    font-size: 15px;
+    color: var(--ink-dim);
+    max-width: 60ch;
+  }
+
+  .sms {
+    margin-top: 20px;
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-card);
+    max-width: 520px;
+  }
+  .sms-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sms-label::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .sms-body {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .sms-body .reply {
+    display: block;
+    margin-top: 8px;
+    color: var(--ink-dim);
+    font-size: 14px;
+  }
+
+  /* ---------- Screen stack ---------- */
+  .screen {
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-xl);
+    padding: 28px 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-card);
+  }
+  @media (max-width: 640px) {
+    .screen { padding: 22px 16px; border-radius: 16px; }
+  }
+
+  .screen-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .screen-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    padding: 4px 8px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+  }
+  .screen-chip .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+  .screen-purpose {
+    font-size: 12px;
+    color: var(--ink-quiet);
+    letter-spacing: 0.02em;
+  }
+
+  .screen-title {
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+    margin-top: 14px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 640px) {
+    .screen-title { font-size: 24px; }
+  }
+
+  /* Larger headline weight for the most load-bearing line on S1 and S5 */
+  .headline-xl {
+    font-size: 32px;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+  @media (max-width: 640px) {
+    .headline-xl { font-size: 26px; }
+  }
+
+  .meta-line {
+    font-size: 14px;
+    color: var(--ink-dim);
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Status banner (S1) ---------- */
+  .status {
+    margin-top: 8px;
+    padding: 18px 20px;
+    border-radius: var(--r-lg);
+    background: var(--warn-tint);
+    color: var(--warn-ink);
+    border: 1px solid rgba(122, 46, 31, 0.12);
+  }
+  .status-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-eyebrow::before {
+    content: "";
+    width: 8px; height: 8px;
+    background: currentColor;
+    border-radius: 2px;
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+  .status-headline {
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #2A1410;
+  }
+  @media (max-width: 640px) {
+    .status-headline { font-size: 20px; }
+  }
+  .status-headline .code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    font-weight: 600;
+    padding: 1px 6px;
+    background: rgba(122, 46, 31, 0.08);
+    border-radius: 4px;
+  }
+
+  /* ---------- Stack of supporting lines (S1) ---------- */
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 22px;
+  }
+  .row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .row-mark {
+    flex: 0 0 22px;
+    margin-top: 2px;
+    color: var(--accent);
+  }
+  .row-body { min-width: 0; flex: 1 1 auto; }
+  .row-label {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .row-text {
+    font-size: 16px;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .row-text .quiet {
+    color: var(--ink-dim);
+    font-size: 14px;
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ---------- Buttons ---------- */
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+    align-items: stretch;
+  }
+  .btn {
+    min-height: 48px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+    border: 1px solid transparent;
+    text-align: center;
+    transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+    flex: 0 1 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .btn:active { transform: translateY(1px); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+  }
+  .btn-primary:hover { background: #163a55; border-color: #163a55; }
+
+  .btn-secondary {
+    background: var(--paper);
+    color: var(--ink);
+    border-color: var(--hairline-strong);
+  }
+  .btn-secondary:hover { border-color: var(--ink-dim); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--accent);
+    border-color: transparent;
+    padding: 12px 12px;
+  }
+  .btn-ghost:hover { background: var(--accent-soft); }
+
+  .btn-block { width: 100%; }
+
+  @media (max-width: 640px) {
+    .actions { flex-direction: column; align-items: stretch; }
+    .actions .btn { width: 100%; }
+  }
+
+  /* ---------- Option cards (S2) ---------- */
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: 18px 18px;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+    cursor: pointer;
+    min-width: 0;
+  }
+  .option:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-lift);
+  }
+  .option:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .option-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .option-title {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow-wrap: anywhere;
+  }
+  .option-cta {
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    flex: 0 0 auto;
+  }
+  .option-cta::after { content: " →"; }
+  .option-consequence {
+    font-size: 14px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+  .option-note {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--caution-ink);
+    background: var(--caution-tint);
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    line-height: 1.4;
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  .support-link {
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: var(--paper);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--ink);
+    font-size: 14px;
+    width: 100%;
+    text-align: left;
+    flex-wrap: wrap;
+    line-height: 1.45;
+    min-height: 56px;
+  }
+  .support-link > .support-link-text { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; display: flex; align-items: center; gap: 10px; }
+  .support-link .support-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: 0 0 8px;
+    display: inline-block;
+  }
+  .support-link strong { font-weight: 600; color: var(--ink); }
+  .support-link .arrow { color: var(--accent); font-weight: 600; flex: 0 0 auto; }
+  .support-link:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* Sort change-button — accent affordance */
+  .change-sort {
+    background: none;
+    border: 0;
+    padding: 6px 4px;
+    font: inherit;
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    border-radius: 2px;
+    min-height: 32px;
+  }
+  .change-sort:hover { border-bottom-color: var(--accent); }
+
+  /* Support-item state pills (Added / Not added / Eligibility) */
+  .support-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1.2;
+    flex: 0 0 auto;
+  }
+  .support-status-pill.is-added {
+    background: var(--confirm-tint);
+    color: var(--confirm-ink);
+  }
+  .support-status-pill.is-not-added {
+    background: var(--surface);
+    color: var(--ink-quiet);
+    border: 1px solid var(--hairline);
+  }
+  .support-status-pill .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* S4 commit helper line */
+  .commit-hint {
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin-top: 10px;
+    line-height: 1.45;
+  }
+  .commit-hint .commit-hint-mark {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* ---------- Filter / sort row (S3) ---------- */
+  .filter-bar {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 8px 12px;
+    min-height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--hairline-strong);
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .chip.is-active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .chip svg { width: 12px; height: 12px; }
+  .sort-line {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .sort-line strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Flight cards (S3) ---------- */
+  .flights {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .flight {
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: 16px 18px;
+    background: var(--paper);
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 16px;
+    align-items: start;
+    min-width: 0;
+  }
+  .flight:hover { border-color: var(--accent); box-shadow: var(--shadow-lift); }
+  .flight:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .flight-times {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .flight-times .sep {
+    color: var(--ink-quiet);
+    font-weight: 400;
+  }
+  .flight-route {
+    font-size: 13px;
+    color: var(--ink-quiet);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .flight-meta {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin-top: 4px;
+  }
+  .flight-meta .dot-sep::before {
+    content: "·";
+    margin-right: 8px;
+    color: var(--ink-quiet);
+  }
+  .flight-badges {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    min-width: 0;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .badge-reason {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .badge-cost-zero {
+    background: var(--confirm-tint);
+    color: var(--confirm-ink);
+  }
+  .badge-cost-diff {
+    background: var(--caution-tint);
+    color: var(--caution-ink);
+  }
+
+  @media (max-width: 480px) {
+    .flight {
+      grid-template-columns: 1fr;
+    }
+    .flight-badges {
+      grid-column: 1;
+      grid-row: auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  /* ---------- Review block (S4) ---------- */
+  .panel {
+    margin-top: 20px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: 18px 20px;
+    background: var(--paper);
+  }
+  .panel-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink-quiet);
+    margin-bottom: 8px;
+  }
+  .panel-title {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+    margin-bottom: 4px;
+  }
+  .panel-sub {
+    font-size: 14px;
+    color: var(--ink-dim);
+    line-height: 1.45;
+  }
+  .panel-itinerary {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 18px;
+    font-size: 14px;
+  }
+  .panel-itinerary dt {
+    color: var(--ink-quiet);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .panel-itinerary dd {
+    margin: 0;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 500;
+  }
+  @media (max-width: 480px) {
+    .panel-itinerary { grid-template-columns: 1fr; gap: 8px 0; }
+    .panel-itinerary dt { margin-top: 6px; }
+  }
+
+  /* Support — peer block on S4 */
+  .support-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .support-item {
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+    background: var(--paper);
+  }
+  .support-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .support-item-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .support-item-status {
+    font-size: 12px;
+    color: var(--ink-quiet);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+  @media (max-width: 480px) {
+    .support-item-status { text-align: left; flex-basis: 100%; }
+  }
+  .support-item-body {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--ink-dim);
+    line-height: 1.45;
+  }
+  .support-item .toggle {
+    margin-top: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    padding: 10px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    min-height: 44px;
+    background: var(--paper);
+  }
+  .support-item .toggle:hover { background: var(--accent-soft); }
+
+  .changes {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--hairline);
+  }
+  .changes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 12px 16px;
+    margin-top: 8px;
+  }
+  .changes-grid dt {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink-quiet);
+    margin-bottom: 2px;
+  }
+  .changes-grid dd {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  @media (max-width: 560px) {
+    .changes-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 380px) {
+    .changes-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- S5 outcome ---------- */
+  .outcome {
+    padding: 22px 22px 24px;
+    border-radius: var(--r-lg);
+    background: var(--confirm-tint);
+    color: var(--confirm-ink);
+    border: 1px solid rgba(31, 74, 54, 0.14);
+    margin-top: 8px;
+  }
+  .outcome-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .outcome-eyebrow::before {
+    content: "✓";
+    display: inline-flex;
+    width: 18px; height: 18px;
+    align-items: center;
+    justify-content: center;
+    background: var(--confirm-ink);
+    color: var(--confirm-tint);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .outcome-headline {
+    font-size: 32px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: #142A20;
+  }
+  @media (max-width: 640px) {
+    .outcome-headline { font-size: 26px; }
+  }
+  .outcome-sub {
+    font-size: 15px;
+    color: var(--confirm-ink);
+    margin-top: 8px;
+    max-width: 56ch;
+  }
+
+  .trip-card {
+    margin-top: 18px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: 18px 20px;
+    background: var(--paper);
+  }
+  .trip-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .trip-card-route {
+    font-size: 13px;
+    color: var(--ink-quiet);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .trip-card-flight {
+    font-size: 14px;
+    color: var(--ink-dim);
+    font-weight: 500;
+  }
+  .trip-card-times {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .trip-time {
+    min-width: 0;
+  }
+  .trip-time .t {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .trip-time .l {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .trip-time .d {
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  .trip-arrow {
+    color: var(--ink-quiet);
+    flex: 0 0 auto;
+  }
+  .trip-arrow svg { width: 26px; height: 10px; }
+
+  .trip-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 14px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--hairline);
+  }
+  .trip-meta dt {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+    font-weight: 600;
+  }
+  .trip-meta dd {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  @media (max-width: 480px) {
+    .trip-meta { grid-template-columns: 1fr 1fr; }
+  }
+
+  .reentry {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border: 1px dashed var(--hairline-strong);
+    border-radius: var(--r-md);
+    font-size: 14px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+  .reentry strong { color: var(--ink); font-weight: 600; }
+  .reentry a, .reentry .linklike {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .reentry a:hover, .reentry .linklike:hover { text-decoration: underline; }
+
+  /* ---------- Help affordance (persistent on every screen) ---------- */
+  .agent-row {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .agent-row .label {
+    font-size: 13px;
+    color: var(--ink-dim);
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .agent-row .btn-secondary {
+    flex: 0 0 auto;
+  }
+
+  /* ---------- Tiny visuals ---------- */
+  .icon {
+    width: 18px; height: 18px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .icon-star {
+    color: var(--accent);
+  }
+
+  /* Footnote */
+  .footnote {
+    margin-top: 36px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-quiet);
+    letter-spacing: 0.04em;
+  }
+
+  /* Reduce motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
+<div class="page">
+
+  <!-- Masthead -->
+  <header class="masthead">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <!-- Inline star/compass mark -->
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z"/>
+        </svg>
+      </span>
+      <span class="brand-name">Northstar Air <em>· Trip recovery</em></span>
+    </div>
+    <span class="doc-meta">Prototype</span>
+  </header>
+
+  <main id="main">
+
+    <!-- Intro + SMS rewrite (per IA §3) -->
+    <section class="intro" aria-labelledby="intro-h">
+      <h1 id="intro-h">A recovery flow that names the event, the options, and the help.</h1>
+      <p class="lede">It is 10:46 p.m. The 6:15 a.m. flight has just been canceled. The following five screens show what the rebuilt flow looks like, beginning with the message the traveler receives on their phone.</p>
+
+      <div class="sms" role="group" aria-label="Rewritten SMS notification">
+        <div class="sms-label">SMS · 10:46 p.m.</div>
+        <p class="sms-body wrap">Northstar: Your 6:15 a.m. flight NS482 (DEN–LGA) is canceled. You have not been rebooked yet. See your options and any support you may need: <span style="color: var(--accent); font-weight: 600;">{system-supplied link}</span>.<span class="reply">Reply HELP for an agent.</span></p>
+      </div>
+    </section>
+
+
+    <!-- ============ S1 ============ -->
+    <section class="screen" aria-labelledby="s1-h">
+      <div class="screen-head">
+        <span class="screen-chip"><span class="dot" aria-hidden="true"></span>Screen 1</span>
+        <span class="screen-purpose">Comprehend and proceed</span>
+      </div>
+      <h2 id="s1-h" class="screen-title">What happened</h2>
+
+      <div class="status" aria-labelledby="s1-status-h">
+        <div class="status-eyebrow">Canceled</div>
+        <div id="s1-status-h" class="status-headline wrap">Your 6:15&nbsp;a.m. flight <span class="code">NS482</span> (DEN–LGA) is canceled.</div>
+      </div>
+
+      <ul class="stack">
+        <li class="row">
+          <span class="row-mark" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>
+          </span>
+          <div class="row-body">
+            <div class="row-label">Reason</div>
+            <div class="row-text wrap">{system-supplied}</div>
+          </div>
+        </li>
+        <li class="row">
+          <span class="row-mark" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12"/><path d="M14 6l6 6-6 6"/></svg>
+          </span>
+          <div class="row-body">
+            <div class="row-label">What this means right now</div>
+            <div class="row-text">You have not been rebooked yet. We'll show your options next.</div>
+          </div>
+        </li>
+        <li class="row">
+          <span class="row-mark" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-7h14l2 7"/><path d="M3 12v6h18v-6"/><path d="M7 16h2M11 16h2"/></svg>
+          </span>
+          <div class="row-body">
+            <div class="row-label">Tonight</div>
+            <div class="row-text">If your travel is delayed overnight, hotel and meal support may be available. <span class="quiet">We'll show what applies on the next step.</span></div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary">See my options</button>
+        <button type="button" class="btn btn-secondary">Get help from an agent</button>
+      </div>
+    </section>
+
+    <!-- ============ S2 ============ -->
+    <section class="screen" aria-labelledby="s2-h">
+      <div class="screen-head">
+        <span class="screen-chip"><span class="dot" aria-hidden="true"></span>Screen 2</span>
+        <span class="screen-purpose">Pick a recovery path</span>
+      </div>
+      <h2 id="s2-h" class="screen-title">Choose how you'll get there</h2>
+
+      <h3 id="s2-options-h" class="group-h">Your three options</h3>
+      <p class="meta-line wrap">Canceled: 6:15&nbsp;a.m. NS482 (DEN–LGA).</p>
+
+      <div class="options" role="group" aria-labelledby="s2-options-h">
+        <button type="button" class="option" aria-labelledby="opt1-t opt1-c">
+          <div class="option-head">
+            <span id="opt1-t" class="option-title">Rebook on a Northstar flight</span>
+            <span class="option-cta" aria-hidden="true">Choose</span>
+          </div>
+          <div id="opt1-c" class="option-consequence">See available flights tomorrow. Pick the one that fits, then review and confirm.</div>
+        </button>
+
+        <button type="button" class="option" aria-labelledby="opt2-t opt2-c">
+          <div class="option-head">
+            <span id="opt2-t" class="option-title">Take travel credit and arrange later</span>
+            <span class="option-cta" aria-hidden="true">Choose</span>
+          </div>
+          <div id="opt2-c" class="option-consequence">Cancel this trip and use the value later. You will not be rebooked, and no flight is held for you. <strong>Expires:</strong> {system-supplied}.</div>
+        </button>
+
+        <button type="button" class="option" aria-labelledby="opt3-t opt3-c opt3-n">
+          <div class="option-head">
+            <span id="opt3-t" class="option-title">Wait for standby</span>
+            <span class="option-cta" aria-hidden="true">Choose</span>
+          </div>
+          <div id="opt3-c" class="option-consequence">Not a confirmed seat. You only fly if a seat opens.</div>
+          <div id="opt3-n" class="option-note wrap">Standby is not the same as a rebooking. If no seat opens, you stay where you are tonight.</div>
+        </button>
+      </div>
+
+      <button type="button" class="support-link" aria-label="See tonight's support — hotel and meals. Check what's available before you commit.">
+        <span class="support-link-text">
+          <span class="support-dot" aria-hidden="true"></span>
+          <span><strong>See tonight's support</strong> — hotel, meals. Check what's available before you commit.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </button>
+
+      <div class="agent-row">
+        <span class="label">Prefer to talk to a person?</span>
+        <button type="button" class="btn btn-secondary">Get help from an agent</button>
+      </div>
+    </section>
+
+    <!-- ============ S3 ============ -->
+    <section class="screen" aria-labelledby="s3-h">
+      <div class="screen-head">
+        <span class="screen-chip"><span class="dot" aria-hidden="true"></span>Screen 3</span>
+        <span class="screen-purpose">Pick a replacement flight</span>
+      </div>
+      <h2 id="s3-h" class="screen-title">Pick a flight</h2>
+
+      <div class="filter-bar" role="group" aria-label="Filter flights">
+        <button type="button" class="chip">Filter
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 3h8M3.5 6h5M5 9h2"/></svg>
+        </button>
+        <button type="button" class="chip">Arrival time</button>
+        <button type="button" class="chip">Nonstop only</button>
+        <button type="button" class="chip">Travel party</button>
+      </div>
+      <p class="sort-line">Sorted by <strong>earliest arrival</strong>. <button type="button" class="change-sort">Change sort</button></p>
+
+      <h3 id="s3-flights-h" class="group-h">Available flights, sorted by earliest arrival</h3>
+
+      <div class="flights" role="group" aria-labelledby="s3-flights-h">
+        <button type="button" class="flight"
+          aria-label="Depart 7:10 a.m. tomorrow, arrive 2:48 p.m., 1 stop, 5 hours 38 minutes, DEN to LGA. Earliest arrival.">
+          <div class="flight-times">
+            <span>7:10&nbsp;a.m.</span>
+            <span class="sep" aria-hidden="true">→</span>
+            <span>2:48&nbsp;p.m.</span>
+          </div>
+          <div class="flight-badges">
+            <span class="badge badge-reason">Earliest arrival</span>
+          </div>
+          <div class="flight-meta">
+            <span>Tomorrow</span>
+            <span class="dot-sep">1 stop ({system-supplied})</span>
+            <span class="dot-sep">5h 38m</span>
+            <span class="dot-sep">DEN–LGA</span>
+          </div>
+        </button>
+
+        <button type="button" class="flight"
+          aria-label="Depart 2:40 p.m. tomorrow, arrive 8:22 p.m., nonstop, 3 hours 42 minutes, DEN to LGA. Fare difference applies.">
+          <div class="flight-times">
+            <span>2:40&nbsp;p.m.</span>
+            <span class="sep" aria-hidden="true">→</span>
+            <span>8:22&nbsp;p.m.</span>
+          </div>
+          <div class="flight-badges">
+            <span class="badge badge-reason">Nonstop</span>
+            <span class="badge badge-cost-diff">Fare difference {system-supplied}</span>
+          </div>
+          <div class="flight-meta">
+            <span>Tomorrow</span>
+            <span class="dot-sep">Nonstop</span>
+            <span class="dot-sep">3h 42m</span>
+            <span class="dot-sep">DEN–LGA</span>
+          </div>
+        </button>
+
+        <button type="button" class="flight"
+          aria-label="Depart 6:30 p.m. tomorrow, arrive 2:05 a.m. the next day, 1 stop, 5 hours 35 minutes, DEN to LGA. No extra cost.">
+          <div class="flight-times">
+            <span>6:30&nbsp;p.m.</span>
+            <span class="sep" aria-hidden="true">→</span>
+            <span>2:05&nbsp;a.m.</span>
+          </div>
+          <div class="flight-badges">
+            <span class="badge badge-cost-zero">No extra cost</span>
+          </div>
+          <div class="flight-meta">
+            <span>Tomorrow → next day</span>
+            <span class="dot-sep">1 stop ({system-supplied})</span>
+            <span class="dot-sep">5h 35m</span>
+            <span class="dot-sep">DEN–LGA</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="agent-row">
+        <span class="label">Don't see a flight that works?</span>
+        <button type="button" class="btn btn-secondary">Get help from an agent</button>
+      </div>
+    </section>
+
+    <!-- ============ S4 ============ -->
+    <section class="screen" aria-labelledby="s4-h">
+      <div class="screen-head">
+        <span class="screen-chip"><span class="dot" aria-hidden="true"></span>Screen 4</span>
+        <span class="screen-purpose">Review and commit</span>
+      </div>
+      <h2 id="s4-h" class="screen-title">Review, support, and confirm</h2>
+
+      <!-- Your new plan -->
+      <div class="panel" aria-labelledby="s4-plan-h">
+        <div class="panel-eyebrow">Your new plan</div>
+        <div id="s4-plan-h" class="panel-title wrap">7:10&nbsp;a.m. tomorrow · DEN to LGA · 1 stop ({system-supplied})</div>
+        <div class="panel-sub">Arrives 2:48&nbsp;p.m. {local timezone}. Flight code {system-supplied}.</div>
+        <dl class="panel-itinerary">
+          <div><dt>Depart</dt><dd>Tomorrow, 7:10&nbsp;a.m.</dd></div>
+          <div><dt>Arrive</dt><dd>Tomorrow, 2:48&nbsp;p.m.</dd></div>
+          <div><dt>Stops</dt><dd>1 stop ({system-supplied})</dd></div>
+          <div><dt>Travel party</dt><dd>{system-supplied}</dd></div>
+        </dl>
+      </div>
+
+      <!-- Tonight's support — peer block -->
+      <div class="panel" aria-labelledby="s4-support-h">
+        <div class="panel-eyebrow">Tonight's support</div>
+        <div id="s4-support-h" class="panel-title">Help you may need before tomorrow's flight</div>
+        <div class="panel-sub">We'll only confirm what the system says applies to your trip. Nothing is added until you press confirm.</div>
+
+        <div class="support-stack">
+          <div class="support-item">
+            <div class="support-item-head">
+              <span class="support-item-title">Need a hotel tonight?</span>
+              <span class="support-status-pill is-not-added" aria-label="Not added"><span class="pill-dot" aria-hidden="true"></span>Not added</span>
+            </div>
+            <div class="support-item-body">If your travel is delayed overnight, a hotel may be arranged. <strong>Eligibility:</strong> {system-supplied}. {system-supplied details: partner, distance to airport, check-in.}</div>
+            <button type="button" class="toggle">Add hotel support</button>
+          </div>
+
+          <div class="support-item">
+            <div class="support-item-head">
+              <span class="support-item-title">Need meal support?</span>
+              <span class="support-status-pill is-not-added" aria-label="Not added"><span class="pill-dot" aria-hidden="true"></span>Not added</span>
+            </div>
+            <div class="support-item-body">A meal credit may be available for use at the airport tonight or tomorrow morning. <strong>Eligibility:</strong> {system-supplied}. {system-supplied details: amount, how to redeem.}</div>
+            <button type="button" class="toggle">Add meal support</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- What changes -->
+      <div class="changes">
+        <div class="panel-eyebrow">What changes</div>
+        <dl class="changes-grid">
+          <div><dt>Baggage</dt><dd>{system-supplied}</dd></div>
+          <div><dt>Check-in deadline</dt><dd>{system-supplied}</dd></div>
+          <div><dt>Gate</dt><dd>Posted closer to departure</dd></div>
+        </dl>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary wrap">Confirm new flight</button>
+        <button type="button" class="btn btn-secondary">Edit choice</button>
+      </div>
+      <p class="commit-hint"><span class="commit-hint-mark" aria-hidden="true"></span>Button text updates if you add support — for example, <em>Confirm new flight and hotel</em>.</p>
+
+      <div class="agent-row">
+        <span class="label">Want a person to walk through this with you?</span>
+        <button type="button" class="btn btn-secondary">Get help from an agent</button>
+      </div>
+    </section>
+
+    <!-- ============ S5 ============ -->
+    <section class="screen" aria-labelledby="s5-h">
+      <div class="screen-head">
+        <span class="screen-chip"><span class="dot" aria-hidden="true"></span>Screen 5</span>
+        <span class="screen-purpose">Leave with confidence</span>
+      </div>
+      <h2 id="s5-h" class="screen-title">Your updated trip</h2>
+
+      <div class="outcome">
+        <div class="outcome-eyebrow">Confirmed</div>
+        <div class="outcome-headline">You're rebooked.</div>
+        <p class="outcome-sub">Tomorrow, 7:10&nbsp;a.m. from DEN. Details below.</p>
+      </div>
+
+      <div class="trip-card">
+        <div class="trip-card-head">
+          <span class="trip-card-route wrap">DEN → LGA · Tomorrow</span>
+          <span class="trip-card-flight wrap">Flight {system-supplied} · Confirmation {system-supplied}</span>
+        </div>
+        <div class="trip-card-times">
+          <div class="trip-time">
+            <div class="t">7:10&nbsp;a.m.</div>
+            <div class="l">Depart · DEN</div>
+            <div class="d">Tomorrow, {local timezone}</div>
+          </div>
+          <div class="trip-arrow" aria-hidden="true">
+            <svg viewBox="0 0 26 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5h22"/><path d="M19 1l5 4-5 4"/></svg>
+          </div>
+          <div class="trip-time">
+            <div class="t">2:48&nbsp;p.m.</div>
+            <div class="l">Arrive · LGA</div>
+            <div class="d">Tomorrow, {local timezone}</div>
+          </div>
+        </div>
+        <dl class="trip-meta">
+          <div><dt>Check-in by</dt><dd>{system-supplied}</dd></div>
+          <div><dt>Terminal / Gate</dt><dd>Posted closer to departure</dd></div>
+          <div><dt>Baggage</dt><dd>{system-supplied}</dd></div>
+        </dl>
+      </div>
+
+      <!--
+        Conditional: render this panel only when the user added support on S4.
+        Render one block per item the user added; if the system returned "not eligible"
+        for an item the user requested, show that decision honestly with a reason —
+        do not silently drop the line. If the user added nothing, omit the panel.
+      -->
+      <div class="panel" aria-labelledby="s5-support-h" data-render="{if user added support}">
+        <div class="panel-eyebrow">Support tonight</div>
+        <div id="s5-support-h" class="panel-title">{system-supplied: status — e.g. "Confirmed" or "Pending"}</div>
+        <div class="support-stack">
+          <!-- Example block; engineering renders one per support item the user actually added on S4. -->
+          <div class="support-item" data-render="{per item user added on S4}">
+            <div class="support-item-head">
+              <span class="support-item-title">{system-supplied: item — e.g. Hotel, Meal credit}</span>
+              <span class="support-item-status">{system-supplied: status — Confirmed · Ref {…} / Not eligible · {reason} / Pending}</span>
+            </div>
+            <div class="support-item-body">{system-supplied: details — partner, address, redemption window, etc., or the plain reason for ineligibility.}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary">Save to phone</button>
+        <button type="button" class="btn btn-secondary wrap">My plans changed — change my trip again</button>
+      </div>
+
+      <div class="reentry">
+        <strong>Need to change something else?</strong> Press <em>My plans changed — change my trip again</em> above to step back through your options. Your current trip stays as it is until you confirm a new change.
+      </div>
+
+      <div class="agent-row">
+        <span class="label">Anything still unresolved?</span>
+        <button type="button" class="btn btn-secondary">Get help from an agent</button>
+      </div>
+    </section>
+
+  </main>
+
+  <p class="footnote">End of prototype · Five-screen recovery flow</p>
+</div>
+</body>
+</html>
