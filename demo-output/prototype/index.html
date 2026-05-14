@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Canceled flight — recovery flow prototype</title>
+<style>
+  /* ---------- Design tokens ---------- */
+  :root{
+    /* Color: neutral slate, with one warm-red signal for the cancellation moment
+       and a calm action blue. Restraint over enthusiasm. */
+    --ink-900:#0b1220;
+    --ink-800:#1a2233;
+    --ink-700:#2b3447;
+    --ink-600:#4a5470;
+    --ink-500:#6b7591;
+    --ink-400:#9aa3bd;
+    --ink-300:#c7cddc;
+    --ink-200:#e3e7f0;
+    --ink-100:#eef1f7;
+    --ink-50:#f6f8fc;
+    --surface:#ffffff;
+    --canvas:#e9ecf3;          /* desk background behind the phone */
+    --accent-600:#1d4ed8;       /* action blue (rebook) */
+    --accent-700:#1e40af;
+    --accent-50:#eef2ff;
+    --signal-600:#b42318;       /* cancellation red */
+    --signal-50:#fef3f2;
+    --signal-200:#fecdca;
+    --success-600:#067647;
+    --success-50:#ecfdf3;
+    --warn-700:#9a6700;
+    --warn-50:#fffbeb;
+    --token-bg:#0b1220;
+    --token-fg:#e3e7f0;
+    --focus:#1d4ed8;
+
+    /* Type — Inter-style system stack; one scale, 1.2 ratio capped */
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --t-xs: 12px;
+    --t-sm: 13px;
+    --t-base: 15px;
+    --t-md: 17px;
+    --t-lg: 20px;
+    --t-xl: 24px;
+    --t-2xl: 28px;
+    --lh-tight: 1.22;
+    --lh-body: 1.45;
+
+    /* Spacing — 4pt rhythm */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+    --s-9: 56px;
+
+    /* Radius / shadow / motion */
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --r-xl: 22px;
+    --r-phone: 38px;
+    --shadow-card: 0 1px 2px rgba(11,18,32,.06), 0 1px 1px rgba(11,18,32,.04);
+    --shadow-phone: 0 20px 40px -16px rgba(11,18,32,.22), 0 4px 12px rgba(11,18,32,.08);
+    --dur: 160ms;
+    --ease: cubic-bezier(.2,.7,.2,1);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font);
+    font-size:var(--t-base);
+    line-height:var(--lh-body);
+    color:var(--ink-800);
+    background:var(--canvas);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* ---------- Storyboard page chrome ---------- */
+  .page{
+    max-width:520px;        /* mobile column centered on neutral desk on desktop */
+    margin:0 auto;
+    padding:var(--s-6) var(--s-4) var(--s-9);
+  }
+  .page-head{
+    text-align:left;
+    padding:var(--s-4) var(--s-2) var(--s-6);
+    color:var(--ink-700);
+  }
+  .page-head h1{
+    font-size:var(--t-lg);
+    line-height:var(--lh-tight);
+    margin:0 0 var(--s-2);
+    color:var(--ink-900);
+    letter-spacing:-0.01em;
+    font-weight:650;
+  }
+  .page-head p{
+    margin:0;
+    font-size:var(--t-sm);
+    color:var(--ink-600);
+    max-width:48ch;
+  }
+  .screen-nav{
+    display:flex;flex-wrap:wrap;gap:var(--s-2);
+    margin-top:var(--s-3);
+  }
+  .screen-nav a{
+    display:inline-flex;align-items:center;
+    min-height:44px;
+    padding:10px 12px;
+    border-radius:var(--r-sm);
+    background:var(--ink-100);
+    color:var(--ink-700);
+    font-size:var(--t-xs);
+    font-weight:600;
+    text-decoration:none;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+  .screen-nav a:hover{background:var(--ink-200)}
+  .screen-nav a:focus-visible{outline:2px solid var(--ink-900);outline-offset:2px}
+  .screen-label{
+    display:flex;
+    align-items:baseline;
+    gap:var(--s-3);
+    margin:var(--s-7) 0 var(--s-3);
+    padding:0 var(--s-2);
+    color:var(--ink-600);
+    font-size:var(--t-xs);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .screen-label .num{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:22px;height:22px;
+    border-radius:999px;
+    background:var(--ink-200);
+    color:var(--ink-700);
+    font-weight:600;
+    font-size:11px;
+    letter-spacing:0;
+  }
+  .screen-label .name{font-weight:600;color:var(--ink-700)}
+
+  /* ---------- Phone frame ---------- */
+  .phone{
+    width:100%;
+    max-width:390px;
+    margin:0 auto;
+    background:var(--surface);
+    border-radius:var(--r-phone);
+    box-shadow:var(--shadow-phone);
+    overflow:hidden;
+    border:1px solid var(--ink-200);
+  }
+  .phone-inner{
+    display:flex;
+    flex-direction:column;
+    min-height:680px;
+  }
+
+  /* ---------- App header (inside phone) ---------- */
+  .app-header{
+    position:sticky;top:0;
+    background:var(--surface);
+    border-bottom:1px solid var(--ink-100);
+    padding:var(--s-3) var(--s-4);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:var(--s-3);
+    z-index:2;
+  }
+  .brand{
+    display:inline-flex;align-items:center;gap:var(--s-2);
+    font-weight:650;font-size:var(--t-sm);color:var(--ink-900);
+    letter-spacing:-0.005em;
+  }
+  .brand-mark{
+    width:22px;height:22px;border-radius:6px;
+    background:linear-gradient(135deg,#0b1220 0%,#2b3447 100%);
+    display:inline-flex;align-items:center;justify-content:center;
+    color:#fff;font-size:12px;font-weight:700;
+  }
+  .brand-name{font-weight:600;color:var(--ink-800)}
+  .call-support{
+    display:inline-flex;align-items:center;gap:6px;
+    min-height:44px;
+    padding:var(--s-2) var(--s-3);
+    margin:-8px -8px -8px 0;
+    border-radius:var(--r-sm);
+    color:var(--accent-700);
+    font-weight:600;
+    font-size:var(--t-sm);
+    text-decoration:none;
+  }
+  .call-support:hover{background:var(--accent-50)}
+  .call-support:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .call-support svg{flex-shrink:0}
+
+  /* ---------- Screen body ---------- */
+  .screen{
+    padding:var(--s-5) var(--s-4) var(--s-7);
+    flex:1;
+  }
+  h2.screen-title{
+    font-size:var(--t-2xl);
+    line-height:1.18;
+    letter-spacing:-0.015em;
+    font-weight:680;
+    color:var(--ink-900);
+    margin:0 0 var(--s-3);
+  }
+  .lede{
+    font-size:var(--t-base);
+    color:var(--ink-700);
+    margin:0 0 var(--s-5);
+  }
+  .meta-row{
+    display:flex;flex-wrap:wrap;gap:var(--s-2);
+    font-size:var(--t-sm);
+    color:var(--ink-600);
+    margin:0 0 var(--s-5);
+  }
+  .meta-row .dot{color:var(--ink-300)}
+
+  /* ---------- Status banner (Screen 1) ---------- */
+  .status-banner{
+    background:var(--signal-50);
+    border:1px solid var(--signal-200);
+    border-radius:var(--r-md);
+    padding:var(--s-4);
+    display:flex;
+    gap:var(--s-3);
+    align-items:flex-start;
+    margin-bottom:var(--s-5);
+  }
+  .status-banner .pip{
+    width:10px;height:10px;
+    border-radius:999px;
+    background:var(--signal-600);
+    margin-top:6px;
+    flex-shrink:0;
+  }
+  .status-banner h3{
+    margin:0 0 4px;
+    font-size:var(--t-sm);
+    color:var(--signal-600);
+    font-weight:650;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+  .status-banner p{
+    margin:0;
+    color:var(--ink-800);
+    font-size:var(--t-base);
+  }
+
+  /* Flight stub (Screen 1) */
+  .stub{
+    background:var(--ink-50);
+    border:1px solid var(--ink-200);
+    border-radius:var(--r-md);
+    padding:var(--s-4);
+    margin-bottom:var(--s-5);
+  }
+  .stub-route{
+    display:flex;align-items:center;gap:var(--s-3);
+    font-size:var(--t-lg);
+    font-weight:650;
+    color:var(--ink-900);
+    letter-spacing:-0.01em;
+  }
+  .stub-route .arrow{color:var(--ink-600);font-weight:500}
+  .stub-sub{
+    margin-top:var(--s-1);
+    color:var(--ink-600);
+    font-size:var(--t-sm);
+  }
+  .stub-line{
+    display:flex;justify-content:space-between;
+    margin-top:var(--s-3);
+    font-size:var(--t-sm);
+    color:var(--ink-700);
+  }
+  .stub-line .label{color:var(--ink-600)}
+
+  .what-next{margin:0 0 var(--s-6)}
+  .what-next h3{
+    font-size:var(--t-sm);
+    font-weight:650;
+    color:var(--ink-700);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin:0 0 var(--s-3);
+  }
+  .what-next ul{
+    margin:0;padding:0;list-style:none;
+    display:flex;flex-direction:column;gap:var(--s-2);
+  }
+  .what-next li{
+    display:flex;gap:var(--s-3);
+    font-size:var(--t-base);color:var(--ink-800);
+  }
+  .what-next li::before{
+    content:"";
+    width:18px;height:18px;border-radius:6px;
+    background:var(--ink-100);
+    color:var(--ink-700);
+    flex-shrink:0;
+    margin-top:3px;
+    background-image:
+      linear-gradient(45deg, transparent 42%, var(--ink-700) 42% 50%, transparent 50%),
+      linear-gradient(-45deg, transparent 42%, var(--ink-700) 42% 50%, transparent 50%);
+    background-size:10px 2px, 10px 2px;
+    background-repeat:no-repeat;
+    background-position:4px 7px, 8px 11px;
+  }
+
+  /* ---------- Buttons ---------- */
+  .actions{display:flex;flex-direction:column;gap:var(--s-2);margin-top:var(--s-4)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    gap:var(--s-2);
+    min-height:48px;
+    padding:var(--s-3) var(--s-4);
+    border-radius:var(--r-md);
+    border:1px solid transparent;
+    font:inherit;
+    font-size:var(--t-base);
+    font-weight:600;
+    text-decoration:none;
+    cursor:pointer;
+    transition:background var(--dur) var(--ease), transform var(--dur) var(--ease);
+    width:100%;
+    text-align:center;
+  }
+  .btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .btn-primary{background:var(--accent-600);color:#fff}
+  .btn-primary:hover{background:var(--accent-700)}
+  /* Primary button focus: dark-ink ring with a white halo gap, so the
+     ring contrasts against both the blue button fill and the white canvas. */
+  .btn-primary:focus-visible{
+    outline:2px solid var(--ink-900);
+    outline-offset:3px;
+    box-shadow:0 0 0 2px #fff;
+  }
+  .btn-secondary{background:var(--surface);color:var(--ink-800);border-color:var(--ink-200)}
+  .btn-secondary:hover{background:var(--ink-50)}
+  .btn-quiet{background:transparent;color:var(--accent-700)}
+  .btn-quiet:hover{background:var(--accent-50)}
+  .btn-row{display:flex;gap:var(--s-2)}
+  .btn-row .btn{flex:1}
+
+  /* ---------- Path cards (Screen 2) ---------- */
+  .paths{display:flex;flex-direction:column;gap:var(--s-3);margin-bottom:var(--s-4);list-style:none;padding:0}
+  .paths > li{display:block}
+  .path{
+    display:block;
+    background:var(--surface);
+    border:1px solid var(--ink-200);
+    border-radius:var(--r-md);
+    padding:var(--s-4);
+    cursor:pointer;
+    text-align:left;
+    width:100%;
+    font:inherit;
+    color:inherit;
+    transition:border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .path:hover{border-color:var(--ink-400);background:var(--ink-50)}
+  .path:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .path.is-default{
+    border-color:var(--accent-600);
+    background:linear-gradient(0deg, var(--accent-50), var(--accent-50)) padding-box;
+  }
+  .path-head{
+    display:flex;align-items:center;gap:var(--s-3);
+    margin-bottom:var(--s-1);
+  }
+  .path-title{
+    font-size:var(--t-md);
+    font-weight:650;
+    color:var(--ink-900);
+    letter-spacing:-0.01em;
+    flex:1;
+    min-width:0;
+  }
+  .badge{
+    font-size:11px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    padding:3px 8px;
+    border-radius:999px;
+    background:var(--accent-600);
+    color:#fff;
+    flex-shrink:0;
+  }
+  .path-desc{
+    font-size:var(--t-sm);
+    color:var(--ink-700);
+    margin:0;
+  }
+  .path-chev{
+    color:var(--ink-400);
+    flex-shrink:0;
+  }
+
+  /* ---------- Filter chips (Screen 3) ---------- */
+  .filters{
+    display:flex;flex-wrap:wrap;gap:var(--s-2);
+    margin-bottom:var(--s-4);
+  }
+  .chip{
+    position:relative;
+    display:inline-flex;align-items:center;gap:6px;
+    min-height:44px;
+    padding:8px 14px;
+    background:var(--surface);
+    border:1px solid var(--ink-200);
+    border-radius:999px;
+    font-size:var(--t-sm);
+    font-weight:550;
+    color:var(--ink-800);
+    cursor:pointer;
+    user-select:none;
+  }
+  .chip input{
+    position:absolute;
+    opacity:0;
+    inset:0;
+    width:100%;height:100%;
+    margin:0;
+    cursor:pointer;
+  }
+  .chip:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:2px}
+  .chip:has(input:checked){
+    background:var(--ink-900);
+    color:#fff;
+    border-color:var(--ink-900);
+  }
+  .chip:has(input:checked) .check{display:inline-flex}
+  .chip .check{
+    display:none;
+    width:14px;height:14px;
+    align-items:center;justify-content:center;
+  }
+
+  .sort-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:var(--s-3) 0 var(--s-3);
+    font-size:var(--t-sm);
+    color:var(--ink-600);
+  }
+  .sort-row strong{color:var(--ink-800);font-weight:600}
+  .sort-change{
+    background:transparent;
+    border:1px solid transparent;
+    padding:8px 10px;
+    border-radius:var(--r-sm);
+    font:inherit;
+    font-size:var(--t-sm);
+    font-weight:600;
+    color:var(--accent-700);
+    cursor:pointer;
+    min-height:44px;
+  }
+  .sort-change:hover{background:var(--accent-50)}
+  .sort-change:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+  /* ---------- Flight cards (Screen 3) ---------- */
+  .flights{display:flex;flex-direction:column;gap:var(--s-3);list-style:none;padding:0;margin:0}
+  .flights > li{display:block}
+  .flight{
+    background:var(--surface);
+    border:1px solid var(--ink-200);
+    border-radius:var(--r-md);
+    padding:var(--s-4);
+  }
+  .flight-top{
+    display:flex;align-items:baseline;gap:var(--s-3);
+    margin-bottom:var(--s-2);
+  }
+  .flight-time{
+    display:flex;align-items:baseline;gap:var(--s-2);
+    font-size:var(--t-lg);
+    font-weight:680;
+    color:var(--ink-900);
+    letter-spacing:-0.01em;
+    min-width:0;
+  }
+  .flight-time .arrow{color:var(--ink-600);font-weight:400}
+  .flight-time .arr{color:var(--ink-700);font-weight:650}
+  .flight-meta{
+    display:flex;flex-wrap:wrap;gap:var(--s-2);
+    font-size:var(--t-sm);color:var(--ink-600);
+  }
+  .flight-meta .sep{color:var(--ink-300)}
+  .flight-tag{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:11px;
+    font-weight:600;
+    color:var(--ink-700);
+    background:var(--ink-100);
+    padding:3px 8px;
+    border-radius:999px;
+    margin-top:var(--s-2);
+  }
+  .flight-reason{
+    font-size:var(--t-sm);
+    color:var(--ink-600);
+    margin:var(--s-2) 0 var(--s-3);
+  }
+  .flight-action{display:flex;justify-content:flex-end}
+  .flight-action .btn{width:auto;min-height:44px;padding:var(--s-2) var(--s-4)}
+
+  /* ---------- Support disclosure (Screen 4) ---------- */
+  .eligibility{
+    background:var(--ink-50);
+    border:1px solid var(--ink-200);
+    border-radius:var(--r-md);
+    padding:var(--s-4);
+    margin-bottom:var(--s-4);
+  }
+  .eligibility h3{
+    font-size:var(--t-md);
+    font-weight:650;
+    color:var(--ink-900);
+    margin:0 0 var(--s-2);
+    letter-spacing:-0.005em;
+  }
+  .eligibility p{margin:0 0 var(--s-3);color:var(--ink-700);font-size:var(--t-sm)}
+  .eligibility p:last-child{margin-bottom:0}
+  .disclosure{
+    border-left:3px solid var(--ink-300);
+    padding:2px 0 2px var(--s-3);
+    margin:var(--s-3) 0 var(--s-3);
+    color:var(--ink-700);
+    font-size:var(--t-sm);
+  }
+  .support-card{
+    background:var(--surface);
+    border:1px solid var(--ink-200);
+    border-radius:var(--r-md);
+    padding:var(--s-4);
+    margin-bottom:var(--s-3);
+  }
+  .support-card h3{
+    margin:0 0 var(--s-1);
+    font-size:var(--t-md);
+    font-weight:650;
+    letter-spacing:-0.005em;
+    color:var(--ink-900);
+  }
+  .support-card p{margin:0;color:var(--ink-700);font-size:var(--t-sm)}
+  .support-card .row{
+    display:flex;align-items:center;gap:var(--s-3);
+  }
+  .support-card .iconbox{
+    width:36px;height:36px;
+    border-radius:10px;
+    background:var(--accent-50);
+    color:var(--accent-700);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+
+  /* ---------- Confirmation summary (Screen 5) ---------- */
+  .confirm-hero{
+    background:linear-gradient(180deg, var(--ink-900), var(--ink-800));
+    color:#fff;
+    border-radius:var(--r-lg);
+    padding:var(--s-5);
+    margin-bottom:var(--s-4);
+  }
+  .confirm-hero .ok{
+    display:inline-flex;align-items:center;gap:var(--s-2);
+    font-size:var(--t-sm);
+    color:#9be7c1;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-bottom:var(--s-3);
+  }
+  .confirm-hero .ok-dot{
+    width:8px;height:8px;border-radius:999px;background:#22c55e;
+    box-shadow:0 0 0 3px rgba(34,197,94,.18);
+  }
+  .confirm-hero h3{
+    margin:0 0 var(--s-1);
+    font-size:var(--t-xl);
+    font-weight:680;
+    letter-spacing:-0.012em;
+    line-height:1.18;
+  }
+  .confirm-hero .route{
+    color:#c7cddc;
+    font-size:var(--t-sm);
+    margin:0 0 var(--s-4);
+  }
+  .confirm-hero dl{
+    margin:0;
+    display:grid;
+    grid-template-columns:auto 1fr;
+    row-gap:var(--s-2);
+    column-gap:var(--s-4);
+    font-size:var(--t-sm);
+  }
+  .confirm-hero dt{color:#9aa3bd;font-weight:500}
+  .confirm-hero dd{margin:0;color:#fff;font-weight:550;min-width:0;word-break:break-word}
+
+  /* Token pills — visible content; do NOT abbreviate or hide */
+  .token{
+    display:inline-block;
+    max-width:100%;
+    font-family:var(--mono);
+    font-size:12px;
+    background:var(--token-bg);
+    color:var(--token-fg);
+    padding:2px 8px;
+    border-radius:6px;
+    line-height:1.4;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    border:1px solid #1f2a40;
+  }
+  .confirm-hero .token{
+    background:rgba(255,255,255,.10);
+    color:#fff;
+    border-color:rgba(255,255,255,.18);
+  }
+
+  .summary-card{
+    background:var(--surface);
+    border:1px solid var(--ink-200);
+    border-radius:var(--r-md);
+    padding:var(--s-4);
+    margin-bottom:var(--s-3);
+  }
+  .summary-card h3{
+    margin:0 0 var(--s-2);
+    font-size:var(--t-sm);
+    font-weight:650;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-600);
+  }
+  .summary-card ul{
+    margin:0;padding:0;list-style:none;
+    display:flex;flex-direction:column;gap:var(--s-2);
+  }
+  .summary-card li{
+    display:flex;justify-content:space-between;gap:var(--s-3);
+    font-size:var(--t-sm);
+    color:var(--ink-800);
+  }
+  .summary-card li .label{color:var(--ink-600)}
+  .summary-card li .value{font-weight:600;text-align:right;min-width:0;word-break:break-word}
+
+  .next-steps li{
+    display:flex;gap:var(--s-3);
+    color:var(--ink-800);
+    font-size:var(--t-sm);
+    padding:var(--s-2) 0;
+    border-bottom:1px solid var(--ink-100);
+  }
+  .next-steps li:last-child{border-bottom:none}
+  .next-steps .step-num{
+    width:22px;height:22px;
+    border-radius:999px;
+    background:var(--ink-100);
+    color:var(--ink-700);
+    font-weight:600;
+    font-size:11px;
+    display:inline-flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+
+  /* Save / share row (Screen 5) */
+  .save-row{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--s-2);
+    margin-top:var(--s-3);
+  }
+  .save-row .btn{padding:var(--s-3) var(--s-2);font-size:var(--t-sm);min-height:48px}
+
+  /* ---------- Support dock (bottom of screens that need it) ---------- */
+  .support-dock{
+    border-top:1px solid var(--ink-100);
+    padding:var(--s-3) var(--s-4);
+    background:var(--ink-50);
+    font-size:var(--t-sm);
+    color:var(--ink-700);
+    display:flex;align-items:center;justify-content:space-between;
+    gap:var(--s-2) var(--s-3);
+    flex-wrap:wrap;
+  }
+  .support-dock > span{min-width:0}
+  .support-dock a{
+    color:var(--accent-700);
+    font-weight:600;
+    text-decoration:none;
+    min-height:44px;
+    display:inline-flex;align-items:center;gap:6px;
+    flex-wrap:wrap;max-width:100%;
+  }
+  .support-dock a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+  /* ---------- Inline icons ---------- */
+  .ico{display:inline-flex;flex-shrink:0}
+
+  /* ---------- Reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important}
+  }
+
+  /* ---------- Small viewport tightening (down to 320px) ---------- */
+  @media (max-width: 360px){
+    :root{
+      --t-2xl: 24px;
+      --t-xl: 20px;
+      --t-lg: 18px;
+    }
+    .save-row{grid-template-columns:1fr 1fr}
+    .confirm-hero dl{grid-template-columns:1fr; row-gap:2px}
+    .confirm-hero dt{margin-top:6px}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-head">
+    <h1>Canceled flight — recovery flow</h1>
+    <p>A mobile-first storyboard. Five screens, stacked. Token placeholders like <code>{depart_time}</code> render server-side; the live build substitutes real values before paint.</p>
+    <nav aria-label="Storyboard screens" class="screen-nav">
+      <a href="#screen-1">Screen 1</a>
+      <a href="#screen-2">Screen 2</a>
+      <a href="#screen-3">Screen 3</a>
+      <a href="#screen-4">Screen 4</a>
+      <a href="#screen-5">Screen 5</a>
+    </nav>
+  </header>
+
+  <!-- =========================================================
+       SCREEN 1 — Status & Cause
+       ========================================================= -->
+  <div class="screen-label" id="screen-1-label">
+    <span class="num">1</span><span class="name" id="screen-1-title">Screen 1 — Status &amp; Cause</span>
+  </div>
+
+  <section class="phone" id="screen-1" aria-labelledby="screen-1-title">
+    <div class="phone-inner">
+      <header class="app-header">
+        <span class="brand">
+          <span class="brand-mark" aria-hidden="true">N</span>
+          <span class="brand-name">Northstar</span>
+        </span>
+        <a class="call-support" href="tel:{support_number}" aria-label="Call support">
+          <span class="ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </span>
+          Call support
+        </a>
+      </header>
+
+      <section class="screen" aria-label="Screen 1 content">
+        <div class="status-banner">
+          <span class="pip" aria-hidden="true"></span>
+          <div>
+            <h3>Flight canceled</h3>
+            <p>You don't need to do anything yet &mdash; we'll walk you through your options.</p>
+          </div>
+        </div>
+
+        <h2 class="screen-title">Your <span aria-label="6:15 a.m.">{depart_time}</span> flight tomorrow is canceled</h2>
+        <p class="lede">Flight <span class="token">{flight_number}</span> from <span class="token">{origin_city}</span> to <span class="token">{destination_city}</span> will not operate. The cause is <strong>crew availability</strong>.</p>
+
+        <div class="stub" aria-label="Original flight details">
+          <div class="stub-route">
+            <span class="token">{origin_code}</span>
+            <span class="arrow" aria-hidden="true">&rarr;</span>
+            <span class="token">{destination_code}</span>
+          </div>
+          <div class="stub-sub">Originally departing <span class="token">{depart_time}</span> on <span class="token">{depart_date}</span></div>
+          <div class="stub-line"><span class="label">Confirmation</span><span class="token">{confirmation_code}</span></div>
+          <div class="stub-line"><span class="label">Passengers</span><span><span class="token">{passenger_count}</span></span></div>
+        </div>
+
+        <div class="what-next" aria-labelledby="next-h">
+          <h3 id="next-h">What we'll do next</h3>
+          <ul>
+            <li>Show you flights that can still get you there.</li>
+            <li>Check whether hotel and meal support is available tonight.</li>
+            <li>Give you a record you can save or share before you go.</li>
+          </ul>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button">See your options</button>
+          <a class="btn btn-quiet" href="tel:{support_number}">Or call support instead</a>
+        </div>
+      </section>
+
+      <footer class="support-dock">
+        <span>Need help right now?</span>
+        <a href="tel:{support_number}">Call <span class="token">{support_number}</span></a>
+      </footer>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       SCREEN 2 — Choose Your Path
+       ========================================================= -->
+  <div class="screen-label" id="screen-2-label">
+    <span class="num">2</span><span class="name" id="screen-2-title">Screen 2 — Choose Your Path</span>
+  </div>
+
+  <section class="phone" id="screen-2" aria-labelledby="screen-2-title">
+    <div class="phone-inner">
+      <header class="app-header">
+        <span class="brand">
+          <span class="brand-mark" aria-hidden="true">N</span>
+          <span class="brand-name">Northstar</span>
+        </span>
+        <a class="call-support" href="tel:{support_number}" aria-label="Call support">
+          <span class="ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </span>
+          Call support
+        </a>
+      </header>
+
+      <section class="screen" aria-label="Screen 2 content">
+        <h2 class="screen-title">How would you like to recover?</h2>
+        <p class="lede">Three options. You can change your mind before you confirm.</p>
+
+        <ul class="paths" role="list">
+          <li>
+            <button class="path is-default" type="button" aria-current="true">
+              <div class="path-head">
+                <span class="path-title">Rebook on a Northstar flight</span>
+              </div>
+              <p class="path-desc">Pick a replacement flight. Earliest arrival first. Standby is an option inside this flow.</p>
+            </button>
+          </li>
+          <li>
+            <button class="path" type="button">
+              <div class="path-head">
+                <span class="path-title">Request a refund</span>
+              </div>
+              <p class="path-desc">Get your money back to the original payment method and cancel the trip.</p>
+            </button>
+          </li>
+          <li>
+            <button class="path" type="button">
+              <div class="path-head">
+                <span class="path-title">Take travel credit</span>
+              </div>
+              <p class="path-desc">Use later. Terms and any expiration will be shown before you confirm.</p>
+            </button>
+          </li>
+        </ul>
+
+        <div class="actions">
+          <a class="btn btn-quiet" href="#screen-1">Back to status</a>
+        </div>
+      </section>
+
+      <footer class="support-dock">
+        <span>Not sure which fits?</span>
+        <a href="tel:{support_number}">Call <span class="token">{support_number}</span></a>
+      </footer>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       SCREEN 3 — Pick a Flight
+       ========================================================= -->
+  <div class="screen-label" id="screen-3-label">
+    <span class="num">3</span><span class="name" id="screen-3-title">Screen 3 — Pick a Flight</span>
+  </div>
+
+  <section class="phone" id="screen-3" aria-labelledby="screen-3-title">
+    <div class="phone-inner">
+      <header class="app-header">
+        <span class="brand">
+          <span class="brand-mark" aria-hidden="true">N</span>
+          <span class="brand-name">Northstar</span>
+        </span>
+        <a class="call-support" href="tel:{support_number}" aria-label="Call support">
+          <span class="ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </span>
+          Call support
+        </a>
+      </header>
+
+      <section class="screen" aria-label="Screen 3 content">
+        <h2 class="screen-title">Pick a replacement flight</h2>
+        <p class="lede">Showing flights to <span class="token">{destination_city}</span> for <span class="token">{passenger_count}</span>.</p>
+
+        <fieldset class="filters" aria-label="Filter flights">
+          <legend class="sr-only" style="position:absolute;clip:rect(0 0 0 0);width:1px;height:1px;overflow:hidden">Filter flights</legend>
+
+          <label class="chip">
+            <input type="checkbox" />
+            <span class="check" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            Nonstop only
+          </label>
+          <label class="chip">
+            <input type="checkbox" />
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            Arrive by 4 p.m.
+          </label>
+          <label class="chip">
+            <input type="checkbox" />
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            Morning
+          </label>
+          <label class="chip">
+            <input type="checkbox" />
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            Afternoon
+          </label>
+          <label class="chip">
+            <input type="checkbox" />
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            Seats for <span class="token" style="margin-left:4px">{passenger_count}</span>
+          </label>
+        </fieldset>
+
+        <div class="sort-row">
+          <span>Sorted by <strong>earliest arrival</strong></span>
+          <button type="button" class="sort-change">Change sort</button>
+        </div>
+
+        <ul class="flights" role="list">
+          <li>
+            <article class="flight">
+              <div class="flight-top">
+                <div class="flight-time">
+                  <span class="token">{depart_time}</span>
+                  <span class="arrow" aria-hidden="true">&rarr;</span>
+                  <span class="arr token">{arrive_time}</span>
+                </div>
+              </div>
+              <div class="flight-meta">
+                <span><span class="token">{origin_code}</span> &rarr; <span class="token">{destination_code}</span></span>
+                <span class="sep">&middot;</span>
+                <span>1 stop in <span class="token">{layover_code}</span></span>
+                <span class="sep">&middot;</span>
+                <span>Duration <span class="token">{duration}</span></span>
+              </div>
+              <p class="flight-reason">Earliest arrival at <span class="token">{destination_code}</span>.</p>
+              <div class="flight-action">
+                <button class="btn btn-secondary" type="button">Hold this flight</button>
+              </div>
+            </article>
+          </li>
+
+          <li>
+            <article class="flight">
+              <div class="flight-top">
+                <div class="flight-time">
+                  <span class="token">{depart_time}</span>
+                  <span class="arrow" aria-hidden="true">&rarr;</span>
+                  <span class="arr token">{arrive_time}</span>
+                </div>
+              </div>
+              <div class="flight-meta">
+                <span><span class="token">{origin_code}</span> &rarr; <span class="token">{destination_code}</span></span>
+                <span class="sep">&middot;</span>
+                <span>Nonstop</span>
+                <span class="sep">&middot;</span>
+                <span>Duration <span class="token">{duration}</span></span>
+              </div>
+              <p class="flight-reason">Nonstop &middot; later arrival than option above.</p>
+              <div class="flight-action">
+                <button class="btn btn-secondary" type="button">Hold this flight</button>
+              </div>
+            </article>
+          </li>
+
+          <li>
+            <article class="flight">
+              <div class="flight-top">
+                <div class="flight-time">
+                  <span class="token">{depart_time}</span>
+                  <span class="arrow" aria-hidden="true">&rarr;</span>
+                  <span class="arr token">{arrive_time}</span>
+                </div>
+              </div>
+              <div class="flight-meta">
+                <span><span class="token">{origin_code}</span> &rarr; <span class="token">{destination_code}</span></span>
+                <span class="sep">&middot;</span>
+                <span>1 stop in <span class="token">{layover_code}</span></span>
+                <span class="sep">&middot;</span>
+                <span>Duration <span class="token">{duration}</span></span>
+              </div>
+              <span class="flight-tag">Standby option available</span>
+              <p class="flight-reason">Evening arrival; standby may open earlier seats.</p>
+              <div class="flight-action">
+                <button class="btn btn-secondary" type="button">Hold this flight</button>
+              </div>
+            </article>
+          </li>
+        </ul>
+      </section>
+
+      <footer class="support-dock">
+        <span>Don't see a workable option?</span>
+        <a href="tel:{support_number}">Call <span class="token">{support_number}</span></a>
+      </footer>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       SCREEN 4 — Tonight's Support
+       ========================================================= -->
+  <div class="screen-label" id="screen-4-label">
+    <span class="num">4</span><span class="name" id="screen-4-title">Screen 4 — Tonight's Support</span>
+  </div>
+
+  <section class="phone" id="screen-4" aria-labelledby="screen-4-title">
+    <div class="phone-inner">
+      <header class="app-header">
+        <span class="brand">
+          <span class="brand-mark" aria-hidden="true">N</span>
+          <span class="brand-name">Northstar</span>
+        </span>
+        <a class="call-support" href="tel:{support_number}" aria-label="Call support">
+          <span class="ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </span>
+          Call support
+        </a>
+      </header>
+
+      <section class="screen" aria-label="Screen 4 content">
+        <h2 class="screen-title">Tonight's hotel and meal support</h2>
+        <p class="lede">A bed and a meal, if you need one for tonight.</p>
+
+        <section class="eligibility" aria-label="Eligibility result">
+          <h3>You may be eligible for support tonight</h3>
+          <p>We're checking based on the cause of the cancellation and what's available near <span class="token">{origin_city}</span> tonight. We'll tell you what you qualify for before you confirm.</p>
+          <p class="disclosure">Hotel and meal support depends on the cause of the cancellation and what is available tonight. We will tell you what you qualify for before you confirm.</p>
+        </section>
+
+        <div class="support-card">
+          <div class="row">
+            <div class="iconbox" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12"/><path d="M2 14h20"/><path d="M6 6V4"/><path d="M18 6V4"/></svg>
+            </div>
+            <div>
+              <h3>Hotel near <span class="token">{origin_city}</span></h3>
+              <p>We'll show you the property, distance, and check-in window once approved.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="support-card">
+          <div class="row">
+            <div class="iconbox" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18"/><path d="M5 11V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>
+            </div>
+            <div>
+              <h3>Meal support</h3>
+              <p>If approved, your meal credit and where to use it will appear on the next screen.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button">Request hotel &amp; meal support</button>
+          <a class="btn btn-quiet" href="tel:{support_number}">Talk to someone about tonight</a>
+          <button class="btn btn-secondary" type="button">I have a place to stay tonight</button>
+        </div>
+
+        <p class="lede" style="margin-top:var(--s-5);font-size:var(--t-sm);color:var(--ink-600)">If we haven't replied within <span class="token">{response_window}</span>, call <span class="token">{support_number}</span> &mdash; we don't want you waiting.</p>
+      </section>
+
+      <footer class="support-dock">
+        <span>Question right now?</span>
+        <a href="tel:{support_number}">Call <span class="token">{support_number}</span></a>
+      </footer>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       SCREEN 5 — Confirmation & Offline Record
+       ========================================================= -->
+  <div class="screen-label" id="screen-5-label">
+    <span class="num">5</span><span class="name" id="screen-5-title">Screen 5 — Confirmation &amp; Offline Record</span>
+  </div>
+
+  <section class="phone" id="screen-5" aria-labelledby="screen-5-title">
+    <div class="phone-inner">
+      <header class="app-header">
+        <span class="brand">
+          <span class="brand-mark" aria-hidden="true">N</span>
+          <span class="brand-name">Northstar</span>
+        </span>
+        <a class="call-support" href="tel:{support_number}" aria-label="Call support">
+          <span class="ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </span>
+          Call support
+        </a>
+      </header>
+
+      <section class="screen" aria-label="Screen 5 content">
+        <h2 class="screen-title">You're rebooked. Save a copy before you go.</h2>
+
+        <section class="confirm-hero" aria-label="New flight summary">
+          <div class="ok"><span class="ok-dot" aria-hidden="true"></span>Rebooked</div>
+          <h3>New flight confirmed</h3>
+          <p class="route"><span class="token">{origin_code}</span> &rarr; <span class="token">{destination_code}</span> &middot; <span class="token">{depart_date}</span></p>
+          <dl>
+            <dt>Confirmation</dt><dd><span class="token">{confirmation_code}</span></dd>
+            <dt>Depart</dt><dd><span class="token">{depart_time}</span></dd>
+            <dt>Arrive</dt><dd><span class="token">{arrive_time}</span></dd>
+            <dt>Baggage</dt><dd><span class="token">{baggage_status}</span></dd>
+            <dt>Check-in</dt><dd>Opens <span class="token">{checkin_window}</span></dd>
+            <dt>Gate</dt><dd>To be assigned</dd>
+          </dl>
+        </section>
+
+        <section class="summary-card" aria-label="Tonight's support status">
+          <h3>Tonight's support</h3>
+          <ul>
+            <li><span class="label">Hotel</span><span class="value"><span class="token">{hotel_status}</span></span></li>
+            <li><span class="label">Meal</span><span class="value"><span class="token">{meal_status}</span></span></li>
+          </ul>
+        </section>
+
+        <section class="summary-card" aria-label="Next steps">
+          <h3>Next steps</h3>
+          <ul class="next-steps">
+            <li><span class="step-num">1</span><span>Check in opens <span class="token">{checkin_window}</span>. We'll text you when it's time.</span></li>
+            <li><span class="step-num">2</span><span>If anything changes again, this record updates &mdash; or call <span class="token">{support_number}</span>.</span></li>
+            <li><span class="step-num">3</span><span>Bring this confirmation to the gate. Your baggage status is <span class="token">{baggage_status}</span>.</span></li>
+          </ul>
+        </section>
+
+        <div class="save-row" role="group" aria-label="Save your record">
+          <button class="btn btn-secondary" type="button">Save as PDF</button>
+          <button class="btn btn-secondary" type="button">Send to email</button>
+          <button class="btn btn-secondary" type="button">Add to wallet</button>
+        </div>
+
+        <div class="actions" style="margin-top:var(--s-4)">
+          <button class="btn btn-primary" type="button">Save my record</button>
+        </div>
+      </section>
+
+      <footer class="support-dock">
+        <span>Plans change again?</span>
+        <a href="tel:{support_number}">Call <span class="token">{support_number}</span></a>
+      </footer>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>
