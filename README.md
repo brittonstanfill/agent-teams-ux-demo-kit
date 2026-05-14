@@ -58,6 +58,10 @@ The demo problem is a canceled-flight recovery flow for a fictional airline, Nor
 - `templates/` — optional role-report and final-recommendation templates
 - `demo-output/` — sample outputs from past runs
 
+#### A worked example
+
+[PR #2 — Demo run output: Northstar canceled-flight recovery](https://github.com/brittonstanfill/agent-teams-ux-demo-kit/pull/2) is a **review-only, do-not-merge** PR that captures one full team run. It includes the final recommendation, all seven role reports, 38 peer-message files documenting the cross-agent handoffs, and a single-agent comparison baseline. Open it to see what a real run produces before you commit to running one yourself.
+
 ---
 
 ## Install the agents
