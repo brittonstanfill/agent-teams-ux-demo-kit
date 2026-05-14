@@ -1,0 +1,1369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Northstar Air — Trip recovery prototype</title>
+<style>
+  /* ---------- design tokens ---------- */
+  :root {
+    --bg: #F4F0E7;
+    --bg-deep: #EAE4D6;
+    --surface: #FFFFFF;
+    --surface-2: #FBF8F1;
+    --fg: #15171F;
+    --fg-2: #3F434E;
+    --fg-muted: #6A6E78;
+    --line: rgba(21, 23, 31, 0.10);
+    --line-strong: rgba(21, 23, 31, 0.24);
+    --accent: #B04514;        /* warm amber — passes AA on white text at button size */
+    --accent-deep: #862F08;
+    --accent-soft: #FBEADC;
+    --accent-fg: #FFFFFF;
+    --covered: #2A6238;
+    --covered-soft: #E1EEDF;
+    --caution-soft: #F8E6CE;
+    --info-soft: #E7EAF3;
+    --phone-bezel: #1B1D26;
+    --phone-screen: #FFFFFF;
+    --shadow-card: 0 1px 0 rgba(21,23,31,0.04), 0 6px 18px rgba(21,23,31,0.07);
+    --shadow-phone: 0 30px 60px -20px rgba(21,23,31,0.22), 0 12px 24px -12px rgba(21,23,31,0.14);
+    --shadow-focus: 0 0 0 3px var(--accent-soft), 0 0 0 5px var(--accent);
+    --r-card: 16px;
+    --r-pill: 999px;
+    --r-screen: 30px;
+    --tap: 44px;
+    --t-fast: 140ms;
+    --t-med: 220ms;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0E1015;
+      --bg-deep: #14171D;
+      --surface: #1B1F27;
+      --surface-2: #232832;
+      --fg: #EEEAE0;
+      --fg-2: #C5C8CE;
+      --fg-muted: #8F939B;
+      --line: rgba(238, 234, 224, 0.10);
+      --line-strong: rgba(238, 234, 224, 0.22);
+      --accent: #F08A40;
+      --accent-deep: #C0671E;
+      --accent-soft: #2C1F12;
+      --accent-fg: #12141A;
+      --covered: #8DCB9D;
+      --covered-soft: #1A2B22;
+      --caution-soft: #2B2114;
+      --info-soft: #1B1E2A;
+      --phone-bezel: #2C2F38;
+      --phone-screen: #15181F;
+      --shadow-card: 0 1px 0 rgba(0,0,0,0.4), 0 6px 24px rgba(0,0,0,0.42);
+      --shadow-phone: 0 40px 80px -20px rgba(0,0,0,0.7), 0 14px 30px -14px rgba(0,0,0,0.5);
+      --shadow-focus: 0 0 0 3px var(--accent-soft), 0 0 0 5px var(--accent);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { color-scheme: light dark; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    font-feature-settings: "tnum" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    left: 12px;
+    background: var(--fg);
+    color: var(--bg);
+    padding: 10px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    z-index: 100;
+    transition: top var(--t-fast);
+  }
+  .skip-link:focus { top: 12px; }
+
+  /* ---------- layout shell ---------- */
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  .cover {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 28px;
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  .cover h1 {
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    font-weight: 700;
+  }
+  .cover p {
+    margin: 0;
+    max-width: 60ch;
+    color: var(--fg-2);
+    font-size: 15.5px;
+  }
+  .cover .toc {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cover .toc a {
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--fg-2);
+    padding: 6px 10px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .cover .toc a:hover { color: var(--fg); border-color: var(--accent); }
+
+  /* ---------- a "run" = one phone screen + notes ---------- */
+  .run {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 40px 0;
+    border-top: 1px dashed var(--line);
+  }
+  .run:first-of-type { border-top: none; padding-top: 8px; }
+
+  .run header h2 {
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  .run header .step {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-muted);
+    margin: 0 0 4px;
+    font-weight: 600;
+  }
+  .run header p.lede {
+    color: var(--fg-2);
+    margin: 6px 0 0;
+    max-width: 56ch;
+    font-size: 15px;
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  .notes {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: var(--shadow-card);
+  }
+  .notes h3 {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+    color: var(--fg-muted);
+    font-weight: 700;
+  }
+  .notes ul { margin: 0; padding-left: 18px; }
+  .notes li { margin-bottom: 8px; color: var(--fg-2); font-size: 14.5px; line-height: 1.55; }
+  .notes li strong { color: var(--fg); font-weight: 600; }
+  .notes .a11y {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  .notes .a11y h4 {
+    font-size: 11px;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--covered);
+    font-weight: 700;
+  }
+  .notes .a11y p { font-size: 13px; color: var(--fg-2); margin: 0; line-height: 1.5; }
+
+  /* ---------- phone frame ---------- */
+  .phone-wrap {
+    display: flex;
+    justify-content: center;
+  }
+  .phone {
+    width: min(380px, 100%);
+    background: var(--phone-bezel);
+    border-radius: calc(var(--r-screen) + 10px);
+    padding: 10px;
+    box-shadow: var(--shadow-phone);
+    position: relative;
+  }
+  .phone::before {
+    /* speaker / notch hint */
+    content: "";
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 96px;
+    height: 22px;
+    background: var(--phone-bezel);
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.05);
+    z-index: 5;
+  }
+  .screen {
+    background: var(--phone-screen);
+    border-radius: var(--r-screen);
+    color: var(--fg);
+    min-height: 720px;
+    padding: 60px 18px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .status-bar {
+    position: absolute;
+    top: 16px; left: 18px; right: 18px;
+    display: flex; justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-2);
+    z-index: 6;
+  }
+  .status-bar .right { display: inline-flex; gap: 6px; align-items: center; }
+  .status-bar svg { width: 14px; height: 14px; }
+
+  /* In dark mode, screens have their own dark surface; tweak some sub-tones */
+  @media (prefers-color-scheme: dark) {
+    .screen { color: var(--fg); }
+  }
+
+  /* ---------- shared screen primitives ---------- */
+  .h-1 {
+    font-size: 26px;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    font-weight: 700;
+  }
+  .h-sub {
+    font-size: 13.5px;
+    color: var(--fg-muted);
+    margin: 0 0 18px;
+    font-weight: 500;
+  }
+  .h-section {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--fg-muted);
+    margin: 22px 0 10px;
+    font-weight: 700;
+  }
+  .lede {
+    color: var(--fg-2);
+    font-size: 15px;
+    margin: 0 0 14px;
+    line-height: 1.5;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--r-pill);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    height: 24px;
+    border: 1px solid transparent;
+  }
+  .pill svg { width: 12px; height: 12px; }
+  .pill.alert {
+    background: var(--caution-soft);
+    color: var(--accent-deep);
+    border-color: rgba(176, 69, 20, 0.2);
+  }
+  @media (prefers-color-scheme: dark) {
+    .pill.alert { color: var(--accent); border-color: rgba(240,138,64,0.25); }
+  }
+  .pill.covered {
+    background: var(--covered-soft);
+    color: var(--covered);
+    border-color: rgba(42, 98, 56, 0.2);
+  }
+  .pill.choice {
+    background: var(--info-soft);
+    color: var(--fg-2);
+    border-color: var(--line-strong);
+  }
+  .pill.tag {
+    background: transparent;
+    color: var(--fg-2);
+    border-color: var(--line-strong);
+    text-transform: none;
+    font-weight: 600;
+  }
+
+  /* primary status banner */
+  .status-banner {
+    background: var(--caution-soft);
+    border: 1px solid rgba(176, 69, 20, 0.18);
+    color: var(--accent-deep);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .status-banner { color: var(--accent); border-color: rgba(240,138,64,0.28); }
+  }
+  .status-banner svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  .status-banner strong { display: block; font-size: 14px; }
+  .status-banner span { font-size: 12.5px; opacity: 0.92; }
+
+  /* choice cards */
+  .choice {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+    width: 100%;
+    text-align: left;
+    font: inherit;
+  }
+  .choice:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-card); }
+  .choice:focus-visible { box-shadow: var(--shadow-focus); }
+
+  .choice.is-primary {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+    padding: 18px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .choice.is-primary { background: var(--surface-2); color: var(--fg); border-color: var(--line-strong); }
+  }
+  .choice .row1 {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .choice .row1 .name { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .choice .row1 .arrow {
+    width: 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+  }
+  .choice:not(.is-primary) .row1 .arrow { background: var(--surface-2); }
+  @media (prefers-color-scheme: dark) {
+    .choice:not(.is-primary) .row1 .arrow { background: var(--bg-deep); }
+  }
+  .choice .row1 .arrow svg { width: 13px; height: 13px; }
+  .choice .why {
+    font-size: 13.5px;
+    color: var(--fg-muted);
+    line-height: 1.45;
+  }
+  .choice.is-primary .why { color: rgba(244, 240, 231, 0.85); }
+  @media (prefers-color-scheme: dark) {
+    .choice.is-primary .why { color: var(--fg-2); }
+  }
+  .choice.is-primary .top-tag {
+    align-self: flex-start;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: var(--r-pill);
+    margin-bottom: 6px;
+  }
+  .choice-stack { display: grid; gap: 10px; }
+
+  /* covered card */
+  .covered-card {
+    margin-top: 18px;
+    padding: 14px;
+    background: var(--covered-soft);
+    border: 1px solid rgba(42, 98, 56, 0.18);
+    border-radius: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  @media (prefers-color-scheme: dark) {
+    .covered-card { border-color: rgba(141,203,157,0.20); }
+  }
+  .covered-card svg { width: 20px; height: 20px; color: var(--covered); flex-shrink: 0; margin-top: 1px; }
+  .covered-card .title { font-weight: 700; font-size: 14px; color: var(--covered); margin: 0 0 2px; letter-spacing: -0.005em; }
+  .covered-card p { margin: 0; font-size: 13px; color: var(--fg-2); line-height: 1.45; }
+
+  /* persistent agent affordance */
+  .agent-bar {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .agent-bar .left {
+    display: flex; align-items: center; gap: 10px; min-height: var(--tap);
+  }
+  .agent-bar svg { width: 18px; height: 18px; color: var(--fg-muted); }
+  .agent-bar .left-text { display: flex; flex-direction: column; }
+  .agent-bar .left-text .lab { font-size: 13.5px; font-weight: 700; color: var(--fg); }
+  .agent-bar .left-text .sub { font-size: 11.5px; color: var(--fg-muted); }
+  .agent-bar a, .agent-bar button {
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--fg);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 14px;
+    border-radius: 10px;
+    min-height: var(--tap);
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .agent-bar a:hover, .agent-bar button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- flight cards (Screen 2) ---------- */
+  .filters {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;
+  }
+  .chip {
+    background: var(--surface-2);
+    color: var(--fg-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-pill);
+    padding: 8px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font: inherit;
+    min-height: 36px;
+    transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+    font-family: inherit;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+  }
+  @media (prefers-color-scheme: dark) {
+    .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  }
+
+  .flight {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    padding: 14px 14px 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-card);
+  }
+  .flight .row1 {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  }
+  .flight .depart {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .flight .arr-meta {
+    font-size: 12.5px;
+    color: var(--fg-muted);
+    text-align: right;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  .flight .arr-meta strong { color: var(--fg-2); font-weight: 600; font-size: 12.5px; }
+  .flight .route {
+    margin-top: 6px;
+    color: var(--fg-2);
+    font-size: 13.5px;
+  }
+  .flight .route .dot { color: var(--fg-muted); padding: 0 4px; }
+  .flight .tag-row {
+    margin-top: 10px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .flight .confirm {
+    margin-top: 14px;
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    min-height: var(--tap);
+    font: inherit;
+    transition: background var(--t-fast);
+  }
+  .flight .confirm:hover { background: var(--accent-deep); }
+  @media (prefers-color-scheme: dark) {
+    .flight .confirm { color: var(--accent-fg); font-weight: 700; }
+  }
+
+  .reassure {
+    background: var(--surface-2);
+    border: 1px dashed var(--line-strong);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--fg-2);
+    line-height: 1.5;
+  }
+  .reassure strong { color: var(--fg); }
+
+  /* ---------- stay screen ---------- */
+  .stay-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-card);
+  }
+  .stay-card .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .stay-card .head .name { font-weight: 700; font-size: 15px; }
+  .stay-card .head .pill { font-size: 11px; }
+  .stay-card .body { font-size: 13.5px; color: var(--fg-2); margin: 0 0 12px; line-height: 1.5; }
+  .stay-card .pick {
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14.5px;
+    min-height: var(--tap);
+    cursor: pointer;
+    font: inherit;
+  }
+  .stay-card.is-secondary .pick {
+    background: var(--surface-2);
+    color: var(--fg);
+    border: 1px solid var(--line-strong);
+  }
+  .stay-card.meals .head .name { font-size: 14px; }
+
+  .skip-self {
+    margin-top: 6px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--fg-2);
+    padding: 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    min-height: var(--tap);
+    border-radius: 10px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font: inherit;
+  }
+  .skip-self:hover { color: var(--fg); }
+
+  /* ---------- timeline (confirmation) ---------- */
+  .timeline {
+    margin: 6px 0 14px;
+    padding: 0;
+    list-style: none;
+    position: relative;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--line-strong);
+    border-radius: 2px;
+  }
+  .timeline li {
+    position: relative;
+    padding: 8px 0 14px 28px;
+  }
+  .timeline li:last-child { padding-bottom: 4px; }
+  .timeline .marker {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 3px solid var(--accent);
+    box-sizing: border-box;
+  }
+  .timeline li:first-child .marker {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .timeline .when {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+  }
+  .timeline .what {
+    font-size: 14.5px;
+    color: var(--fg);
+    line-height: 1.45;
+  }
+  .timeline .what em {
+    font-style: normal;
+    color: var(--fg-muted);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px dashed var(--line-strong);
+  }
+
+  .conf-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .conf-actions button, .conf-actions a {
+    width: 100%;
+    padding: 13px 12px;
+    font-size: 14.5px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--fg);
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    min-height: var(--tap);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font: inherit;
+  }
+  .conf-actions svg { width: 16px; height: 16px; }
+  .conf-actions .primary {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+  }
+  .conf-actions .primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+  .conf-actions button:hover, .conf-actions a:hover { border-color: var(--accent); }
+
+  .replan {
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--fg-2);
+    padding: 12px;
+    background: var(--info-soft);
+    border-radius: 10px;
+    line-height: 1.5;
+  }
+  .replan a {
+    color: var(--accent-deep);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .replan a { color: var(--accent); }
+  }
+
+  /* ---------- SMS preview ---------- */
+  .sms {
+    background: var(--phone-screen);
+    border-radius: var(--r-screen);
+    color: var(--fg);
+    min-height: 480px;
+    padding: 60px 14px 14px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sms-header {
+    text-align: center;
+    font-size: 13px;
+    color: var(--fg-muted);
+    margin: -8px 0 6px;
+    font-weight: 600;
+  }
+  .bubble {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 12px 14px;
+    max-width: 86%;
+    align-self: flex-start;
+    box-shadow: 0 1px 0 var(--line);
+  }
+  .bubble .sender {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .bubble .body {
+    font-size: 14.5px;
+    line-height: 1.45;
+    color: var(--fg);
+  }
+  .bubble .link {
+    color: var(--accent-deep);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 600;
+    word-break: break-all;
+  }
+  @media (prefers-color-scheme: dark) {
+    .bubble .link { color: var(--accent); }
+  }
+  .bubble .ts {
+    font-size: 11px;
+    color: var(--fg-muted);
+    margin-top: 6px;
+    text-align: right;
+  }
+
+  /* ---------- before/after callout ---------- */
+  .compare {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+    margin-top: 14px;
+  }
+  .compare h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 0 0 8px;
+    color: var(--fg-muted);
+    font-weight: 700;
+  }
+  .compare .before,
+  .compare .after {
+    font-size: 13.5px;
+    line-height: 1.5;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+  .compare .before {
+    background: var(--caution-soft);
+    color: var(--fg);
+    margin-bottom: 6px;
+    text-decoration: line-through;
+    text-decoration-color: rgba(176, 69, 20, 0.55);
+  }
+  @media (prefers-color-scheme: dark) {
+    .compare .before { background: rgba(240,138,64,0.10); }
+  }
+  .compare .after {
+    background: var(--covered-soft);
+    color: var(--fg);
+  }
+  .compare .lbl {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--fg-muted);
+    margin-right: 6px;
+  }
+
+  /* ---------- footer ---------- */
+  .colophon {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--fg-muted);
+    max-width: 60ch;
+    line-height: 1.6;
+  }
+  .colophon strong { color: var(--fg-2); }
+
+  /* ---------- responsive: two columns at desktop ---------- */
+  @media (min-width: 880px) {
+    .stage {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      gap: 48px;
+    }
+    .phone-wrap { justify-content: flex-start; }
+    .notes { position: sticky; top: 24px; }
+  }
+
+  @media (min-width: 1280px) {
+    .stage { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr); gap: 56px; }
+  }
+
+  /* visually hidden for screen reader announcements */
+  .vh {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#screens">Skip to screens</a>
+<div class="shell">
+
+  <header class="cover">
+    <p class="eyebrow">Trip recovery flow · canceled-flight redesign</p>
+    <h1>A flow that helps a tired traveler get there — and ends with what happens next, not "Done."</h1>
+    <p>Four screens after the wake-up text. The redesign reframes the SMS, drops the misleading default, pulls hotel and meals out of the FAQ, and replaces the dead-end confirmation with a save-to-offline timeline. Mobile-first; supports light and dark; respects reduced motion; tap targets ≥ 44 px.</p>
+    <nav class="toc" aria-label="Jump to screen">
+      <a href="#sms">SMS</a>
+      <a href="#s1">1 · What happened</a>
+      <a href="#s2">2 · Pick a flight</a>
+      <a href="#s3">3 · Tonight's stay</a>
+      <a href="#s4">4 · What happens next</a>
+    </nav>
+  </header>
+
+  <main id="screens">
+
+    <!-- ============ SMS ============ -->
+    <section class="run" id="sms" aria-labelledby="sms-h">
+      <header>
+        <p class="step">Screen 0</p>
+        <h2 id="sms-h">The wake-up text</h2>
+        <p class="lede">If the SMS doesn't say what happened, every screen after it has to apologize for it. The text carries the cause, what tapping does, and the two big things the user is about to decide.</p>
+      </header>
+      <div class="stage">
+        <div class="phone-wrap">
+          <div class="phone" role="img" aria-label="SMS thread mockup showing a single message from Northstar Air at 10:46 PM.">
+            <div class="sms" lang="en">
+              <div class="status-bar" aria-hidden="true">
+                <span>10:46</span>
+                <span class="right">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 13c5-5 15-5 20 0"/><path d="M5 16c3-3 11-3 14 0"/><path d="M8 19c1.5-1.5 6.5-1.5 8 0"/><circle cx="12" cy="22" r="0.5" fill="currentColor"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9h20v10H2z"/><path d="M22 13h-2v2h2"/></svg>
+                </span>
+              </div>
+              <div class="sms-header">Messages</div>
+              <div class="bubble">
+                <div class="sender">Northstar Air</div>
+                <div class="body">Your 6:15 AM flight NS482 (DEN → LGA) was canceled — crew availability. Tap to see your options for tonight and tomorrow: <span class="link">ns.air/r/482</span></div>
+                <div class="ts">10:46 PM</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes" aria-labelledby="sms-notes-h">
+          <h3 id="sms-notes-h">Design notes</h3>
+          <ul>
+            <li><strong>Names the event.</strong> "Canceled" — not "schedule irregularity." A stressed user shouldn't have to translate jargon to know what's happening.</li>
+            <li><strong>Names the cause.</strong> "Crew availability" tells the user this is on the airline, not on weather they're about to check on their own.</li>
+            <li><strong>Names what tapping does.</strong> "See your options for tonight and tomorrow" — explicit, concrete, two-horizon.</li>
+            <li><strong>Stays under 160 characters.</strong> Renders as a single SMS on every carrier we tested.</li>
+          </ul>
+          <div class="compare">
+            <h4>Before → after</h4>
+            <div class="before"><span class="lbl">was</span>Northstar Alert: Schedule irregularity on NS482. Manage trip: link</div>
+            <div class="after"><span class="lbl">now</span>Your 6:15 AM flight NS482 (DEN → LGA) was canceled — crew availability. Tap to see your options for tonight and tomorrow.</div>
+          </div>
+          <div class="a11y">
+            <h4>Accessibility</h4>
+            <p>SMS is plain text — no rich formatting that breaks on basic phones or screen readers. Link clearly distinguished by underline and color (1.4.1, contrast ≥ 4.5:1).</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ Screen 1 ============ -->
+    <section class="run" id="s1" aria-labelledby="s1-h">
+      <header>
+        <p class="step">Screen 1</p>
+        <h2 id="s1-h">What happened, and what you can do</h2>
+        <p class="lede">Status without rescue is unkind. The first screen names the event, then immediately shows the three real paths — equal weight, rebook visually first.</p>
+      </header>
+      <div class="stage">
+        <div class="phone-wrap">
+          <div class="phone" role="img" aria-label="Phone screen mockup showing the canceled flight status and three recovery options.">
+            <div class="screen" lang="en">
+              <div class="status-bar" aria-hidden="true">
+                <span>10:47</span>
+                <span class="right">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 13c5-5 15-5 20 0"/><path d="M5 16c3-3 11-3 14 0"/><path d="M8 19c1.5-1.5 6.5-1.5 8 0"/><circle cx="12" cy="22" r="0.5" fill="currentColor"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9h20v10H2z"/><path d="M22 13h-2v2h2"/></svg>
+                </span>
+              </div>
+
+              <div class="status-banner" role="status" aria-live="polite">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.7" fill="currentColor"/></svg>
+                <div>
+                  <strong>Flight canceled</strong>
+                  <span>NS482 · DEN → LGA · Crew availability</span>
+                </div>
+              </div>
+
+              <h1 class="h-1">Your 6:15 AM flight was canceled.</h1>
+              <p class="h-sub">Northstar will help you get there. Pick what works:</p>
+
+              <div class="choice-stack" role="group" aria-label="Recovery options">
+                <button class="choice is-primary" type="button">
+                  <span class="top-tag">Most people start here</span>
+                  <span class="row1">
+                    <span class="name">Find me a new flight</span>
+                    <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg></span>
+                  </span>
+                  <span class="why">Pick from confirmed seats tomorrow.</span>
+                </button>
+
+                <button class="choice" type="button">
+                  <span class="row1">
+                    <span class="name">Take a travel credit</span>
+                    <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg></span>
+                  </span>
+                  <span class="why">Skip the trip and use the credit on a future booking.</span>
+                </button>
+
+                <button class="choice" type="button">
+                  <span class="row1">
+                    <span class="name">Join standby</span>
+                    <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg></span>
+                  </span>
+                  <span class="why">Try for an earlier seat today if one opens up.</span>
+                </button>
+              </div>
+
+              <div class="covered-card" role="note">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                <div>
+                  <p class="title">Tonight's stay and meals</p>
+                  <p>Northstar will cover tonight if you're stuck overnight. You'll see the details after you choose.</p>
+                </div>
+              </div>
+
+              <div class="agent-bar">
+                <div class="left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span class="left-text">
+                    <span class="lab">Talk to a Northstar agent</span>
+                    <span class="sub">Wait time shown when you tap.</span>
+                  </span>
+                </div>
+                <a href="#" role="button">Open</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes" aria-labelledby="s1-notes-h">
+          <h3 id="s1-notes-h">Design notes</h3>
+          <ul>
+            <li><strong>No tabs.</strong> Tabs hide alternatives and let us ship the wrong default. Three equal-weight cards expose all three paths at once.</li>
+            <li><strong>"Most people start here" — not "Recommended."</strong> Recommendations without reasons feel like sales pressure. This phrase is plain, explainable, and not a promise.</li>
+            <li><strong>Entitlement on the first screen.</strong> A covered-tonight chip surfaces the hotel/meal coverage before the user worries about it. Reinforces that asking for help is not a fight.</li>
+            <li><strong>Persistent agent affordance.</strong> Bottom of every screen, same visual weight. Self-service should be the easy path, not the only path.</li>
+            <li><strong>Status announced once.</strong> An <code>aria-live="polite"</code> region announces the cancellation on screen load — and only on load. We do not poll.</li>
+          </ul>
+          <div class="a11y">
+            <h4>Accessibility</h4>
+            <p>Status uses icon + text (not color alone — 1.4.1). All actions ≥ 44 × 44 px (2.5.5). Visible focus rings (2.4.7). Headings in document order (1.3.1).</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ Screen 2 ============ -->
+    <section class="run" id="s2" aria-labelledby="s2-h">
+      <header>
+        <p class="step">Screen 2</p>
+        <h2 id="s2-h">Pick a flight</h2>
+        <p class="lede">Reason tags instead of "Recommended." No fare differences for like-for-like rebooks. Filters that match what a stressed traveler actually filters on: when does it land, is it direct, am I traveling with people?</p>
+      </header>
+      <div class="stage">
+        <div class="phone-wrap">
+          <div class="phone" role="img" aria-label="Phone screen mockup showing three flight options with filters and per-flight confirm buttons.">
+            <div class="screen" lang="en">
+              <div class="status-bar" aria-hidden="true">
+                <span>10:48</span>
+                <span class="right">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 13c5-5 15-5 20 0"/><path d="M5 16c3-3 11-3 14 0"/><path d="M8 19c1.5-1.5 6.5-1.5 8 0"/><circle cx="12" cy="22" r="0.5" fill="currentColor"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9h20v10H2z"/><path d="M22 13h-2v2h2"/></svg>
+                </span>
+              </div>
+
+              <h1 class="h-1">Pick a new flight</h1>
+              <p class="h-sub">DEN → LGA · tomorrow</p>
+
+              <div class="filters" role="group" aria-label="Filter flights">
+                <button class="chip js-chip" type="button" aria-pressed="true">Earliest arrival</button>
+                <button class="chip js-chip" type="button" aria-pressed="false">Direct only</button>
+                <button class="chip js-chip" type="button" aria-pressed="false">Traveling with family</button>
+              </div>
+
+              <article class="flight" aria-label="7:10 AM flight, earliest arrival">
+                <div class="row1">
+                  <span class="depart">7:10<span aria-hidden="true" style="font-size:14px;color:var(--fg-muted);font-weight:600;letter-spacing:0;"> AM</span></span>
+                  <span class="arr-meta"><strong>Arrives</strong><br>[arrival time]</span>
+                </div>
+                <div class="route">DEN <span class="dot">→</span> LGA <span class="dot">·</span> 1 stop</div>
+                <div class="tag-row">
+                  <span class="pill choice">Earliest arrival</span>
+                  <span class="pill tag">No fare difference</span>
+                </div>
+                <button class="confirm" type="button">Confirm 7:10 AM</button>
+              </article>
+
+              <article class="flight" aria-label="2:40 PM flight, fewest stops">
+                <div class="row1">
+                  <span class="depart">2:40<span aria-hidden="true" style="font-size:14px;color:var(--fg-muted);font-weight:600;letter-spacing:0;"> PM</span></span>
+                  <span class="arr-meta"><strong>Arrives</strong><br>[arrival time]</span>
+                </div>
+                <div class="route">DEN <span class="dot">→</span> LGA <span class="dot">·</span> Nonstop</div>
+                <div class="tag-row">
+                  <span class="pill choice">Fewest stops</span>
+                  <span class="pill tag">No fare difference</span>
+                </div>
+                <button class="confirm" type="button">Confirm 2:40 PM</button>
+              </article>
+
+              <article class="flight" aria-label="6:30 PM flight">
+                <div class="row1">
+                  <span class="depart">6:30<span aria-hidden="true" style="font-size:14px;color:var(--fg-muted);font-weight:600;letter-spacing:0;"> PM</span></span>
+                  <span class="arr-meta"><strong>Arrives</strong><br>[arrival time]</span>
+                </div>
+                <div class="route">DEN <span class="dot">→</span> LGA <span class="dot">·</span> 1 stop</div>
+                <div class="tag-row">
+                  <span class="pill tag">No fare difference</span>
+                </div>
+                <button class="confirm" type="button">Confirm 6:30 PM</button>
+              </article>
+
+              <div class="reassure">
+                <strong>No fare difference for any of these.</strong> Need something tonight? Try standby — we'll text you the moment a seat opens.
+              </div>
+
+              <div class="agent-bar">
+                <div class="left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span class="left-text">
+                    <span class="lab">Talk to a Northstar agent</span>
+                    <span class="sub">Wait time shown when you tap.</span>
+                  </span>
+                </div>
+                <a href="#" role="button">Open</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes" aria-labelledby="s2-notes-h">
+          <h3 id="s2-notes-h">Design notes</h3>
+          <ul>
+            <li><strong>Reason tags, not "Recommended."</strong> Each tag is a falsifiable claim: "Earliest arrival," "Fewest stops." If they're not true, they don't appear.</li>
+            <li><strong>No fare deltas on like-for-like rebooks.</strong> Price is for upgrade decisions, later, with consent. Showing fare deltas during a cancellation reads as the airline charging the user for its problem.</li>
+            <li><strong>Filters built around real questions.</strong> Earliest arrival is the goal for the family-event traveler. "Traveling with family" pre-checks group seat availability instead of letting it surprise the user three screens later.</li>
+            <li><strong>Tap-target restated in the button.</strong> "Confirm 7:10 AM" tells you what you're confirming. Saves a back-tap on second-guessing.</li>
+            <li><strong>[arrival time] is a bracketed placeholder.</strong> Real value is system-supplied at render. We don't invent a number.</li>
+          </ul>
+          <div class="a11y">
+            <h4>Accessibility</h4>
+            <p>Filter chips are real <code>button</code> elements with <code>aria-pressed</code>. Tabular numerals on flight times for readability. Each flight is an <code>&lt;article&gt;</code> with an accessible name.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ Screen 3 ============ -->
+    <section class="run" id="s3" aria-labelledby="s3-h">
+      <header>
+        <p class="step">Screen 3</p>
+        <h2 id="s3-h">Tonight's stay & meals</h2>
+        <p class="lede">The current flow buries this in "Other policies." Moving it into the flow is the move that drops calls and increases trust at the same time. Equal-weight options; clear opt-out for the user who's staying with family.</p>
+      </header>
+      <div class="stage">
+        <div class="phone-wrap">
+          <div class="phone" role="img" aria-label="Phone screen mockup offering hotel and meal coverage with two booking options and a skip link.">
+            <div class="screen" lang="en">
+              <div class="status-bar" aria-hidden="true">
+                <span>10:49</span>
+                <span class="right">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 13c5-5 15-5 20 0"/><path d="M5 16c3-3 11-3 14 0"/><path d="M8 19c1.5-1.5 6.5-1.5 8 0"/><circle cx="12" cy="22" r="0.5" fill="currentColor"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9h20v10H2z"/><path d="M22 13h-2v2h2"/></svg>
+                </span>
+              </div>
+
+              <h1 class="h-1">Tonight's stay &amp; meals</h1>
+              <p class="lede">You'll be in DEN overnight. <strong>Northstar covers tonight.</strong></p>
+
+              <div class="stay-card">
+                <div class="head">
+                  <span class="name">Northstar books for me</span>
+                  <span class="pill covered"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Covered</span>
+                </div>
+                <p class="body">We'll text the hotel and shuttle details after you confirm. Most people choose this.</p>
+                <button class="pick" type="button">Northstar books for me</button>
+              </div>
+
+              <div class="stay-card is-secondary">
+                <div class="head">
+                  <span class="name">I'll book my own</span>
+                  <span class="pill choice">Reimbursed</span>
+                </div>
+                <p class="body">Submit your receipt with the steps we'll send you. Useful if you already have a hotel in mind.</p>
+                <button class="pick" type="button">I'll book it myself</button>
+              </div>
+
+              <div class="stay-card meals">
+                <div class="head">
+                  <span class="name">Meals</span>
+                  <span class="pill covered"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Credit applied</span>
+                </div>
+                <p class="body">Credit applied at airport restaurants. The amount is on your confirmation.</p>
+              </div>
+
+              <button class="skip-self" type="button">Skip — I'm staying with family or friends</button>
+
+              <div class="agent-bar">
+                <div class="left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span class="left-text">
+                    <span class="lab">Talk to a Northstar agent</span>
+                    <span class="sub">Wait time shown when you tap.</span>
+                  </span>
+                </div>
+                <a href="#" role="button">Open</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes" aria-labelledby="s3-notes-h">
+          <h3 id="s3-notes-h">Design notes</h3>
+          <ul>
+            <li><strong>Coverage as a screen, not a footnote.</strong> The screen exists because hiding entitlements to reduce voucher cost is a trust-burning shortcut.</li>
+            <li><strong>"Covered" / "Reimbursed" pills carry icon + label.</strong> Color is not the only signal. A color-blind user reads "Covered" the same way.</li>
+            <li><strong>No invented voucher amount.</strong> "The amount is on your confirmation" is honest about where the value lives without inventing a number that policy hasn't blessed.</li>
+            <li><strong>Visible opt-out.</strong> "Skip — I'm staying with family or friends" preserves user agency for the cohort that doesn't need a hotel.</li>
+            <li><strong>Hotel is unnamed.</strong> Showing a specific hotel before policy says which one is a bait-and-switch waiting to happen.</li>
+          </ul>
+          <div class="a11y">
+            <h4>Accessibility</h4>
+            <p>Headings nested correctly inside the screen. Buttons name their action. Status pills do not rely on color alone (1.4.1, 1.4.11). Skip-button is keyboard reachable in the normal tab order — not hidden in a menu.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ Screen 4 ============ -->
+    <section class="run" id="s4" aria-labelledby="s4-h">
+      <header>
+        <p class="step">Screen 4</p>
+        <h2 id="s4-h">What happens next</h2>
+        <p class="lede">The current confirmation says "Done." That's the worst possible word for the moment the user actually needs the most. This screen replaces it with a literal next-24-hours timeline, a save-offline primary, and a visible way to change plans again.</p>
+      </header>
+      <div class="stage">
+        <div class="phone-wrap">
+          <div class="phone" role="img" aria-label="Phone screen mockup showing a chronological timeline of what happens next and a primary save-offline action.">
+            <div class="screen" lang="en">
+              <div class="status-bar" aria-hidden="true">
+                <span>10:50</span>
+                <span class="right">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 13c5-5 15-5 20 0"/><path d="M5 16c3-3 11-3 14 0"/><path d="M8 19c1.5-1.5 6.5-1.5 8 0"/><circle cx="12" cy="22" r="0.5" fill="currentColor"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9h20v10H2z"/><path d="M22 13h-2v2h2"/></svg>
+                </span>
+              </div>
+
+              <h1 class="h-1">You're set.</h1>
+              <p class="h-sub">Here's what to expect.</p>
+
+              <ol class="timeline" aria-label="Next 24 hours">
+                <li>
+                  <span class="marker" aria-hidden="true"></span>
+                  <div class="when">Now</div>
+                  <div class="what">Confirmation and hotel details texted to you.</div>
+                </li>
+                <li>
+                  <span class="marker" aria-hidden="true"></span>
+                  <div class="when">Tonight</div>
+                  <div class="what">Check in at the hotel we sent.</div>
+                </li>
+                <li>
+                  <span class="marker" aria-hidden="true"></span>
+                  <div class="when">Tomorrow <em>[check-in time]</em></div>
+                  <div class="what">Be at the airport <em>[time before flight]</em>.</div>
+                </li>
+                <li>
+                  <span class="marker" aria-hidden="true"></span>
+                  <div class="when">Tomorrow 7:10 AM</div>
+                  <div class="what">NS<em>[new flight number]</em> boards at gate <em>[gate]</em>.</div>
+                </li>
+              </ol>
+
+              <div class="conf-actions">
+                <button class="primary" type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Save trip details offline
+                </button>
+                <button type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+                  Share with someone
+                </button>
+                <button type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Add to my calendar
+                </button>
+              </div>
+
+              <p class="replan">Plans changed? <a href="#">You can change your booking again.</a></p>
+
+              <div class="agent-bar">
+                <div class="left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span class="left-text">
+                    <span class="lab">Talk to a Northstar agent</span>
+                    <span class="sub">Wait time shown when you tap.</span>
+                  </span>
+                </div>
+                <a href="#" role="button">Open</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes" aria-labelledby="s4-notes-h">
+          <h3 id="s4-notes-h">Design notes</h3>
+          <ul>
+            <li><strong>A timeline, not "Done."</strong> "Done" is for the system. The user needs a chronological story.</li>
+            <li><strong>Save offline is the primary.</strong> The user with one bar of signal at a gate needs the trip details in a place that doesn't require connectivity.</li>
+            <li><strong>Share with someone</strong> is recovery for people traveling alone. The data is already in the app — the friction is only social.</li>
+            <li><strong>"Change your booking again" is a visible link.</strong> Putting it in a footer or behind "Manage trip" is exactly the trick that makes people call instead.</li>
+            <li><strong>Bracketed placeholders are deliberate.</strong> <code>[gate]</code>, <code>[new flight number]</code>, <code>[time before flight]</code> are system-supplied. We don't invent operational numbers — the design renders shaped slots so it's obvious where they go.</li>
+          </ul>
+          <div class="a11y">
+            <h4>Accessibility</h4>
+            <p>Ordered list semantics for the timeline (1.3.1). Bracketed placeholders are marked up so they read as "left bracket gate right bracket" to screen readers — they will be replaced before release. Save-offline action is keyboard reachable as the first action.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <p class="colophon">
+      <strong>What this is.</strong> A four-screen mobile-first prototype of a canceled-flight recovery flow for Northstar Air (a fictional airline). It reframes the SMS, drops the misleading default, surfaces hotel and meal coverage, and replaces the dead-end confirmation with a save-to-offline timeline. The flow keeps within a 5-screen cap, doesn't invent airline policy or operational details, and supports light/dark modes plus reduced motion. WCAG-2.1-AA-relevant criteria are cited inline next to the decision they shaped: 1.3.1, 1.4.1, 1.4.3, 1.4.11, 2.1.1, 2.3.3, 2.4.7, 2.5.5, 4.1.3.
+    </p>
+
+  </main>
+</div>
+
+<script>
+  // Filter chips: toggle aria-pressed; honor reduced motion (no animated reorder).
+  document.querySelectorAll('.js-chip').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pressed = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', String(!pressed));
+    });
+  });
+
+  // Choice cards on Screen 1 are buttons — no destination here, but make Enter/Space announce
+  document.querySelectorAll('.choice, .confirm, .pick').forEach(function (el) {
+    el.addEventListener('click', function () {
+      // Announce-only behavior; prototype does not navigate
+      var live = document.getElementById('proto-live');
+      if (!live) {
+        live = document.createElement('div');
+        live.id = 'proto-live';
+        live.className = 'vh';
+        live.setAttribute('aria-live', 'polite');
+        document.body.appendChild(live);
+      }
+      live.textContent = 'Prototype: ' + (el.textContent || '').trim() + ' selected';
+    });
+  });
+</script>
+</body>
+</html>
