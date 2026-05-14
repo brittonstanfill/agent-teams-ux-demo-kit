@@ -1,10 +1,12 @@
 # Parallel-Author Team Prompt
 
-Use this when **authorship matters** — visual composition, narrative coherence, distinctive aesthetic. Sequential relay (covered in `02-master-agent-team-prompt.md`) tends to produce committee-flattened output: each specialist tunes the prior pass in their domain, no one owns the whole, the median wins. This prompt produces 2–3 *distinct authored versions* and asks the team to pick a winner.
+Use this when **authorship matters** — visual composition, narrative coherence, distinctive aesthetic. Sequential relay (covered in [`team-relay.md`](team-relay.md)) tends to produce committee-flattened output: each specialist tunes the prior pass in their domain, no one owns the whole, the median wins. This prompt produces 2–3 *distinct authored versions* and asks the team to pick a winner.
 
-## When to use this vs. `02-`
+> _Run [`../bin/precheck.sh`](../bin/precheck.sh) before pasting. Shared preflight and clean-room rules live in [`_preflight.md`](_preflight.md); the clean-room block restated in the prompt body should match it. If you change either here, keep them in sync._
 
-| Use parallel-author (this prompt) | Use relay-with-debate (`02-`) |
+## When to use this vs. relay-with-debate
+
+| Use parallel-author (this prompt) | Use relay-with-debate ([`team-relay.md`](team-relay.md)) |
 | :--- | :--- |
 | Visual composition is load-bearing | Audit + risk surface is load-bearing |
 | You want a distinctive aesthetic | You want defensible analysis |
@@ -88,9 +90,9 @@ Working rules:
 
 ## When this pattern hurts
 
-- The work is genuinely a synthesis (research findings, requirements doc, recommendation memo) and a single composed voice would be less useful than seven specialist voices weighing in. Use `02-` instead.
-- You can't afford 2–3 parallel authoring passes (token cost). Use `02-` and accept the median-pull risk.
-- The artifact has no compositional dimension — it's a checklist, a spec, a list. Use `02-` or `08-single-agent-quick-prompt.md`.
+- The work is genuinely a synthesis (research findings, requirements doc, recommendation memo) and a single composed voice would be less useful than seven specialist voices weighing in. Use [`team-relay.md`](team-relay.md) instead.
+- You can't afford 2–3 parallel authoring passes (token cost). Use [`team-relay.md`](team-relay.md) and accept the median-pull risk.
+- The artifact has no compositional dimension — it's a checklist, a spec, a list. Use [`team-relay.md`](team-relay.md) or [`single-quick.md`](single-quick.md).
 
 ## Notes for facilitators
 

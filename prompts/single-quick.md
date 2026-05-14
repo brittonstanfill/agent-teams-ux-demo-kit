@@ -16,7 +16,7 @@ That's it. The agent already knows its own discipline, methods, output format, a
 
 ## When to use this vs. the 4-round team debate
 
-| Use the single-agent prompt | Use `07-team-debate-master-prompt.md` |
+| Use the single-agent prompt | Use [`team-debate.md`](team-debate.md) |
 | :--- | :--- |
 | One lens is enough | Multiple disciplines need to weigh in |
 | Reversible / low-stakes decision | Hard-to-reverse, high-stakes choice |

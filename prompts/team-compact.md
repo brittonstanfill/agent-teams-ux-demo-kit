@@ -2,6 +2,8 @@
 
 Use this prompt when the lean slate is still too expensive. It tests whether the minimum useful team can preserve artifact-level improvements while cutting coordination overhead.
 
+> _Run [`../bin/precheck.sh`](../bin/precheck.sh) before pasting. Shared preflight and clean-room rules live in [`_preflight.md`](_preflight.md); the clean-room block restated below should match it. If you change either here, keep them in sync._
+
 ```text
 Create a compact agent team named "Northstar Four-Role UX Recovery Team" to redesign the canceled-flight recovery experience described in:
 

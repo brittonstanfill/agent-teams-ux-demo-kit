@@ -8,3 +8,12 @@ __pycache__/
 *.pyc
 .env
 .env.local
+
+# Locally installed agents (project-scoped). The canonical source is claude-agents/.
+# Use bin/install-agents.sh --project to sync, bin/verify-agents.sh --project to check.
+.claude/agents/
+
+# Generated workspace for demo / clean-room runs. Only .gitkeep is tracked on main.
+# Sealed run outputs live on experiment/* branches, not on main.
+demo-output/*
+!demo-output/.gitkeep

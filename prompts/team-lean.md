@@ -1,6 +1,8 @@
 # Lean Agent-Team Prompt
 
-Use this prompt when the full relay-with-debate run wins on quality but costs too much time or coordination. It tests whether a smaller team can preserve the artifact-level gains from `02-master-agent-team-prompt.md`.
+Use this prompt when the full relay-with-debate run wins on quality but costs too much time or coordination. It tests whether a smaller team can preserve the artifact-level gains from [`team-relay.md`](team-relay.md).
+
+> _Run [`../bin/precheck.sh`](../bin/precheck.sh) before pasting. Shared preflight and clean-room rules live in [`_preflight.md`](_preflight.md); the clean-room block restated below should match it. If you change either here, keep them in sync._
 
 ```text
 Create a lean agent team named "Northstar Lean UX Recovery Team" to redesign the canceled-flight recovery experience described in:

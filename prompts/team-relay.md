@@ -2,7 +2,9 @@
 
 Copy/paste this into Claude Code from the project folder that contains this kit.
 
-> **Two patterns ship in this kit.** Use this *relay-with-debate* prompt when the team needs to converge on one synthesized recommendation. For visual / compositional work where authorship matters, use [`09-parallel-author-prompt.md`](09-parallel-author-prompt.md) instead — that pattern produces 2–3 distinct authored versions and a chosen winner. Mixing them is fine: do a parallel-author pass for the surface, then a relay-with-debate pass for the audit.
+> **Two patterns ship in this kit.** Use this *relay-with-debate* prompt when the team needs to converge on one synthesized recommendation. For visual / compositional work where authorship matters, use [`team-parallel-author.md`](team-parallel-author.md) instead — that pattern produces 2–3 distinct authored versions and a chosen winner. Mixing them is fine: do a parallel-author pass for the surface, then a relay-with-debate pass for the audit.
+
+> _Run [`../bin/precheck.sh`](../bin/precheck.sh) before pasting. Shared preflight and clean-room rules live in [`_preflight.md`](_preflight.md); the clean-room block restated below should match it. If you change either here, keep them in sync._
 
 ```text
 Create an agent team named "Northstar UX Recovery Team" to redesign the canceled-flight recovery experience described in:
@@ -129,4 +131,4 @@ If you're updating from an earlier copy of this kit:
 - Adds an explicit **quality bar** — "distinctive over safe" — to head off committee flattening.
 - Bakes **debates into the process**, not just into the report. The team must produce ≥2 documented disagreements with dissent preserved.
 - Loosens the structural constraint — **4–5 screens is a target, not a cap** — and replaces it with a quality demand.
-- Demands an **authored HTML artifact**, not just a doc describing one. The baseline prompt in `03-` now demands the same, so the comparison is honest.
+- Demands an **authored HTML artifact**, not just a doc describing one. The baseline prompt in [`single-baseline.md`](single-baseline.md) now demands the same, so the comparison is honest.

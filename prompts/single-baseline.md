@@ -57,4 +57,4 @@ Before committing, run a responsive render smoke check on `demo-output/single-ag
 
 The earlier version of this prompt asked the single agent to produce only a markdown document. When facilitators ran the demo head-to-head against the team output (which by V2 of the kit had grown to include an HTML artifact), the baseline doc couldn't lose on visual quality — *because it never had to ship visual*. The scorecard claimed a fair comparison but the artifact types differed.
 
-This version makes the artifacts apples-to-apples. The single agent must now ship the same thing the team ships. If the single agent's HTML is more visually coherent than the team's, that's a real finding about authorship and composition — and the scorecard in `05-scorecard.md` is now honest about it.
+This version makes the artifacts apples-to-apples. The single agent must now ship the same thing the team ships. If the single agent's HTML is more visually coherent than the team's, that's a real finding about authorship and composition — and the scorecard in [`../rubrics/scorecard.md`](../rubrics/scorecard.md) is now honest about it.
