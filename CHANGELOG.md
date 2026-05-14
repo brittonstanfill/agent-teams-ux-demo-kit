@@ -46,9 +46,10 @@ Numbered file prefixes removed; files moved into category directories. The numbe
 - Facilitator runbook now references `bin/precheck.sh` as the primary pre-flight, with the manual `find` command as a fallback.
 - Clean-room runbook reorders the team-prompt options with `team-compact.md` first (the current default) instead of `team-relay.md` (the older pattern).
 - Scorecard now points to `evaluation-system.md` for the improvement loop using the new repo-relative path.
-- Deck (`deck/agent-teams-meetup-deck.html`) updated to v3+ in two passes:
+- Deck (`deck/agent-teams-meetup-deck.html`) updated to v3+ in three passes:
   1. First pass aligned the UX-kit-specific slides: baseline-prompt and team-prompt slides now show the current `single-baseline.md` / `team-relay.md` content (clean-room rule, HTML artifact requirement, Creative Director role, required debates); prompt-anatomy slide reflects the 9-agent team; resources slide replaced the dead `agent-teams-meetup-plan.md` link with `START_HERE.md` and `bin/install-agents.sh`.
   2. Second pass — once the deck was named as reference material — rewrote the four remaining HealthPortal stage-demo slides (Setup, Cancellation Moment, mechanism, rubric) to use Northstar so the deck is internally consistent with the repo. Setup slide now walks the actual install workflow (`git clone` + fresh branch + `bin/install-agents.sh` + `bin/precheck.sh` + paste from `prompts/`). Cancellation Moment slide uses the Northstar entry SMS and trip-status screen as the two surfaces. Mechanism and rubric slides use Northstar-grounded examples. Title-slide speaker notes carry a "Reading this as a reference?" orientation block pointing at the canonical entry files.
+  3. Third pass added a new "Structured plans" slide (replacing the empty `tb-features` divider). It introduces the initiative → phase → milestone hierarchy and names the discipline that makes it work for AI execution: keep the milestones small enough that one PR holds the whole change. Examples are grounded in the Northstar scenario, and the benefits section names consistent/predictable progress, simpler PRs for humans and AI, honest rollback, and right-sizing for an agent team's scope.
 
 ### Earlier history (reconstructed)
 

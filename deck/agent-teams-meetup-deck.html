@@ -2518,15 +2518,66 @@ Keep the final memo crisp; the appendix carries evidence and dissent.</code>
     </div>
   </section>
 
-  <!-- SLIDE 18 — tb-features divider -->
-  <section class="slide dark" data-title="tb-features">
-    <div class="stack" style="max-width: 1400px; text-align: center;">
-      <div style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: clamp(72px, 12vw, 180px); letter-spacing: -0.04em; line-height: 1;">
-        tb-features
+  <!-- SLIDE 18 — Structured plans for AI execution -->
+  <section class="slide" data-title="Structured plans">
+    <div class="stack" style="max-width: 1500px;">
+      <div class="eyebrow-row">
+        <div class="eyebrow">Plan for the team · structured work for AI execution</div>
+      </div>
+      <div class="h1" style="max-width: 1300px; line-height: 1.1;">
+        Structure the work so the AI only has to change <em style="font-style: normal; border-bottom: 4px solid var(--charcoal);">one thing at a time</em>.
+      </div>
+      <div class="lead" style="max-width: 1100px;">
+        Initiative &rarr; phase &rarr; milestone. The hierarchy is normal product planning. The discipline is keeping the <em>milestones</em> small &mdash; small enough that one PR holds the whole change.
+      </div>
+
+      <div class="cols-3" style="margin-top: 48px;">
+        <div class="card-num">
+          <div class="num">01</div>
+          <div class="t">Initiative</div>
+          <div class="d"><strong>What changes for users.</strong> A quarter or two of work. Names an outcome, not an implementation. <em>e.g. &ldquo;Rebuild canceled-flight recovery so it feels like recovery, not punishment.&rdquo;</em></div>
+        </div>
+        <div class="card-num">
+          <div class="num">02</div>
+          <div class="t">Phase</div>
+          <div class="d"><strong>A slice of the initiative.</strong> A few weeks. Sequences work toward the outcome and can ship independently. <em>e.g. &ldquo;Rewrite the entry SMS and trip-status surfaces.&rdquo;</em></div>
+        </div>
+        <div class="card-num">
+          <div class="num">03</div>
+          <div class="t">Milestone</div>
+          <div class="d"><strong>One PR worth of work.</strong> A day or three. A single change that could be reverted alone without leaving anything broken. <em>e.g. &ldquo;Ship the rewritten entry SMS as the new default.&rdquo;</em></div>
+        </div>
+      </div>
+
+      <div style="margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--line);">
+        <div class="eyebrow" style="margin-bottom: 18px;">Why small milestones help</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+          <div>
+            <div style="font-size: 16px; line-height: 1.55; color: var(--fg); margin-bottom: 18px;">
+              <strong>Consistent, predictable progress.</strong> Each milestone has one obvious done state. Half-finished sprawling PRs disappear because the unit of work is too small to sprawl.
+            </div>
+            <div style="font-size: 16px; line-height: 1.55; color: var(--fg);">
+              <strong>Simpler PRs &mdash; for humans and AI.</strong> A reviewer (human or model) can hold the whole diff in their head. Review comments stay specific instead of drifting to &ldquo;there&rsquo;s a lot happening here.&rdquo;
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 16px; line-height: 1.55; color: var(--fg); margin-bottom: 18px;">
+              <strong>Honest rollback.</strong> Undoing a mistake undoes only that milestone &mdash; the rest of the work stays solid. Big milestones make &ldquo;just revert it&rdquo; expensive enough that teams patch around the mistake instead.
+            </div>
+            <div style="font-size: 16px; line-height: 1.55; color: var(--fg);">
+              <strong>Right-sized for a team.</strong> A milestone is the unit an agent team can tackle without scope sprawl. Bigger, and the team starts inventing its own structure mid-run &mdash; which is exactly what the plan was supposed to prevent.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="notes" hidden>
-      <p>Section divider. The next slide is the bonus computer-use watchdog prompt.</p>
+      <p>This is the operational answer to &ldquo;how do I actually use agent teams on real work?&rdquo; The thesis on slide 3 named the three problem shapes where agent teams pay off; this slide names the <em>unit of work</em> at which they pay off &mdash; the milestone.</p>
+      <p>The hierarchy itself isn&rsquo;t novel. Initiative / phase / milestone is product-planning vocabulary that predates AI. What changes is the discipline: AI executes more reliably when each milestone is a small, reviewable PR. Big milestones produce big diffs, and big diffs are where the team (or a solo agent) starts changing things outside the plan.</p>
+      <p>Concrete rule of thumb: if you can&rsquo;t summarize the milestone in one sentence, and reverting it wouldn&rsquo;t leave the codebase healthy, the milestone is too big. Split it.</p>
+      <p>The Northstar example carries through. Initiative: rebuild canceled-flight recovery so it feels like recovery, not punishment. Phase: rewrite the entry SMS and trip-status surfaces. Milestone: ship the rewritten entry SMS as the new default. Several milestones add up to a phase; several phases add up to the initiative. Each milestone ships as one PR.</p>
+      <p>This pairs with Tip 2 from slide 14 (<em>decisions in files, not chat</em>). The plan document is where the decisions live across initiatives and phases; the milestone is the unit that gets executed against the plan. Together they keep the team grounded &mdash; the plan tells the team where it&rsquo;s going, the milestone bounds what it does next.</p>
+      <p>Note for the next slide: the bonus watchdog prompt is one tool for the &ldquo;run while you&rsquo;re away&rdquo; case &mdash; useful, but small milestones are the more fundamental answer. A team running against a one-PR milestone usually doesn&rsquo;t need a watchdog.</p>
     </div>
   </section>
 
