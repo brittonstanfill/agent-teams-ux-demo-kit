@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Northstar Air — Canceled Flight Recovery (Prototype)</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#0F1419;background:#F4F5F7;-webkit-font-smoothing:antialiased}
+:root{
+  --ink:#0F1419;--ink-soft:#4A5568;--ink-mute:#6B7280;--line:#E5E7EB;
+  --surface:#fff;--canvas:#F4F5F7;
+  --accent:#1E40AF;--accent-ink:#1E3A8A;--accent-tint:#EEF2FF;
+  --warn-bg:#FEF3C7;--warn-ink:#78350F;
+  --ok-tint:#ECFDF5;--ok-ink:#166534;
+  --danger-tint:#FEF2F2;--danger-ink:#991B1B;
+  --shadow:0 1px 2px rgba(15,20,25,.06),0 4px 12px rgba(15,20,25,.04);
+  --radius:12px;--radius-lg:16px;--radius-sm:8px;
+}
+a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+a:hover{text-decoration-thickness:2px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+/* sr-only utility: visually hidden but available to assistive tech */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.skip:focus{position:fixed;left:12px;top:12px;width:auto;height:auto;padding:10px 14px;background:var(--ink);color:#fff;border-radius:8px;z-index:99}
+
+/* page chrome */
+.page-head{position:sticky;top:0;z-index:10;background:rgba(244,245,247,.92);backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid var(--line)}
+.page-head-inner{max-width:980px;margin:0 auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.brand{font-weight:600;font-size:13px;letter-spacing:.02em;color:var(--ink-soft)}
+.brand b{color:var(--ink);font-weight:700}
+.stepnav{display:flex;gap:6px;flex-wrap:wrap}
+.stepnav a{flex:1 1 auto;min-width:0;font-size:12px;font-weight:500;color:var(--ink-soft);background:#fff;border:1px solid var(--line);padding:8px 10px;border-radius:999px;text-align:center;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:36px;display:inline-flex;align-items:center;justify-content:center}
+.stepnav a:hover{color:var(--ink);border-color:#cbd5e1}
+.stepnav .n{display:inline-block;width:18px;height:18px;line-height:18px;border-radius:999px;background:var(--accent-tint);color:var(--accent-ink);font-weight:700;margin-right:6px;font-size:11px;text-align:center}
+
+main{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+
+/* screen frame: mobile-card */
+.screen{margin:0 auto 32px;max-width:390px;width:100%}
+.screen-label{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 4px 10px;font-size:12px;color:var(--ink-soft);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.screen-label b{color:var(--ink);font-weight:700;letter-spacing:.02em;text-transform:none;font-size:13px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden}
+.frame-pad{padding:20px}
+
+/* shared bits */
+.h1{font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-.01em;margin:0 0 8px}
+.h2{font-size:17px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.h3{font-size:14px;font-weight:600;margin:0 0 6px;letter-spacing:.01em}
+.muted{color:var(--ink-soft);font-size:13px;line-height:1.5}
+.tiny{font-size:12px;color:var(--ink-mute);line-height:1.45}
+.token{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--accent-tint);color:var(--accent-ink);padding:1px 6px;border-radius:6px;white-space:nowrap}
+.rule{height:1px;background:var(--line);margin:16px 0;border:0}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;padding:12px 16px;border-radius:10px;border:1px solid transparent;font-weight:600;font-size:15px;text-decoration:none;transition:background .12s ease,border-color .12s ease}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-ink)}
+.btn-secondary{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn-secondary:hover{border-color:#cbd5e1}
+.btn-ghost{background:transparent;color:var(--accent-ink);min-height:44px}
+.btn-ghost:hover{background:var(--accent-tint)}
+
+/* SMS hero */
+.sms{background:linear-gradient(180deg,#0F1419 0%,#1F2937 100%);color:#E5E7EB;border-radius:14px;padding:16px;margin-bottom:16px}
+.sms-meta{display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.sms-bubble{background:#1F2937;border:1px solid #374151;padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.5;color:#F3F4F6}
+.sms-bubble b{color:#fff}
+.sms-foot{font-size:11px;color:#9CA3AF;margin-top:8px;display:flex;align-items:center;gap:6px}
+.sms-foot .dot{width:6px;height:6px;border-radius:999px;background:#10B981;display:inline-block}
+
+/* status chip */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;line-height:1.2}
+.chip-danger{background:var(--danger-tint);color:var(--danger-ink)}
+.chip-warn{background:var(--warn-bg);color:var(--warn-ink)}
+.chip-ok{background:var(--ok-tint);color:var(--ok-ink)}
+.chip-info{background:var(--accent-tint);color:var(--accent-ink)}
+.chip-neutral{background:#F3F4F6;color:#374151}
+
+/* flight summary line */
+.flight-line{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-weight:600;font-size:18px;letter-spacing:-.01em}
+.flight-line .arrow{color:var(--ink-mute);font-weight:400}
+.flight-sub{font-size:13px;color:var(--ink-soft);margin-top:2px}
+
+/* checklist */
+.next-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.next-list li{display:flex;gap:10px;font-size:14px;color:var(--ink-soft);align-items:flex-start}
+.next-list .num{flex:none;width:22px;height:22px;border-radius:999px;background:var(--accent-tint);color:var(--accent-ink);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}
+
+/* option cards (screen 2) */
+.option-grid{display:grid;gap:10px}
+.opt{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px;text-decoration:none;color:inherit;transition:border-color .12s,box-shadow .12s}
+.opt:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.opt-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.opt-title{font-weight:600;font-size:15px;color:var(--ink)}
+.opt-conseq{font-size:13px;color:var(--ink-soft);margin-top:2px}
+.opt-arrow{color:var(--ink-mute);font-size:18px;line-height:1}
+.standby{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:12px 14px;border:1px dashed var(--line);border-radius:10px;background:#FAFAFB;text-decoration:none;color:inherit}
+.standby-l{font-size:13px}
+.standby-l b{display:block;color:var(--ink);font-weight:600;font-size:14px;margin-bottom:2px}
+
+/* filters (screen 3) */
+.filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin:0 -4px 12px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.filter{flex:none;font-size:12px;font-weight:500;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);min-height:36px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.filter[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* Pressed filter on near-black: indigo focus ring would fail 3:1, so invert to light. */
+.filter[aria-pressed="true"]:focus-visible{outline:2px solid #EEF2FF;outline-offset:2px}
+
+/* flight cards (screen 3) */
+.flight-card{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:10px;text-decoration:none;color:inherit}
+.flight-card:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.fc-row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.fc-time{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.fc-stops{font-size:12px;color:var(--ink-soft)}
+.fc-route{font-size:13px;color:var(--ink-soft)}
+.fc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+/* entitlements (screen 4) */
+.entitle{display:grid;gap:8px}
+.ent{display:grid;grid-template-columns:1fr;gap:6px 10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.ent>.chip{justify-self:start}
+.ent-t{font-weight:600;font-size:14px;color:var(--ink)}
+.ent-d{font-size:12px;color:var(--ink-soft);grid-column:1/-1}
+.review-card{background:#FAFAFB;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+
+/* confirmation (screen 5) */
+.summary{background:linear-gradient(180deg,#EEF2FF 0%,#fff 70%);border:1px solid var(--line);border-radius:14px;padding:16px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin-top:10px;font-size:13px}
+.kv dt{color:var(--ink-soft);min-width:0}
+.kv dd{margin:0;color:var(--ink);font-weight:500;min-width:0;overflow-wrap:anywhere}
+.kv dd .token{white-space:normal;overflow-wrap:anywhere}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.reentry{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* footer */
+.foot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:#FAFAFB;font-size:12px;color:var(--ink-soft)}
+.foot a{font-weight:500}
+
+/* desktop tweaks */
+@media (min-width:1024px){
+  .page-head-inner{flex-direction:row;align-items:center;justify-content:space-between}
+  .stepnav{flex-wrap:nowrap}
+  main{padding:32px 24px 96px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#screen-1">Skip to content</a>
+
+<header class="page-head" role="banner">
+  <div class="page-head-inner">
+    <div class="brand"><b>Northstar Air</b> &middot; Canceled flight recovery</div>
+    <nav class="stepnav" aria-label="Prototype screens">
+      <a href="#screen-1"><span class="n">1</span>Notice</a>
+      <a href="#screen-2"><span class="n">2</span>Options</a>
+      <a href="#screen-3"><span class="n">3</span>Choose flight</a>
+      <a href="#screen-4"><span class="n">4</span>Support &amp; confirm</a>
+      <a href="#screen-5"><span class="n">5</span>Confirmation</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<h1 class="sr-only">Northstar canceled-flight recovery walkthrough</h1>
+
+<!-- ================== SCREEN 1 ================== -->
+<section class="screen" id="screen-1" aria-labelledby="s1-h">
+  <div class="screen-label"><b>1. Cancellation Notice</b><span>Entry from SMS</span></div>
+  <article class="frame">
+    <div class="frame-pad">
+
+      <!-- SMS hero -->
+      <div class="sms" role="group" aria-label="Example of the SMS the traveler received">
+        <span class="sr-only">Example text message from Northstar Air. The bubble text reads:</span>
+        <div class="sms-meta"><span>Text message &middot; Northstar Air</span><span>10:46 PM</span></div>
+        <div class="sms-bubble">
+          Your <b>NS482</b> from <b>DEN</b> to <b>LGA</b> on <b>6:15 a.m.</b> has been <b>canceled</b> due to crew availability. Tap to see your recovery options &mdash; rebook, refund, or travel credit. <span class="token">{secure link}</span>
+        </div>
+        <div class="sms-foot"><span class="dot" aria-hidden="true"></span>Plain-language rewrite of the original alert</div>
+      </div>
+
+      <span class="chip chip-danger" aria-hidden="true">&middot; Canceled</span>
+      <h2 class="h1" id="s1-h" style="margin-top:8px">Your flight was canceled.</h2>
+      <p class="muted">Flight <b style="color:var(--ink)">NS482</b> from <b style="color:var(--ink)">DEN</b> to <b style="color:var(--ink)">LGA</b>, scheduled <b style="color:var(--ink)">6:15&nbsp;a.m.</b>, will not operate. Reason: <b style="color:var(--ink)">crew availability</b>.</p>
+
+      <hr class="rule">
+
+      <h3 class="h2">What happens next</h3>
+      <ol class="next-list" aria-label="Three steps">
+        <li><span class="num">1</span><span><b style="color:var(--ink)">Pick a recovery option.</b> Rebook on Northstar, get a refund, or take a travel credit.</span></li>
+        <li><span class="num">2</span><span><b style="color:var(--ink)">See support you may be entitled to.</b> Hotel, meals, and rebooking help &mdash; eligibility shown per booking.</span></li>
+        <li><span class="num">3</span><span><b style="color:var(--ink)">Leave with a saved plan.</b> Including check-in time and a way back in if plans change again.</span></li>
+      </ol>
+
+      <p style="margin:18px 0 12px"><a class="btn btn-primary" href="#screen-2" aria-label="See your recovery options">See your options</a></p>
+      <p style="margin:0"><a class="btn btn-secondary" href="#page-support">Talk to an agent instead</a></p>
+
+      <p class="tiny" style="margin-top:14px">Signed in as <span class="token">{passenger name}</span> &middot; Party of <span class="token">{party size}</span></p>
+    </div>
+    <div class="foot">
+      <span>Step 1 of 5</span>
+      <a href="#page-support">Need help?</a>
+    </div>
+  </article>
+</section>
+
+<!-- ================== SCREEN 2 ================== -->
+<section class="screen" id="screen-2" aria-labelledby="s2-h">
+  <div class="screen-label"><b>2. Recovery Options</b><span>Pick one path</span></div>
+  <article class="frame">
+    <div class="frame-pad">
+      <span class="chip chip-info">NS482 &middot; DEN &rarr; LGA</span>
+      <h2 class="h1" id="s2-h" style="margin-top:10px">Choose how to recover.</h2>
+      <p class="muted">No option is selected for you. Pick the one that fits your trip.</p>
+
+      <div class="option-grid" style="margin-top:14px" role="list">
+        <a class="opt" href="#screen-3" role="listitem" aria-label="Rebook on Northstar">
+          <div class="opt-top"><span class="opt-title">Rebook on Northstar</span><span class="opt-arrow" aria-hidden="true">&rsaquo;</span></div>
+          <div class="opt-conseq">Get on another Northstar flight. You&rsquo;ll compare and choose on the next screen.</div>
+        </a>
+        <a class="opt" href="#screen-4" role="listitem" aria-label="Refund to original payment">
+          <div class="opt-top"><span class="opt-title">Refund to original payment</span><span class="opt-arrow" aria-hidden="true">&rsaquo;</span></div>
+          <div class="opt-conseq">Money back to your card. Amount: <span class="token">{refund amount if applicable}</span>.</div>
+        </a>
+        <a class="opt" href="#screen-4" role="listitem" aria-label="Travel credit for later">
+          <div class="opt-top"><span class="opt-title">Travel credit</span><span class="opt-arrow" aria-hidden="true">&rsaquo;</span></div>
+          <div class="opt-conseq">Use later on Northstar. Value: <span class="token">{credit amount if applicable}</span>. Expiration: <span class="token">{if applicable per booking}</span>.</div>
+        </a>
+      </div>
+
+      <hr class="rule">
+
+      <a class="standby" href="#screen-3" aria-label="Standby option, not a confirmed seat">
+        <span class="standby-l">
+          <b>Try standby</b>
+          Standby is <b style="color:var(--danger-ink)">not a confirmed seat</b>. You may not get on.
+        </span>
+        <span class="opt-arrow" aria-hidden="true">&rsaquo;</span>
+      </a>
+
+      <p class="tiny" style="margin-top:14px">Traveling with others? Per-passenger options coming soon.</p>
+    </div>
+    <div class="foot">
+      <span>Step 2 of 5</span>
+      <a href="#page-support">Talk to an agent</a>
+    </div>
+  </article>
+</section>
+
+<!-- ================== SCREEN 3 ================== -->
+<section class="screen" id="screen-3" aria-labelledby="s3-h">
+  <div class="screen-label"><b>3. Choose a Flight</b><span>If you picked Rebook</span></div>
+  <article class="frame">
+    <div class="frame-pad">
+      <h2 class="h1" id="s3-h">Choose a replacement flight.</h2>
+      <p class="muted">Sorted by arrival time. <span class="token">{seats remaining indicator}</span> shown per flight.</p>
+
+      <div class="filters" role="group" aria-label="Filter flights">
+        <button class="filter" aria-pressed="true">Arrive by</button>
+        <button class="filter" aria-pressed="false">Nonstop</button>
+        <button class="filter" aria-pressed="false">Travel party</button>
+        <button class="filter" aria-pressed="false">Mobility needs</button>
+      </div>
+
+      <a class="flight-card" href="#screen-4" aria-label="7:10 a.m. to 11:05 a.m., 1 stop, NS612 via ORD">
+        <div class="fc-row1"><span class="fc-time">7:10 a.m. &rarr; 11:05 a.m.</span><span class="fc-stops">1 stop</span></div>
+        <div class="fc-route">NS612 &middot; DEN &rarr; ORD &rarr; LGA &middot; <span class="token">{seats remaining indicator}</span></div>
+        <div class="fc-chips"><span class="chip chip-neutral">Earliest arrival</span></div>
+      </a>
+
+      <a class="flight-card" href="#screen-4" aria-label="2:40 p.m. to 8:35 p.m., nonstop">
+        <div class="fc-row1"><span class="fc-time">2:40 p.m. &rarr; 8:35 p.m.</span><span class="fc-stops">Nonstop</span></div>
+        <div class="fc-route"><span class="token">{flight number}</span> &middot; DEN &rarr; LGA &middot; <span class="token">{seats remaining indicator}</span></div>
+        <div class="fc-chips"><span class="chip chip-neutral">Fewest stops</span></div>
+      </a>
+
+      <a class="flight-card" href="#screen-4" aria-label="6:30 p.m. to 10:55 p.m., 1 stop, NS888 via DTW">
+        <div class="fc-row1"><span class="fc-time">6:30 p.m. &rarr; 10:55 p.m.</span><span class="fc-stops">1 stop</span></div>
+        <div class="fc-route">NS888 &middot; DEN &rarr; DTW &rarr; LGA &middot; <span class="token">{seats remaining indicator}</span></div>
+        <div class="fc-chips"><span class="chip chip-neutral">Latest departure</span></div>
+      </a>
+
+      <p class="tiny" style="margin-top:10px">No flight pre-selected. No fare-difference shown during recovery.</p>
+    </div>
+    <div class="foot">
+      <span>Step 3 of 5</span>
+      <a href="#page-support">Talk to an agent</a>
+    </div>
+  </article>
+</section>
+
+<!-- ================== SCREEN 4 ================== -->
+<section class="screen" id="screen-4" aria-labelledby="s4-h">
+  <div class="screen-label"><b>4. Support &amp; Confirm</b><span>Review entitlements, then confirm</span></div>
+  <article class="frame">
+    <div class="frame-pad">
+      <h2 class="h1" id="s4-h">Support available for this disruption.</h2>
+      <p class="muted">Eligibility is shown per booking. Items you&rsquo;re not eligible for are shown plainly, not hidden.</p>
+
+      <div class="entitle" style="margin-top:14px" role="list">
+        <div class="ent" role="listitem">
+          <span class="ent-t">Overnight accommodation</span>
+          <span class="chip chip-neutral"><span class="token">{eligibility per booking}</span></span>
+          <span class="ent-d">If eligible, booking instructions appear here.</span>
+        </div>
+        <div class="ent" role="listitem">
+          <span class="ent-t">Meals</span>
+          <span class="chip chip-neutral"><span class="token">{eligibility per booking}</span></span>
+          <span class="ent-d">If eligible, redemption details appear here.</span>
+        </div>
+        <div class="ent" role="listitem">
+          <span class="ent-t">Rebooking assistance</span>
+          <span class="chip chip-neutral"><span class="token">{eligibility per booking}</span></span>
+          <span class="ent-d">You can change this selection before confirming.</span>
+        </div>
+        <div class="ent" role="listitem">
+          <span class="ent-t">Accessibility &amp; mobility</span>
+          <span class="chip chip-neutral"><span class="token">{eligibility per booking}</span></span>
+          <span class="ent-d">Wheelchair assistance, service animals, and other needs.</span>
+        </div>
+        <div class="ent" role="listitem">
+          <span class="ent-t">Checked baggage</span>
+          <span class="chip chip-neutral"><span class="token">{baggage policy per booking}</span></span>
+          <span class="ent-d">Status moves with your rebooked flight.</span>
+        </div>
+      </div>
+
+      <div class="review-card" aria-label="Your selection">
+        <h3 class="h2" style="margin-bottom:6px">Your selection</h3>
+        <div class="flight-line"><span class="token">{new flight number}</span><span class="arrow">&rarr;</span><span class="token">{new departure}</span></div>
+        <div class="flight-sub">DEN &rarr; LGA &middot; <span class="token">{stops}</span> &middot; arrives <span class="token">{new arrival}</span></div>
+        <div class="tiny" style="margin-top:8px">Held for you. Not ticketed until you confirm.</div>
+      </div>
+
+      <p style="margin:16px 0 10px"><a class="btn btn-primary" href="#screen-5">Confirm and finish</a></p>
+      <p style="margin:0"><a class="btn btn-ghost" href="#screen-2">Change my recovery option</a></p>
+    </div>
+    <div class="foot">
+      <span>Step 4 of 5</span>
+      <a href="#page-support">Talk to an agent</a>
+    </div>
+  </article>
+</section>
+
+<!-- ================== SCREEN 5 ================== -->
+<section class="screen" id="screen-5" aria-labelledby="s5-h">
+  <div class="screen-label"><b>5. Confirmation &amp; Plan</b><span>Save it for the road</span></div>
+  <article class="frame">
+    <div class="frame-pad">
+      <span class="chip chip-ok" aria-hidden="true">&check; Confirmed</span>
+      <h2 class="h1" id="s5-h" style="margin-top:10px">You&rsquo;re booked on <span class="token">{new flight number}</span>.</h2>
+      <p class="muted">We&rsquo;ll send a copy of this plan to <span class="token">{contact channel}</span> if configured.</p>
+
+      <div class="summary" style="margin-top:14px" aria-label="Trip summary">
+        <div class="flight-line"><span>DEN</span><span class="arrow">&rarr;</span><span>LGA</span></div>
+        <div class="flight-sub"><span class="token">{new flight number}</span> &middot; <span class="token">{stops}</span> &middot; <span class="token">{new date}</span></div>
+        <dl class="kv">
+          <dt>Departs</dt><dd><span class="token">{new departure}</span></dd>
+          <dt>Arrives</dt><dd><span class="token">{new arrival}</span></dd>
+          <dt>Check-in by</dt><dd><span class="token">{check-in time}</span></dd>
+          <dt>Hotel</dt><dd><span class="token">{eligibility per booking}</span></dd>
+          <dt>Meals</dt><dd><span class="token">{eligibility per booking}</span></dd>
+          <dt>Baggage</dt><dd><span class="token">{baggage policy per booking}</span></dd>
+        </dl>
+      </div>
+
+      <h3 class="h2" style="margin-top:18px">At the airport</h3>
+      <ol class="next-list">
+        <li><span class="num">1</span><span>Arrive by <span class="token">{check-in time}</span>. Have ID ready.</span></li>
+        <li><span class="num">2</span><span>Check in at a Northstar counter or kiosk per airport instructions.</span></li>
+        <li><span class="num">3</span><span>Head to your gate (gate info shown closer to departure).</span></li>
+        </ol>
+
+      <div class="action-row">
+        <button class="btn btn-secondary" type="button">Save as PDF</button>
+        <button class="btn btn-secondary" type="button">Add to wallet</button>
+      </div>
+      <p style="margin:8px 0 0"><button class="btn btn-ghost" type="button">Text this summary to me</button></p>
+
+      <div class="reentry">
+        <span>Plans changed again?</span>
+        <a href="#screen-1">Start recovery over &rsaquo;</a>
+      </div>
+
+      <aside id="page-support" aria-label="Support" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+        <p class="tiny" style="margin:0">Need a human? Reach Northstar support via <span class="token">{support channel options as configured}</span>.</p>
+      </aside>
+    </div>
+    <div class="foot">
+      <span>Step 5 of 5 &middot; Done</span>
+      <a href="#screen-1">Back to top</a>
+    </div>
+  </article>
+</section>
+
+</main>
+</body>
+</html>
