@@ -2,7 +2,7 @@
 
 Use this to keep the demo honest. The agent team should not "win" unless the output improves enough to justify coordination cost.
 
-For the improvement loop, use `11-evaluation-system.md`. This file is the quick live-demo scorecard.
+For the improvement loop, use [`evaluation-system.md`](evaluation-system.md). This file is the quick live-demo scorecard.
 
 **Honest framing for the demo:** the kit's earlier pitch — "team output > single output" — is true on some dimensions and false on others. A live demo that hides this is less useful than one that surfaces it. The "What team wins on / What single agent wins on" section at the bottom is now the most important part of the scorecard.
 
@@ -89,8 +89,8 @@ These don't compound — they belong to one author. A team can refine them but r
 
 ### How to use this in the demo
 
-1. Run the single-agent baseline (`03-`) — note it now ships HTML, not just a doc.
-2. Run the compact team (`13-`) for the current recommended path. Use `02-` or `09-` only when intentionally comparing older patterns.
+1. Run the single-agent baseline ([`../prompts/single-baseline.md`](../prompts/single-baseline.md)) — note it now ships HTML, not just a doc.
+2. Run the compact team ([`../prompts/team-compact.md`](../prompts/team-compact.md)) for the current recommended path. Use [`team-relay.md`](../prompts/team-relay.md) or [`team-parallel-author.md`](../prompts/team-parallel-author.md) only when intentionally comparing older patterns.
 3. Score both honestly with the rubric above.
 4. End the demo with the "team wins on / single wins on" comparison. Show the audience *where the team earned its cost* and *where the single agent held its own*.
 

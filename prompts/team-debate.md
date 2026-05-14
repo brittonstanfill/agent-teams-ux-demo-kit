@@ -2,7 +2,7 @@
 
 A general-purpose prompt for running a structured multi-specialist UX debate using Claude Code's agent-teams feature. Use this when the team needs to converge on a design decision and you want real friction in the process — not just a single agent's answer.
 
-This prompt is intentionally heavier than `02-master-agent-team-prompt.md` (the Northstar demo prompt). Use this one for real product decisions where the cost of being wrong justifies the cost of running the team.
+This prompt is intentionally heavier than [`team-relay.md`](team-relay.md) (the Northstar demo prompt). Use this one for real product decisions where the cost of being wrong justifies the cost of running the team.
 
 ---
 
@@ -23,6 +23,8 @@ This prompt is intentionally heavier than `02-master-agent-team-prompt.md` (the 
 ---
 
 ## Pre-flight (confirm before spawning)
+
+Run [`../bin/precheck.sh`](../bin/precheck.sh) — it covers all of the below in one shot, plus agent drift and `demo-output/` cleanliness. The full list of checks lives in [`_preflight.md`](_preflight.md):
 
 - `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set in `settings.json` or env
 - `teammateMode` is `"tmux"` in `~/.claude/settings.json`, OR this session was launched with `claude --teammate-mode tmux`, OR you are already inside a tmux session

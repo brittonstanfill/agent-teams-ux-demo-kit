@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+  Agent Teams — Meetup Deck
+  Framing version: v3+ (champion-challenger compact team is the current default).
+  The deck lags the kit. If the kit's recommended workflow, scoring rubric, or
+  "team wins on / single wins on" framing has changed since you last touched the
+  deck, sync to README.md and START_HERE.md before presenting. See CHANGELOG.md
+  for the kit's evolution.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -477,10 +485,24 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: clamp(11px, 0.95vw, 13px);
     line-height: 1.55;
-    max-height: 62vh;
-    overflow: auto;
+    max-height: 56vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     white-space: pre-wrap;
     text-align: left;
+  }
+  /* Prompt slides top-align their content so the scrollable card stays fully inside the viewport
+     (default .slide is justify-content: center, which pushes long content above the fold). */
+  .slide.has-prompt {
+    justify-content: flex-start;
+    padding-top: 6vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .slide.has-prompt .stack {
+    width: 100%;
   }
   .slide:not(.dark) .prompt-card {
     background: #1d1f23;
@@ -724,7 +746,7 @@
     letter-spacing: 0.5px;
   }
 
-  /* Patient portal phone mocks (slide 9) */
+  /* Northstar phone mocks (slide 9 — Cancellation Moment) */
   .phone-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
@@ -1253,7 +1275,18 @@
       </div>
     </div>
     <div class="notes" hidden>
-      <p>Open warm. Don't start with "today I'm going to talk about" — start with the question you're going to answer. Something like: <em>"Anthropic shipped a feature called Agent Teams a few months ago. I went in thinking it was overhyped. Came out thinking — it is, for most things, and it isn't, for three specific things. That's what I want to walk you through."</em></p>
+      <p><strong>Reading this as a reference rather than watching the talk?</strong> Press <kbd>N</kbd> any time to toggle these notes — they carry the context the slides assume. The 20-minute talk is paired with a working UX kit (this repo). Suggested entry points:</p>
+      <ul>
+        <li><code>README.md</code> — what ships in the kit and how to install it</li>
+        <li><code>START_HERE.md</code> — the canonical run order; names the current default prompt</li>
+        <li><code>bin/install-agents.sh</code> — sync the 9 agent definitions into <code>~/.claude/agents/</code></li>
+        <li><code>bin/precheck.sh</code> — pre-flight before spawning a team</li>
+        <li><code>runbooks/clean-room.md</code> — how to run an honest baseline-vs-team comparison</li>
+        <li><code>rubrics/evaluation-system.md</code> — the full improvement-loop rubric (the simple 7-dimension version on slide 12 is the live-demo subset)</li>
+      </ul>
+      <p>Slides 7 (Setup), 9 (Cancellation Moment), 11 (mechanism), and 12 (rubric) are scenario-grounded in <code>demo-inputs/northstar-canceled-flight-brief.md</code>. The prompts on slides 8.5 and 8.6 are condensed previews of <code>prompts/single-baseline.md</code> and <code>prompts/team-relay.md</code> respectively; the full versions are the source of truth.</p>
+      <hr/>
+      <p><em>Presenter notes:</em> Open warm. Don't start with "today I'm going to talk about" — start with the question you're going to answer. Something like: <em>"Anthropic shipped a feature called Agent Teams a few months ago. I went in thinking it was overhyped. Came out thinking — it is, for most things, and it isn't, for three specific things. That's what I want to walk you through."</em></p>
       <p>Set audience expectation: this is a 20-minute talk. One live demo, possibly two. Resources at the end you can take with you.</p>
       <p>If the room is mixed (some Claude Code regulars, some new): "I'll assume you've heard of Claude Code but not necessarily used Agent Teams. If you have, the second half will give you new prompts."</p>
     </div>
@@ -1712,46 +1745,46 @@
         <!-- Step 2 -->
         <div class="setup-step">
           <div class="step-num">STEP 02</div>
-          <div class="step-title">Download the demo repo</div>
-          <div class="step-cmd">github.com/brittonstanfill/<br />agent-teams-demo<br /><span class="prompt">→ </span>Code <span class="prompt">→</span> Download ZIP</div>
-          <div class="step-note"><strong>Don't <code style="font-family:'JetBrains Mono',monospace;">git clone</code>.</strong> An agent can read the spoiler out of <code style="font-family:'JetBrains Mono',monospace;">.git</code> history.</div>
+          <div class="step-title">Clone the kit, fresh branch</div>
+          <div class="step-cmd"><span class="prompt">$ </span>git clone github.com/<br />brittonstanfill/<br />agent-teams-ux-demo-kit<br /><span class="prompt">$ </span>git switch -c try-it</div>
+          <div class="step-note">A fresh branch keeps your run from contaminating the <code style="font-family:'JetBrains Mono',monospace;">demo-output/</code> on main. See <strong>runbooks/clean-room.md</strong>.</div>
         </div>
 
         <!-- Step 3 -->
         <div class="setup-step">
           <div class="step-num">STEP 03</div>
-          <div class="step-title">Install &amp; sanity-check the repro</div>
-          <div class="step-cmd"><span class="prompt">$ </span>npm install<br /><span class="prompt">$ </span>npm start<br /><span class="prompt">$ </span>npm run repro</div>
-          <div class="step-note">Should print <strong>BUG REPRODUCED</strong> in ~5s. If not, fix that first.</div>
+          <div class="step-title">Install the 9 agents</div>
+          <div class="step-cmd"><span class="prompt">$ </span>bin/install-agents.sh<br /><span class="prompt">$ </span>bin/verify-agents.sh</div>
+          <div class="step-note">Syncs <code style="font-family:'JetBrains Mono',monospace;">claude-agents/*.md</code> into <code style="font-family:'JetBrains Mono',monospace;">~/.claude/agents/</code>. Verify exits non-zero on drift — important before live demos.</div>
         </div>
 
         <!-- Step 4 -->
         <div class="setup-step">
           <div class="step-num">STEP 04</div>
-          <div class="step-title">Delete the README</div>
-          <div class="step-cmd"><span class="prompt">$ </span>rm README.md</div>
-          <div class="step-note">The README is the <strong>facilitator's copy</strong> — it names the correct hypothesis. Remove it before the team reads anything.</div>
+          <div class="step-title">Pre-flight</div>
+          <div class="step-cmd"><span class="prompt">$ </span>bin/precheck.sh</div>
+          <div class="step-note">Checks Claude Code version, the experimental flag, tmux state, agent drift, and that <code style="font-family:'JetBrains Mono',monospace;">demo-output/</code> is clean. <strong>Fix anything it flags</strong> before spawning a team.</div>
         </div>
 
         <!-- Step 5 -->
         <div class="setup-step">
           <div class="step-num">STEP 05</div>
-          <div class="step-title">Launch &amp; paste the prompt</div>
-          <div class="step-cmd"><span class="prompt">$ </span>claude<br /><span class="dim" style="color:var(--slate)"># paste demo-prompts.md</span></div>
-          <div class="step-note">Prompt lives in <strong>demo-prompts.md</strong> — that file stays in the repo (spoiler-safe).</div>
+          <div class="step-title">Launch &amp; paste a prompt</div>
+          <div class="step-cmd"><span class="prompt">$ </span>claude<br /><span class="dim" style="color:var(--slate)"># paste from prompts/</span><br /><span class="dim" style="color:var(--slate)"># team-compact.md (default)</span></div>
+          <div class="step-note">Brief is <strong>demo-inputs/northstar-canceled-flight-brief.md</strong>. The compact team prompt produces two candidate artifacts, picks one, then seals the final.</div>
         </div>
       </div>
 
       <div class="setup-footnote">
-        <div>The whole repo and prompt: <code class="mono" style="font-size:13px;">github.com/brittonstanfill/agent-teams-demo</code></div>
+        <div>The whole repo: <code class="mono" style="font-size:13px;">github.com/brittonstanfill/agent-teams-ux-demo-kit</code> &nbsp;·&nbsp; start with <code class="mono" style="font-size:13px;">START_HERE.md</code></div>
         <div class="arrow">Next → why tmux makes this watchable</div>
       </div>
     </div>
     <div class="notes" hidden>
       <p>This slide is your "they can run this at home" anchor. Say the GitHub URL out loud — twice. Once now, once on the resources slide at the end.</p>
-      <p>Land the ZIP-not-clone point as a story: <em>"I made this mistake last week. I cloned the repo, the team read the initial commit message and immediately said 'I know what the bug is.' Demo over."</em></p>
-      <p>Step 4 is the one most people forget. Say it twice. The README contains the planted bug's actual cause inside a spoiler section, exactly so the facilitator (you) can verify the team is right — but you have to remove it before the team boots.</p>
-      <p>If anyone asks "why not just .gitignore it?" — answer: because the README is also how I tell the next facilitator how to run the demo. The point is that the artifact you share publicly contains the answer, and the artifact the agents see does not. <code>rm</code> is the seam.</p>
+      <p><strong>Step 3 is the load-bearing one for live demos.</strong> The kit's own README used to tell users to <code>cp claude-agents/*.md ~/.claude/agents/</code> manually. That meant a kit-side update to an agent's tool allowlist would silently fall behind in the user's local copy, and the demo would fail mid-run because an agent couldn't write a file. The <code>install-agents.sh</code> + <code>verify-agents.sh</code> pair is the fix — and it should be run before every demo.</p>
+      <p><strong>Step 4 (precheck) is the difference between a smooth run and 10 minutes of awkward debugging on stage.</strong> The "warned about tmux session" output is common; "failed on demo-output cleanliness" usually means a previous run left output behind — <code>bin/precheck.sh --clean</code> clears it after confirmation.</p>
+      <p>If anyone in the room is following along: the canonical run order lives in <code>START_HERE.md</code>, not the README. The README is an index of what ships; START_HERE names the current default workflow.</p>
     </div>
   </section>
 
@@ -1906,11 +1939,11 @@
   </section>
 
   <!-- SLIDE 8.5 — Baseline prompt (single agent) -->
-  <section class="slide" data-title="Baseline prompt">
+  <section class="slide has-prompt" data-title="Baseline prompt">
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Prompt A · the baseline</div>
-        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">03-single-agent-baseline-prompt.md</div>
+        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">prompts/single-baseline.md</div>
       </div>
       <div class="h1" style="max-width: 1200px; line-height: 1.1;">
         One session. <span style="color: var(--muted); font-weight: 500;">Seven disciplines crammed into one head.</span>
@@ -1920,22 +1953,38 @@
 <button class="copy-btn" data-copy-target="prompt-baseline" type="button">Copy</button>
 <code id="prompt-baseline">Review the canceled-flight recovery experience in:
 
-Agent Teams UX Demo Kit/demo-inputs/northstar-canceled-flight-brief.md
+demo-inputs/northstar-canceled-flight-brief.md
 
-Create a meeting-ready recommendation for improving the experience. Cover UX research, information architecture, interaction design, UX writing, accessibility, visual/UI design, and behavioral science.
+Clean-room rule:
+- Do not open, search, or reuse anything in demo-output/ except to create the files below.
+- Do not inspect prior branches, PRs, or past Northstar outputs before writing this baseline.
 
-Write the result to:
-Agent Teams UX Demo Kit/demo-output/single-agent-baseline.md
+Create a meeting-ready recommendation. Cover UX research, IA, interaction, content, accessibility, visual/UI, and behavioral science.
 
-Include:
-1. Executive recommendation
-2. Redesigned flow in 5 screens or fewer
-3. Main issues found
-4. Recommended copy
-5. Accessibility and trust risks
-6. Experiment plan
+Ship two things:
 
-Label assumptions. Do not invent metrics or user quotes.</code>
+1. A working HTML prototype at:
+   demo-output/single-agent-baseline/index.html
+   - Mobile-first, self-contained (inline CSS + JS).
+   - Render the redesigned flow as actual screens, not as a description.
+   - Respect prefers-color-scheme and prefers-reduced-motion.
+   - Hit WCAG 2.1 AA where possible.
+
+2. A meeting-ready doc at:
+   demo-output/single-agent-baseline.md
+   - Executive recommendation
+   - Redesigned flow (4–5 screens, target not cap)
+   - Main issues, recommended copy verbatim
+   - Accessibility / trust risks + mitigations
+   - Experiment plan (hypothesis + primary metric + guardrail + exit rule)
+
+Quality bar:
+- Distinguishable as the work of a designer who cares about craft.
+- Distinctiveness over completeness.
+
+Label assumptions ([observed], [inferred], [assumption], [recommendation]).
+Do not invent metrics, user quotes, airline policies, wait times, voucher amounts,
+or other operational facts not in the brief.</code>
       </div>
     </div>
     <div class="notes" hidden>
@@ -1945,98 +1994,94 @@ Label assumptions. Do not invent metrics or user quotes.</code>
   </section>
 
   <!-- SLIDE 8.6 — Team prompt -->
-  <section class="slide" data-title="Team prompt">
+  <section class="slide has-prompt" data-title="Team prompt">
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Prompt B · the team</div>
-        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">02-master-agent-team-prompt.md</div>
+        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">prompts/team-relay.md</div>
       </div>
       <div class="h1" style="max-width: 1200px; line-height: 1.1;">
-        Seven teammates. <span style="color: var(--muted); font-weight: 500;">Named owners, named handoffs, named output.</span>
+        Eight teammates. <span style="color: var(--muted); font-weight: 500;">A director, seven specialists, named handoffs, required debate.</span>
       </div>
-      <div class="prompt-meta">Same brief. Same deliverable shape. Compare the two outputs side-by-side.</div>
+      <div class="prompt-meta">Same brief and same deliverable shape as the baseline above &mdash; so the visual / craft comparison is honest.</div>
       <div class="prompt-card">
 <button class="copy-btn" data-copy-target="prompt-team" type="button">Copy</button>
-<code id="prompt-team">Create an agent team named "Northstar UX Recovery Team" to redesign the canceled-flight recovery experience described in:
+<code id="prompt-team">Create an agent team named "Northstar UX Recovery Team" to redesign the canceled-flight recovery experience in:
 
-Agent Teams UX Demo Kit/demo-inputs/northstar-canceled-flight-brief.md
+demo-inputs/northstar-canceled-flight-brief.md
 
-Use these seven teammates. If matching subagent definitions are available, use them. Otherwise create teammates with these roles and instructions:
+Clean-room rule:
+- Do not open or reuse anything in demo-output/ except to create deliverables.
+- Do not inspect prior outputs before team deliverables are sealed.
+- The lead may read the baseline only after both sides are sealed, when scoring begins.
 
-1. UX Researcher
-2. Information Architect
-3. Interaction Designer
-4. Content Designer / UX Writer
-5. Accessibility Specialist
-6. Visual / UI Designer
-7. Behavioral Scientist
+Use these eight teammates. If matching subagent definitions are available, use them:
+
+1. Creative Director — sets aesthetic anchor and quality bar BEFORE authoring
+2. UX Researcher
+3. Information Architect
+4. Interaction Designer
+5. Content Designer / UX Writer
+6. Accessibility Specialist
+7. Visual / UI Designer
+8. Behavioral Scientist
 
 Goal:
-Create a meeting-ready recommendation for a better canceled-flight recovery flow. The output should show how the team improved the product decision through role-specific analysis and teammate communication.
+Create a meeting-ready recommendation AND an authored HTML artifact — not a doc
+describing a design. The output should show how the team improved the decision
+through role-specific analysis, teammate communication, and at least two visible
+debates that materially changed a decision.
+
+Quality bar:
+- Distinguishable as the work of seven specialists who care about craft.
+- Distinctiveness over completeness. Could it survive a portfolio review?
 
 Working rules:
-- Each teammate owns one file in `Agent Teams UX Demo Kit/demo-output/role-reports/`.
-- No teammate should edit another teammate's role report.
-- The lead owns the final synthesis file: `Agent Teams UX Demo Kit/demo-output/final-recommendation.md`.
-- Label every major claim as one of: observed from brief, inferred, assumption, or recommendation.
-- Do not invent research data, metrics, laws, airline policies, or user quotes.
-- Make the teammate messages visible in the final recommendation.
+- Each teammate owns one file in demo-output/role-reports/.
+- Lead owns demo-output/final-recommendation.md, process-appendix.md, run-metadata.md.
+- Visual/UI authors demo-output/prototype/index.html; others refine in their domain.
+- Label every claim as observed, inferred, assumption, or recommendation.
+- Do not invent metrics, airline policies, wait times, voucher amounts, or other
+  operational facts not in the brief.
 
-Required role outputs:
-- UX Researcher: user needs, emotional state, research questions, assumptions to validate.
-- Information Architect: revised flow structure, content hierarchy, decision points, navigation labels.
-- Interaction Designer: step-by-step interaction model, states, error recovery, handoff moments.
-- Content Designer / UX Writer: screen-level copy, notification copy, plain-language guidance, tone rules.
-- Accessibility Specialist: blockers, WCAG-style concerns, assistive tech implications, inclusive design fixes.
-- Visual / UI Designer: layout direction, hierarchy, component suggestions, visual system notes.
-- Behavioral Scientist: trust risks, choice architecture, ethical nudges, experiment ideas.
+Sequence (visual goes EARLY, not late):
+1. Creative Director briefs the anchor and quality bar.
+2. UX Researcher + IA set the spine.
+3. Visual/UI authors the prototype from a clean canvas.
+4. Interaction adds states; Content writes copy; Behavioral + Accessibility audit.
+5. Devil's advocate (optional) stress-tests before synthesis.
+6. Lead synthesizes.
 
-Required peer handoffs:
-- UX Researcher must message Information Architect and Content Designer with top user needs.
-- Information Architect must message Interaction Designer and Content Designer with the proposed flow model.
-- Interaction Designer must message Accessibility Specialist and Visual/UI Designer with proposed states.
-- Accessibility Specialist must message Interaction Designer, Visual/UI Designer, and Content Designer with blockers.
-- Behavioral Scientist must message Content Designer and Interaction Designer with ethical choice-architecture risks.
-- Visual/UI Designer must message Accessibility Specialist before finalizing the UI direction.
-- Content Designer must message Information Architect and Accessibility Specialist before finalizing copy.
+Required debates (do not skip):
+At least 2 decisions where ≥2 specialists disagree. Each affected specialist takes
+a position in parallel (≤120 words, no peer-reading). Counter-argument round runs.
+Resolution preserves the winning argument AND the dissent.
 
-Synthesis requirements:
-Before writing the final recommendation, the lead should show:
-1. Top 3 findings from each teammate.
-2. The most important disagreement or tension.
-3. Which teammate message changed another teammate's recommendation.
+Final deliverables:
+- demo-output/final-recommendation.md (≤900 words, meeting-ready)
+- demo-output/process-appendix.md (debates, dissent, handoffs that changed output)
+- demo-output/run-metadata.md
+- demo-output/prototype/index.html
 
-Final deliverable:
-Write `Agent Teams UX Demo Kit/demo-output/final-recommendation.md` with these sections:
-
-1. Executive recommendation
-2. Redesigned flow in 5 screens or fewer
-3. What each role contributed
-4. Cross-agent handoffs that changed the answer
-5. Key tradeoffs and rejected alternatives
-6. Accessibility and trust guardrails
-7. Experiment plan
-8. Scorecard-ready comparison against a single-agent baseline
-
-Keep the final synthesis crisp and meeting-ready.</code>
+Keep the final memo crisp; the appendix carries evidence and dissent.</code>
       </div>
     </div>
     <div class="notes" hidden>
       <p>Same brief, same deliverable shape — the only thing that changes is the collaboration model. That's what makes the comparison honest.</p>
-      <p>The named peer handoffs are the load-bearing part of this prompt. Without them you get parallel monologues, not a team.</p>
-      <p>Click the Copy button (top right of the prompt card) to drop straight into Claude Code.</p>
+      <p>The named peer handoffs are the load-bearing part of this prompt. Without them you get parallel monologues, not a team. The v3+ kit also added two pieces that aren't in this slide but matter: the <em>Creative Director</em> role briefs the aesthetic anchor before authoring (so the team doesn't flatten to committee-safe), and the <em>required debates</em> rule forces at least two decisions to surface real disagreement (with dissent preserved in <code>process-appendix.md</code>).</p>
+      <p>Click the Copy button (top right of the prompt card) to drop straight into Claude Code — or open <code>prompts/team-relay.md</code> for the full prompt. For the current default (smaller team, two competing artifacts early), see <code>prompts/team-compact.md</code> instead.</p>
     </div>
   </section>
 
-  <!-- SLIDE 9 — Demo: The Patient Moment -->
-  <section class="slide dark" data-title="Demo: The Patient Moment">
+  <!-- SLIDE 9 — Demo: The Cancellation Moment -->
+  <section class="slide dark" data-title="Demo: The Cancellation Moment">
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Live demo · 7 minutes</div>
       </div>
       <div class="h1" style="max-width: 1200px;">
-        Friday. 9:47 PM. <em style="font-style: normal; border-bottom: 4px solid rgba(255,255,255,0.4);">Abnormal result.</em><br />
-        Provider's gone home. What does the patient see?
+        Tuesday. 10:46 PM. <em style="font-style: normal; border-bottom: 4px solid rgba(255,255,255,0.4);">Flight canceled.</em><br />
+        Last one of the night. What does the traveler see?
       </div>
       <div class="lead" style="max-width: 900px;">
         Two surfaces. Eight UX specialists. Two collaboration models. Watch which one produces a <em>defended</em> design.
@@ -2044,44 +2089,45 @@ Keep the final synthesis crisp and meeting-ready.</code>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 64px; margin-top: 36px; align-items: start; justify-items: center;">
         <div>
-          <div class="phone-label">SURFACE 01 — PUSH NOTIFICATION</div>
+          <div class="phone-label">SURFACE 01 — ENTRY SMS</div>
           <div class="phone-notif">
             <div style="display: flex; align-items: flex-start; gap: 10px;">
-              <div style="width:40px; height:40px; border-radius:9px; background:linear-gradient(135deg,#0a84ff,#0066cc); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:14px; flex-shrink:0; letter-spacing:-0.5px;">RX</div>
+              <div style="width:40px; height:40px; border-radius:9px; background:linear-gradient(135deg,#1e3a5f,#0f2540); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:14px; flex-shrink:0; letter-spacing:-0.5px;">NS</div>
               <div style="flex:1;">
                 <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;">
-                  <span style="font-weight:600; font-size:13px; color:#3a3a3a;">HEALTHPORTAL</span>
-                  <span style="color:#8e8e93; font-size:12px;">now</span>
+                  <span style="font-weight:600; font-size:13px; color:#3a3a3a;">NORTHSTAR AIR</span>
+                  <span style="color:#8e8e93; font-size:12px;">10:46 PM</span>
                 </div>
-                <div style="font-weight:600; font-size:15px; color:#111;">Your test results are in.</div>
-                <div style="font-size:14px; color:#1c1c1e;">Tap to view your abnormal result.</div>
+                <div style="font-weight:600; font-size:15px; color:#111;">Schedule irregularity on NS482.</div>
+                <div style="font-size:14px; color:#1c1c1e;">Manage trip: northstar.ai/t/4FK2</div>
               </div>
             </div>
           </div>
         </div>
 
         <div>
-          <div class="phone-label">SURFACE 02 — LANDING CARD</div>
+          <div class="phone-label">SURFACE 02 — TRIP STATUS SCREEN</div>
           <div class="phone-card">
             <div style="padding: 14px 18px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; background: #fafafa;">
-              <div style="width:24px; height:24px; border-radius:6px; background:linear-gradient(135deg,#0a84ff,#0066cc); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:10px;">RX</div>
-              <div style="font-weight:600; font-size:13px; color:#111;">HealthPortal</div>
+              <div style="width:24px; height:24px; border-radius:6px; background:linear-gradient(135deg,#1e3a5f,#0f2540); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:10px;">NS</div>
+              <div style="font-weight:600; font-size:13px; color:#111;">Northstar Air</div>
             </div>
             <div style="padding: 18px;">
-              <div style="display:inline-block; background:#fee2e2; color:#991b1b; border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; letter-spacing:0.8px; margin-bottom:14px;">ABNORMAL</div>
-              <div style="font-size:17px; font-weight:600; line-height:1.25; margin-bottom:10px; color:#111;">You have a new result.</div>
-              <div style="font-size:12px; color:#374151; line-height:1.5; margin-bottom:12px;">One or more values in your recent test panel are outside the normal reference range.</div>
-              <button style="display:block; width:100%; padding:10px; border-radius:9px; background:#0a84ff; color:#fff; border:none; font-size:13px; font-weight:600;">View Full Result</button>
+              <div style="display:inline-block; background:#fef3c7; color:#92400e; border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; letter-spacing:0.8px; margin-bottom:14px;">SCHEDULE CHANGE</div>
+              <div style="font-size:17px; font-weight:600; line-height:1.25; margin-bottom:10px; color:#111;">Your itinerary has changed.</div>
+              <div style="font-size:12px; color:#374151; line-height:1.5; margin-bottom:6px;">NS482 DEN&nbsp;→&nbsp;LGA is no longer operating. We are sorry for the inconvenience.</div>
+              <div style="font-size:11px; color:#6b7280; line-height:1.4; margin-bottom:12px; font-style:italic;">View details</div>
+              <button style="display:block; width:100%; padding:10px; border-radius:9px; background:#1e3a5f; color:#fff; border:none; font-size:13px; font-weight:600;">Continue</button>
             </div>
           </div>
         </div>
       </div>
     </div>
     <div class="notes" hidden>
-      <p>Set the scene slowly: <em>"Friday at 9:47 PM. The patient has been waiting on this result for four days. The provider just released it and went home for the weekend. The result is flagged abnormal but not critical. There's no follow-up appointment. The patient is alone, possibly tired, possibly worried. They get this notification."</em></p>
-      <p>Let the room react to the word "abnormal" on the lock screen. Most designers will spot it.</p>
-      <p>Then: <em>"Same 8 UX specialists — 7 disciplines plus a devil's advocate. Two collaboration models. Same brief. Watch what changes."</em></p>
-      <p>Open the real HTML mocks in a browser tab if anyone wants them resizable.</p>
+      <p>Set the scene slowly: <em>"Tuesday, 10:46 PM. A traveler is at DEN, exhausted, with one carry-on. Their phone buzzes — 'Schedule irregularity on NS482.' That's the first thing they read. They have to decode 'schedule irregularity' to mean 'your flight is canceled.' They open the link. The trip-status screen tells them their itinerary has changed — but doesn't say what comes next. The Continue button doesn't say where it leads."</em></p>
+      <p>Let the room react to "schedule irregularity" as evasive copy. Most designers spot it. Then the second issue lands: the entitlements they're owed under DOT rules (hotel voucher, meal credit, alternate flight) are <em>none of them visible on this screen</em> — they're hidden in a collapsed FAQ three taps deep. The current flow's failure mode is not malicious; it's overwhelmed.</p>
+      <p>Then: <em>"Same brief — see <code>demo-inputs/northstar-canceled-flight-brief.md</code>. Same 9 UX specialists: 7 disciplines, a creative director, a devil's advocate. Two collaboration models. Watch what changes."</em></p>
+      <p>For more scenario detail (5 current screens, business goal, constraints, desired output), open the brief file directly. The full traveler journey beyond these two surfaces is in there.</p>
     </div>
   </section>
 
@@ -2183,7 +2229,7 @@ Keep the final synthesis crisp and meeting-ready.</code>
     <div class="notes" hidden>
       <p>This is the moment to tab over to the terminal. The diagram is your fallback if the live demo flakes.</p>
       <p>Narrate as the team spawns: <em>"Each of these is a full Claude Code session with its own context window. The seven of them share a task list. They can message each other directly. The lead doesn't gate every exchange."</em></p>
-      <p>If you have the debate log open, point at it: <em>"This is the file the team appends to as they argue. Look at this exchange — behavior to copy, 'your v1 keeps abnormal on the lock screen, I want it removed.' Copy revises. Look at the v2 — that sentence got rewritten because of the argument."</em></p>
+      <p>If you have the debate log open, point at it: <em>"This is the file the team appends to as they argue. Look at this exchange — behavioral to content, 'your v1 keeps "schedule irregularity" in the SMS preview, I want it changed to name the cancellation directly.' Content revises. Look at the v2 SMS — that sentence got rewritten because of the argument."</em> The persistent record lives in <code>demo-output/process-appendix.md</code> after the run.</p>
       <p>Time budget: 4–5 minutes. Cut to slide 11 when the team converges or once you've shown two substantive exchanges.</p>
     </div>
   </section>
@@ -2202,24 +2248,24 @@ Keep the final synthesis crisp and meeting-ready.</code>
         <div class="card-num">
           <div class="num">01</div>
           <div class="t">Specialists clash by design</div>
-          <div class="d">Each agent's domain touches another's. Behavioral fights Content on framing. A11y fights Visual on contrast. The conflicts are the data — averaged opinions hide the real tradeoffs.</div>
+          <div class="d">Each agent's domain touches another's. Behavioral fights Content on the entry-SMS framing. A11y fights Visual on the contrast of the "Recommended" chip. The conflicts are the data — averaged opinions hide the real tradeoffs.</div>
         </div>
         <div class="card-num">
           <div class="num">02</div>
           <div class="t">Positions, not averages</div>
-          <div class="d">Sub-agents stack findings. Teams take <em>defended positions</em> — "we delayed the 9:47 PM push, here's the cognitive evidence; we removed 'abnormal' from the lock screen, here's why."</div>
+          <div class="d">Sub-agents stack findings. Teams take <em>defended positions</em> — "we rewrote the SMS to name the cancellation directly; we surfaced the hotel and meal entitlements out of the collapsed FAQ; we kept the rebook screen but removed the default tab so no option feels pre-chosen."</div>
         </div>
         <div class="card-num">
           <div class="num">03</div>
           <div class="t">Honest handoffs</div>
-          <div class="d">Tensions that can't resolve get handed back to the human lead with the contending positions stated cleanly. That handoff is itself a deliverable — only the team pattern produces it.</div>
+          <div class="d">Tensions that can't resolve get handed back to the human lead with the contending positions stated cleanly — preserved in <code style="font-family:'JetBrains Mono',monospace; font-size: 12px;">process-appendix.md</code>, not buried. That handoff is itself a deliverable — only the team pattern produces it.</div>
         </div>
       </div>
     </div>
     <div class="notes" hidden>
       <p>Anchor on the headline: <strong>the arguing isn't the show, it's the design.</strong> The visible spectacle of agents messaging each other isn't a gimmick — it's the mechanism by which a defended design emerges.</p>
-      <p>The contrast: a sub-agent stack converges on bland because no specialist defended a contested position. The agent team takes positions, justifies them, and surfaces what can't be resolved.</p>
-      <p>If asked "couldn't I do all this with one agent in one prompt?" — yes, but you'd get coherence, not debate. The debate log is the artifact the single-prompt version can't produce.</p>
+      <p>The contrast: a sub-agent stack converges on bland because no specialist defended a contested position. The agent team takes positions, justifies them, and surfaces what can't be resolved. In the Northstar run, the load-bearing example is the "Recommended" chip on the rebook screen — Behavioral wants it removed (hidden default risk); Visual wants it kept (it directs the eye). The team's resolution preserves both arguments in the appendix.</p>
+      <p>If asked "couldn't I do all this with one agent in one prompt?" — yes, but you'd get coherence, not debate. The <code>process-appendix.md</code> with cross-agent handoffs and preserved dissent is the artifact the single-prompt version can't produce. See the worked example in PR #2 of this repo.</p>
     </div>
   </section>
 
@@ -2227,7 +2273,7 @@ Keep the final synthesis crisp and meeting-ready.</code>
   <section class="slide" data-title="How we judged it">
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
-        <div class="eyebrow">Evaluation rubric · 7 dimensions, 1–4 scale</div>
+        <div class="eyebrow">Live-demo rubric · 7 dimensions, 1–4 scale</div>
       </div>
       <div class="h1" style="max-width: 1200px;">
         Same problem. <em style="font-style: normal; border-bottom: 4px solid var(--charcoal);">Different score.</em>
@@ -2235,12 +2281,12 @@ Keep the final synthesis crisp and meeting-ready.</code>
 
       <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 56px; margin-top: 36px; align-items: start;">
         <div>
-          <div class="rubric-row"><span class="rubric-n">01</span><span class="rubric-body"><span class="name">Patient-first framing</span><span class="q">— person or system?</span></span></div>
-          <div class="rubric-row"><span class="rubric-n">02</span><span class="rubric-body"><span class="name">Words match the moment</span><span class="q">— read it aloud at 9:47 PM</span></span></div>
-          <div class="rubric-row"><span class="rubric-n">03</span><span class="rubric-body"><span class="name">Hierarchy directs care</span><span class="q">— eye path matches action</span></span></div>
-          <div class="rubric-row"><span class="rubric-n">04</span><span class="rubric-body"><span class="name">Action affordances</span><span class="q">— is "wait until Monday" an option?</span></span></div>
-          <div class="rubric-row"><span class="rubric-n">05</span><span class="rubric-body"><span class="name">Holds up under distress</span><span class="q">— alone, panicking, assistive tech</span></span></div>
-          <div class="rubric-row"><span class="rubric-n">06</span><span class="rubric-body"><span class="name">Ethical posture</span><span class="q">— patient or institution?</span></span></div>
+          <div class="rubric-row"><span class="rubric-n">01</span><span class="rubric-body"><span class="name">Traveler-first framing</span><span class="q">— person or system?</span></span></div>
+          <div class="rubric-row"><span class="rubric-n">02</span><span class="rubric-body"><span class="name">Words match the moment</span><span class="q">— read it aloud at 10:46 PM after a canceled flight</span></span></div>
+          <div class="rubric-row"><span class="rubric-n">03</span><span class="rubric-body"><span class="name">Hierarchy directs action</span><span class="q">— is rebook obvious without scanning?</span></span></div>
+          <div class="rubric-row"><span class="rubric-n">04</span><span class="rubric-body"><span class="name">Entitlements visible</span><span class="q">— is the hotel voucher one tap away or three?</span></span></div>
+          <div class="rubric-row"><span class="rubric-n">05</span><span class="rubric-body"><span class="name">Holds up under distress</span><span class="q">— tired, mobile-only, screen reader, low bandwidth</span></span></div>
+          <div class="rubric-row"><span class="rubric-n">06</span><span class="rubric-body"><span class="name">Ethical posture</span><span class="q">— traveler or airline?</span></span></div>
           <div class="rubric-row"><span class="rubric-n">07</span><span class="rubric-body"><span class="name">Honesty about tradeoffs</span><span class="q">— defended or papered over?</span></span></div>
         </div>
 
@@ -2260,13 +2306,15 @@ Keep the final synthesis crisp and meeting-ready.</code>
             <div class="score-row"><span class="dim">07</span><span class="bar"><span class="fill a" style="width:50%"></span></span><span class="bar"><span class="fill b" style="width:100%"></span></span></div>
           </div>
           <div class="caption" style="margin-top: 18px; font-style: italic;">Illustrative scores. Replace with your actual judging before stage.</div>
+          <div class="caption" style="margin-top: 12px; font-size: 12px; color: var(--muted);">For the full kit rubric (Layer 0 gates · outcome · decision · efficiency · Coordination Yield) see <code style="font-family:'JetBrains Mono',monospace;">rubrics/evaluation-system.md</code>.</div>
         </div>
       </div>
     </div>
     <div class="notes" hidden>
       <p>Don't walk through all 7 dimensions live. Show the table, land on the biggest delta, point at the specific design move from the debate log that earned it.</p>
       <p>If both rounds score the same on a dimension — say so. That's a finding: <em>"neither model nailed accessibility under distress. The human design lead still has to own that."</em></p>
-      <p>The honest framing: agent teams aren't always better. They earn their tokens when the disagreement is the deliverable. Dimension 7 (honesty about tradeoffs) is where the team pattern most reliably wins.</p>
+      <p>The honest framing: agent teams aren't always better. They earn their tokens when the disagreement is the deliverable. Dimension 7 (honesty about tradeoffs) is where the team pattern most reliably wins. Dimension 4 (entitlements visible) is the one that exposes the "reduce calls by hiding help" failure mode the brief explicitly warns about.</p>
+      <p><strong>This is the simple, demo-friendly version of the rubric.</strong> The improvement-loop version in <code>rubrics/evaluation-system.md</code> has Layer 0 gates (clean-room, completeness, constraint integrity, accessibility floor, responsive render floor, trust floor), Layer 1 outcome quality (8 dimensions, 45% weight), Layer 2 decision quality (8 dimensions, 35% weight), Layer 3 efficiency (5 dimensions, 20% weight), and a Coordination Yield calculation with an overhead penalty. Use the simple rubric live; use the full rubric when deciding whether to promote a prompt change.</p>
     </div>
   </section>
 
@@ -2284,11 +2332,11 @@ Keep the final synthesis crisp and meeting-ready.</code>
         <div class="annotated-prompt">
           <div class="pline">
             <div class="tag">01</div>
-            <div class="code">Create a team with <span class="hl">8 teammates</span> — 7 UX specialties + a devil's advocate.</div>
+            <div class="code">Create a team with <span class="hl">9 teammates</span> — a creative director, 7 UX specialties, and a devil's advocate.</div>
           </div>
           <div class="pline">
             <div class="tag">02</div>
-            <div class="code">Name them <span class="hl">ux-researcher · information-architect · interaction-designer · content-designer · accessibility-specialist · visual-designer · behavioral-scientist · devils-advocate</span>.</div>
+            <div class="code">Name them <span class="hl">creative-director · ux-researcher · information-architect · interaction-designer · content-designer · accessibility-specialist · visual-designer · behavioral-scientist · devils-advocate</span>.</div>
           </div>
           <div class="pline">
             <div class="tag">03</div>
@@ -2451,7 +2499,7 @@ Keep the final synthesis crisp and meeting-ready.</code>
           <div class="resource">
             <div class="resource-label">The UX agent team kit</div>
             <div class="resource-url">github.com/brittonstanfill/agent-teams-ux-demo-kit</div>
-            <div class="resource-note">8 reusable UX subagent definitions (incl. devil's advocate), Northstar demo scenario, master team-debate prompt, single-agent quick prompt, judging rubric.</div>
+            <div class="resource-note">9 reusable UX subagent definitions (incl. creative director + devil's advocate), Northstar demo scenario, compact / relay / parallel-author team prompts, single-agent quick prompt, layered evaluation rubric.</div>
           </div>
           <div class="resource">
             <div class="resource-label">Subagent comparison</div>
@@ -2461,14 +2509,14 @@ Keep the final synthesis crisp and meeting-ready.</code>
         </div>
         <div>
           <div class="resource">
-            <div class="resource-label">Prompt library (11 patterns)</div>
-            <div class="resource-url">agent-teams-meetup-plan.md</div>
-            <div class="resource-note">PR review · TDD loop · competing hypotheses · cross-layer build · UX critique · dual-surface · 5 more.</div>
+            <div class="resource-label">Where to start</div>
+            <div class="resource-url">START_HERE.md</div>
+            <div class="resource-note">The canonical run order. Names the current default prompt, the clean-room protocol, and which experiment branches are intentionally left unmerged.</div>
           </div>
           <div class="resource">
-            <div class="resource-label">The 8 UX subagents</div>
-            <div class="resource-url">~/.claude/agents/</div>
-            <div class="resource-note">UX Researcher · IA · Interaction · Content · Accessibility · Visual · Behavioral Scientist · Devil's Advocate — drop-in definitions, reusable in any project.</div>
+            <div class="resource-label">The 9 UX subagents</div>
+            <div class="resource-url">bin/install-agents.sh</div>
+            <div class="resource-note">Creative Director · UX Researcher · IA · Interaction · Content · Accessibility · Visual · Behavioral Scientist · Devil's Advocate. The install script overwrites kit-owned filenames and supports <code style="font-family:'JetBrains Mono',monospace;">--dry-run</code> and <code style="font-family:'JetBrains Mono',monospace;">--project</code>.</div>
           </div>
           <div class="resource">
             <div class="resource-label">The Reddit thread</div>
@@ -2484,20 +2532,71 @@ Keep the final synthesis crisp and meeting-ready.</code>
     </div>
   </section>
 
-  <!-- SLIDE 18 — tb-features divider -->
-  <section class="slide dark" data-title="tb-features">
-    <div class="stack" style="max-width: 1400px; text-align: center;">
-      <div style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: clamp(72px, 12vw, 180px); letter-spacing: -0.04em; line-height: 1;">
-        tb-features
+  <!-- SLIDE 18 — Structured plans for AI execution -->
+  <section class="slide" data-title="Structured plans">
+    <div class="stack" style="max-width: 1500px;">
+      <div class="eyebrow-row">
+        <div class="eyebrow">Plan for the team · structured work for AI execution</div>
+      </div>
+      <div class="h1" style="max-width: 1300px; line-height: 1.1;">
+        Structure the work so the AI only has to change <em style="font-style: normal; border-bottom: 4px solid var(--charcoal);">one thing at a time</em>.
+      </div>
+      <div class="lead" style="max-width: 1100px;">
+        Initiative &rarr; phase &rarr; milestone. The hierarchy is normal product planning. The discipline is keeping the <em>milestones</em> small &mdash; small enough that one PR holds the whole change.
+      </div>
+
+      <div class="cols-3" style="margin-top: 48px;">
+        <div class="card-num">
+          <div class="num">01</div>
+          <div class="t">Initiative</div>
+          <div class="d"><strong>What changes for users.</strong> A quarter or two of work. Names an outcome, not an implementation. <em>e.g. &ldquo;Rebuild canceled-flight recovery so it feels like recovery, not punishment.&rdquo;</em></div>
+        </div>
+        <div class="card-num">
+          <div class="num">02</div>
+          <div class="t">Phase</div>
+          <div class="d"><strong>A slice of the initiative.</strong> A few weeks. Sequences work toward the outcome and can ship independently. <em>e.g. &ldquo;Rewrite the entry SMS and trip-status surfaces.&rdquo;</em></div>
+        </div>
+        <div class="card-num">
+          <div class="num">03</div>
+          <div class="t">Milestone</div>
+          <div class="d"><strong>One PR worth of work.</strong> A day or three. A single change that could be reverted alone without leaving anything broken. <em>e.g. &ldquo;Ship the rewritten entry SMS as the new default.&rdquo;</em></div>
+        </div>
+      </div>
+
+      <div style="margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--line);">
+        <div class="eyebrow" style="margin-bottom: 18px;">Why small milestones help</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+          <div>
+            <div style="font-size: 16px; line-height: 1.55; color: var(--fg); margin-bottom: 18px;">
+              <strong>Consistent, predictable progress.</strong> Each milestone has one obvious done state. Half-finished sprawling PRs disappear because the unit of work is too small to sprawl.
+            </div>
+            <div style="font-size: 16px; line-height: 1.55; color: var(--fg);">
+              <strong>Simpler PRs &mdash; for humans and AI.</strong> A reviewer (human or model) can hold the whole diff in their head. Review comments stay specific instead of drifting to &ldquo;there&rsquo;s a lot happening here.&rdquo;
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 16px; line-height: 1.55; color: var(--fg); margin-bottom: 18px;">
+              <strong>Honest rollback.</strong> Undoing a mistake undoes only that milestone &mdash; the rest of the work stays solid. Big milestones make &ldquo;just revert it&rdquo; expensive enough that teams patch around the mistake instead.
+            </div>
+            <div style="font-size: 16px; line-height: 1.55; color: var(--fg);">
+              <strong>Right-sized for a team.</strong> A milestone is the unit an agent team can tackle without scope sprawl. Bigger, and the team starts inventing its own structure mid-run &mdash; which is exactly what the plan was supposed to prevent.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="notes" hidden>
-      <p>Section divider. The next slide is the bonus computer-use watchdog prompt.</p>
+      <p>This is the operational answer to &ldquo;how do I actually use agent teams on real work?&rdquo; The thesis on slide 3 named the three problem shapes where agent teams pay off; this slide names the <em>unit of work</em> at which they pay off &mdash; the milestone.</p>
+      <p>The hierarchy itself isn&rsquo;t novel. Initiative / phase / milestone is product-planning vocabulary that predates AI. What changes is the discipline: AI executes more reliably when each milestone is a small, reviewable PR. Big milestones produce big diffs, and big diffs are where the team (or a solo agent) starts changing things outside the plan.</p>
+      <p>Concrete rule of thumb: if you can&rsquo;t summarize the milestone in one sentence, and reverting it wouldn&rsquo;t leave the codebase healthy, the milestone is too big. Split it.</p>
+      <p>The Northstar example carries through. Initiative: rebuild canceled-flight recovery so it feels like recovery, not punishment. Phase: rewrite the entry SMS and trip-status surfaces. Milestone: ship the rewritten entry SMS as the new default. Several milestones add up to a phase; several phases add up to the initiative. Each milestone ships as one PR.</p>
+      <p>This pairs with Tip 2 from slide 14 (<em>decisions in files, not chat</em>). The plan document is where the decisions live across initiatives and phases; the milestone is the unit that gets executed against the plan. Together they keep the team grounded &mdash; the plan tells the team where it&rsquo;s going, the milestone bounds what it does next.</p>
+      <p>Note for the next slide: the bonus watchdog prompt is one tool for the &ldquo;run while you&rsquo;re away&rdquo; case &mdash; useful, but small milestones are the more fundamental answer. A team running against a one-PR milestone usually doesn&rsquo;t need a watchdog.</p>
     </div>
   </section>
 
   <!-- SLIDE 19 — Bonus prompt: computer-use watchdog -->
-  <section class="slide" data-title="Watchdog prompt">
+  <section class="slide has-prompt" data-title="Watchdog prompt">
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Bonus · computer-use watchdog</div>

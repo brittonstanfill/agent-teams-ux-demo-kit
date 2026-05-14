@@ -11,7 +11,7 @@ Inputs:
 - Scenario brief: [path]
 - Artifact A: [path]
 - Artifact B: [path]
-- Evaluation system: 11-evaluation-system.md
+- Evaluation system: ../rubrics/evaluation-system.md
 
 Rules:
 - Score only from the provided files.

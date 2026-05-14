@@ -66,7 +66,7 @@ Do not commit `.claude/agents/` as part of the experiment output unless the expe
 Run the baseline first in the baseline checkout:
 
 ```text
-Use 03-single-agent-baseline-prompt.md exactly. Follow its clean-room rule. Write only the requested files. When done, stop.
+Use prompts/single-baseline.md exactly. Follow its clean-room rule. Write only the requested files. When done, stop.
 ```
 
 Commit the sealed baseline:
@@ -77,12 +77,12 @@ git add demo-output/single-agent-baseline demo-output/single-agent-baseline.md d
 git commit -m "Add clean-room single-agent baseline"
 ```
 
-Start a new Claude Code session in the separate team checkout with `/clear` or a fresh terminal. Then run either:
+Start a new Claude Code session in the separate team checkout with `/clear` or a fresh terminal. Then run one of:
 
-- `02-master-agent-team-prompt.md` for relay-with-debate
-- `09-parallel-author-prompt.md` when visual authorship is the main thing being tested
-- `12-lean-agent-team-prompt.md` when the hypothesis is that fewer specialists can preserve quality with lower overhead
-- `13-four-role-agent-team-prompt.md` when the hypothesis is that the smallest practical team can preserve quality with lower overhead
+- [`../prompts/team-compact.md`](../prompts/team-compact.md) — the current default; the smallest practical team that has reliably preserved quality with lower overhead
+- [`../prompts/team-relay.md`](../prompts/team-relay.md) — older relay-with-debate pattern; use when intentionally testing it
+- [`../prompts/team-parallel-author.md`](../prompts/team-parallel-author.md) — when visual authorship is the main thing being tested
+- [`../prompts/team-lean.md`](../prompts/team-lean.md) — when the hypothesis is that a six-role lean team can preserve quality with lower overhead
 
 Commit the sealed team output:
 
@@ -100,7 +100,7 @@ Before scoring, run a quick scan on the blind artifacts for origin-identifying t
 
 ## Score and decide
 
-Use `11-evaluation-system.md` for improvement-loop decisions. Use `05-scorecard.md` only for quick live-demo scoring. Record:
+Use [`../rubrics/evaluation-system.md`](../rubrics/evaluation-system.md) for improvement-loop decisions. Use [`../rubrics/scorecard.md`](../rubrics/scorecard.md) only for quick live-demo scoring. Record:
 
 - Branch and commit SHAs for baseline and team outputs
 - Wall time

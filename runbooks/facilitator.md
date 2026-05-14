@@ -22,14 +22,20 @@ Before the meeting:
 - Enable agent teams if needed with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
 - Put the optional files in `claude-agents/` into `.claude/agents/` if you want the team to use named subagent definitions. Before a live demo, re-copy the latest files and verify each `tools:` line includes `Write, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage` — earlier versions of the kit shipped read-only agent definitions that couldn't actually produce files.
 - Keep `demo-inputs/northstar-canceled-flight-brief.md` open.
-- Create an empty `demo-output/` folder before the run. For a real evaluation, use `10-clean-room-experiment-runbook.md`: fresh clone, fresh branch, no prior outputs, no prior demo PRs opened until scoring.
-- Before pasting either prompt, verify the output folder is clean:
+- Create an empty `demo-output/` folder before the run. For a real evaluation, use [`clean-room.md`](clean-room.md): fresh clone, fresh branch, no prior outputs, no prior demo PRs opened until scoring.
+- Before pasting either prompt, verify the output folder is clean. The easiest way is:
+
+```bash
+bin/precheck.sh
+```
+
+That script also checks Claude Code version, the agent-teams experimental flag, tmux state, and agent drift. If you only want the cleanliness check, run:
 
 ```bash
 find demo-output -type f ! -name .gitkeep -print
 ```
 
-That command should print nothing. If it prints generated files, stop and use a fresh checkout.
+That command should print nothing. If it prints generated files, stop and use a fresh checkout (or run `bin/precheck.sh --clean`).
 
 ## 25 Minute Live Demo
 
@@ -51,7 +57,7 @@ What to point out:
 
 **5:00-8:00 - Launch the team**
 
-Run the master agent-team prompt (`02-master-agent-team-prompt.md`) OR the parallel-author prompt (`09-parallel-author-prompt.md`) depending on what the demo is making. For a visual-heavy artifact, parallel-author produces a better story.
+Run the master agent-team prompt ([`../prompts/team-relay.md`](../prompts/team-relay.md)) OR the parallel-author prompt ([`../prompts/team-parallel-author.md`](../prompts/team-parallel-author.md)) depending on what the demo is making. For a visual-heavy artifact, parallel-author produces a better story.
 
 What to show:
 - The team lead.
@@ -86,7 +92,7 @@ Create the final recommendation. Include the decisions, rejected alternatives, d
 
 **22:00-25:00 - Score honestly**
 
-Use `05-scorecard.md`. Run the "team wins on / single wins on" section explicitly. The best ending is not "the team wins." The best ending is: **"Here is where the team earned its cost. Here is where the single agent held its own. Here's how you choose between the patterns for *your* next artifact."**
+Use [`../rubrics/scorecard.md`](../rubrics/scorecard.md). Run the "team wins on / single wins on" section explicitly. The best ending is not "the team wins." The best ending is: **"Here is where the team earned its cost. Here is where the single agent held its own. Here's how you choose between the patterns for *your* next artifact."**
 
 ## If Time Is Short
 
