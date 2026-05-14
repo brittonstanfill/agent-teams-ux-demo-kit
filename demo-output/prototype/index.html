@@ -1,0 +1,1179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Canceled-flight recovery — concept prototype</title>
+<style>
+  /* ---------- Design tokens ----------
+     Aesthetic anchor: Linear restraint + Things deliberateness.
+     Calm, late-night, trustworthy. One action accent; one warm tone
+     reserved for entitlements (the brief's load-bearing module).
+  */
+  :root {
+    --ink: #0F1115;
+    --ink-2: #2A2F38;
+    --muted: #4F5762;
+    --muted-2: #8A93A1;
+    --hairline: #E5E7EB;
+    --hairline-2: #EEF0F3;
+    --paper: #F4F5F7;
+    --surface: #FFFFFF;
+
+    --accent: #1E40AF;        /* action blue */
+    --accent-ink: #FFFFFF;
+    --accent-soft: #EAEFFB;
+
+    --warm-bg: #FFF6E5;       /* entitlements: hotel + meals */
+    --warm-stroke: #F2D9A8;
+    --warm-ink: #6B3A0E;
+
+    --danger: #8A1F1F;        /* status only, never decorative */
+    --ok: #1F6B3A;
+
+    --token-bg: #F1F2F5;
+    --token-ink: #2A2F38;
+
+    --r-frame: 28px;
+    --r-card: 12px;
+    --r-btn: 10px;
+    --r-pill: 999px;
+
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+
+    --shadow-frame: 0 1px 2px rgba(15,17,21,.04), 0 12px 32px rgba(15,17,21,.08);
+    --shadow-card: 0 1px 1px rgba(15,17,21,.03), 0 1px 2px rgba(15,17,21,.04);
+
+    --fs-12: 12px;
+    --fs-13: 13px;
+    --fs-14: 14px;
+    --fs-15: 15px;
+    --fs-17: 17px;
+    --fs-20: 20px;
+    --fs-24: 24px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: var(--fs-15);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Skip link — visible on focus, addresses keyboard users */
+  .skip-link {
+    position: absolute;
+    left: var(--s-3);
+    top: var(--s-3);
+    background: var(--ink);
+    color: var(--surface);
+    padding: 10px 14px;
+    border-radius: var(--r-btn);
+    text-decoration: none;
+    font-weight: 600;
+    transform: translateY(-200%);
+    transition: transform .15s ease;
+    z-index: 999;
+  }
+  .skip-link:focus { transform: translateY(0); outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Page chrome (the "table" the mockups sit on) */
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--s-7) var(--s-4) var(--s-8);
+  }
+
+  .page-header {
+    margin-bottom: var(--s-7);
+  }
+  .page-header h1 {
+    font-size: var(--fs-20);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 var(--s-1);
+    color: var(--ink);
+  }
+  .page-header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-14);
+    max-width: 60ch;
+  }
+
+  /* Grid of phone mockups */
+  .mockups {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-7);
+    align-items: start;
+  }
+  @media (min-width: 760px) {
+    .mockups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8); }
+  }
+  @media (min-width: 1180px) {
+    .mockups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  .mockup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  .mockup-label {
+    font-size: var(--fs-13);
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+    text-align: left;
+    width: 100%;
+    max-width: 390px;
+    margin: 0;
+  }
+  .mockup-label .num {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    margin-right: 6px;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    background: var(--surface);
+    border-radius: var(--r-frame);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--shadow-frame);
+    overflow: hidden;          /* scoped to the card, NOT to body */
+    display: flex;
+    flex-direction: column;
+    min-height: 720px;
+  }
+
+  /* Status bar — a quiet stylistic cue, no fake content */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 22px 6px;
+    font-size: var(--fs-12);
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+  .status-bar .dots { display: inline-flex; gap: 3px; }
+  .status-bar .dot { width: 4px; height: 4px; border-radius: 999px; background: var(--ink); }
+
+  /* App header inside the phone */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--s-3) var(--s-5) var(--s-4);
+    border-bottom: 1px solid var(--hairline-2);
+  }
+  .app-header .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--ink);
+    font-size: var(--fs-13);
+    letter-spacing: 0.02em;
+  }
+  .app-header .brand .mark {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    background: var(--ink);
+    display: inline-block;
+    position: relative;
+  }
+  .app-header .brand .mark::after {
+    content: "";
+    position: absolute; inset: 4px;
+    background: var(--surface);
+    border-radius: 2px;
+    clip-path: polygon(0 60%, 50% 0, 100% 60%, 100% 100%, 0 100%);
+  }
+  .app-header .step {
+    font-size: var(--fs-12);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Screen body */
+  .screen {
+    padding: var(--s-5) var(--s-5) var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    flex: 1;
+  }
+
+  /* Typography inside the canvas */
+  .screen h1, .screen h2, .screen h3 { margin: 0; letter-spacing: -0.01em; }
+  .eyebrow {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0;
+  }
+  .h-status {
+    font-size: var(--fs-24);
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .h-screen {
+    font-size: var(--fs-20);
+    line-height: 1.25;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .h-section {
+    font-size: var(--fs-15);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .body-text { color: var(--ink-2); font-size: var(--fs-15); }
+  .meta { color: var(--muted); font-size: var(--fs-13); }
+
+  /* Token slot — visibly distinct, monospace */
+  .tok {
+    display: inline-block;
+    background: var(--token-bg);
+    color: var(--token-ink);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    border: 1px solid var(--hairline);
+    white-space: nowrap;
+  }
+
+  /* Flight summary block */
+  .flight-summary {
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    padding: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    background: var(--surface);
+  }
+  .flight-summary .route {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: var(--fs-17);
+    color: var(--ink);
+  }
+  .flight-summary .arrow { color: var(--muted-2); }
+  .flight-summary .reason {
+    font-size: var(--fs-13);
+    color: var(--muted);
+  }
+
+  /* Entitlement module — load-bearing, the one warm surface */
+  .covered {
+    background: var(--warm-bg);
+    border: 1px solid var(--warm-stroke);
+    border-radius: var(--r-card);
+    padding: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .covered .h-covered {
+    font-size: var(--fs-15);
+    font-weight: 600;
+    color: var(--warm-ink);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .covered .h-covered svg { flex-shrink: 0; }
+  .covered .items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .covered .item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .covered .item .icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--warm-stroke);
+    color: var(--warm-ink);
+  }
+  .covered .item .label { font-weight: 600; color: var(--ink); font-size: var(--fs-14); }
+  .covered .item .detail { color: var(--ink-2); font-size: var(--fs-13); margin-top: 2px; }
+
+  /* Decision cards (Screen 2) */
+  .decisions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .decisions > li { display: flex; }
+  .decision {
+    width: 100%;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    padding: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    transition: border-color .12s ease, box-shadow .12s ease, transform .06s ease;
+  }
+  .decision:hover { border-color: var(--ink-2); }
+  .decision:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .decision:active { transform: translateY(1px); }
+
+  .decision .label {
+    font-size: var(--fs-17);
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .decision .consequence {
+    color: var(--muted);
+    font-size: var(--fs-13);
+  }
+  .decision .chev {
+    color: var(--muted-2);
+    flex-shrink: 0;
+  }
+  .decision .primary-tag {
+    display: inline-block;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+
+  /* Primary card visual weight — rebooking is dominant via accent tint + left border,
+     not via inversion. Refund + standby read as honest alternatives, not rejected drafts. */
+  .decision.primary {
+    background: var(--accent-soft);
+    border-color: #C9D5F0;
+    border-left: 3px solid var(--accent);
+    padding-left: calc(var(--s-4) - 2px);
+  }
+  .decision.primary:hover { border-color: var(--accent); }
+  .decision.primary .label { color: var(--ink); }
+  .decision.primary .consequence { color: var(--ink-2); font-size: var(--fs-14); }
+  .decision.primary .chev { color: var(--accent); }
+
+  /* Subordinate card — standby is visually quieter via type weight + muted label,
+     but keeps a solid border so it does not read as rejected. */
+  .decision.subordinate {
+    background: var(--surface);
+    border-color: var(--hairline);
+  }
+  .decision.subordinate .label { color: var(--ink-2); font-weight: 600; }
+
+  /* Flight option list (Screen 3) */
+  .filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+  }
+  .chip {
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--ink-2);
+    border-radius: var(--r-pill);
+    padding: 8px 14px;
+    font-size: var(--fs-13);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    min-height: 40px;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+  }
+  .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .sort-line {
+    font-size: var(--fs-13);
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sort-line button {
+    background: none;
+    border: 0;
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+    padding: 6px 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    min-height: 32px;
+  }
+  .sort-line button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+  .flight-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .flight-card {
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    padding: var(--s-4);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .flight-card .top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-2) var(--s-3);
+  }
+  .flight-card .times {
+    font-size: var(--fs-17);
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .flight-card .duration {
+    font-size: var(--fs-13);
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .reason-badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--fs-12);
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--accent-soft);
+    border: 1px solid #C9D5F0;
+    border-radius: var(--r-pill);
+    padding: 3px 10px;
+    line-height: 1.4;
+  }
+  .reason-badge.muted {
+    background: var(--hairline-2);
+    border-color: var(--hairline);
+    color: var(--muted);
+  }
+  .flight-card .row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s-2) var(--s-3);
+  }
+  .flight-card .meta-left { color: var(--muted); font-size: var(--fs-13); }
+  .flight-card .fare-note {
+    font-size: var(--fs-12);
+    color: var(--muted);
+  }
+
+  /* Review summary blocks (Screen 4) */
+  .summary-block {
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .summary-block .row-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: var(--s-3) var(--s-4);
+    gap: var(--s-3);
+    border-bottom: 1px solid var(--hairline-2);
+  }
+  .summary-block .row-item:last-child { border-bottom: 0; }
+  .summary-block .row-item .k {
+    color: var(--muted);
+    font-size: var(--fs-13);
+    flex: 0 0 38%;
+  }
+  .summary-block .row-item .v {
+    color: var(--ink);
+    font-size: var(--fs-14);
+    text-align: right;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  /* Confirmation block (Screen 5) */
+  .confirm-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-3) 0;
+  }
+  .confirm-hero .check {
+    width: 36px; height: 36px;
+    border-radius: 999px;
+    background: var(--ok);
+    color: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--s-2);
+  }
+
+  .save-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-2);
+  }
+  .save-options button {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-btn);
+    padding: 12px;
+    font: inherit;
+    color: var(--ink);
+    font-weight: 500;
+    font-size: var(--fs-14);
+    cursor: pointer;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: border-color .12s ease, background .12s ease;
+  }
+  .save-options button:hover { border-color: var(--ink-2); }
+  .save-options button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .next-if {
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    padding: var(--s-4);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Buttons */
+  .btn {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid transparent;
+    border-radius: var(--r-btn);
+    padding: 14px 18px;
+    font: inherit;
+    font-weight: 600;
+    font-size: var(--fs-15);
+    cursor: pointer;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    line-height: 1.2;
+    transition: background .12s ease, border-color .12s ease, transform .06s ease;
+  }
+  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .btn:active { transform: translateY(1px); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+    width: 100%;
+  }
+  .btn-primary:hover { background: #18348C; border-color: #18348C; }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--hairline);
+    width: 100%;
+  }
+  .btn-secondary:hover { border-color: var(--ink-2); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--accent);
+    border-color: transparent;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 10px 6px;
+    width: auto;
+    min-height: 44px;
+  }
+  .btn-ghost:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+  /* Persistent support bar */
+  .support {
+    margin-top: auto;
+    border-top: 1px solid var(--hairline-2);
+    padding: var(--s-3) var(--s-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    background: var(--surface);
+  }
+  .support .label { font-size: var(--fs-13); color: var(--muted); }
+  .support a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: var(--fs-14);
+    text-decoration: none;
+    padding: 8px 4px;
+    min-height: 44px;
+  }
+  .support a:hover { color: var(--accent); }
+  .support a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+  /* Footer in screen */
+  .screen-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin-top: var(--s-2);
+  }
+
+  /* SMS preview style for Screen 1 reason line */
+  .reason-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--hairline-2);
+    color: var(--ink-2);
+    font-size: var(--fs-12);
+    padding: 4px 10px;
+    border-radius: var(--r-pill);
+    align-self: flex-start;
+  }
+
+  /* tonight re-surface (Screen 5) — softer than Screen 1 hero entitlement,
+     same warm hue for visual continuity */
+  .tonight-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--s-3) var(--s-4);
+    background: var(--warm-bg);
+    border-bottom: 1px solid var(--warm-stroke);
+  }
+  .tonight-row:last-child { border-bottom: 0; }
+  .tonight-row .k { font-weight: 600; color: var(--warm-ink); font-size: var(--fs-14); }
+  .tonight-row .v { font-size: var(--fs-13); color: var(--ink-2); text-align: right; }
+  .tonight-wrap {
+    border: 1px solid var(--warm-stroke);
+    border-radius: var(--r-card);
+    overflow: hidden;
+  }
+
+  /* Generic icon container */
+  .ic { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* Narrow viewport (<=430px): the phone canvas is 390px wide; the page chrome
+     must surrender its breathing room so the mockup card never forces an
+     overflow. Key/value rows that pair two nowrap tokens (e.g.
+     "{hotel_entitlement_status} · {hotel_entitlement_amount}") cannot fit in a
+     38/62 split at this width — stack them so each token gets full width, and
+     allow the value column to break inside long tokens as a safety net.
+     Tokens remain visually identifiable (background, monospace, border). */
+  @media (max-width: 430px) {
+    .page { padding: var(--s-6) var(--s-3) var(--s-7); }
+    .summary-block .row-item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+    }
+    .summary-block .row-item .k { flex-basis: auto; }
+    .summary-block .row-item .v {
+      text-align: left;
+      overflow-wrap: anywhere;
+    }
+    .tonight-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+    }
+    .tonight-row .v {
+      text-align: left;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  /* Reduce motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <a href="#s1-heading" class="skip-link">Skip to first screen</a>
+
+  <div class="page">
+    <header class="page-header">
+      <h1>Canceled-flight recovery — concept prototype</h1>
+      <p>Five mobile screens, intended for review at 390&nbsp;px. Values shown as <span class="tok">{snake_case_token}</span> are system-supplied at runtime; the prototype does not invent amounts, names, or timelines.</p>
+    </header>
+
+    <div class="mockups">
+
+      <!-- ================= SCREEN 1 ================= -->
+      <figure class="mockup" id="frame-1">
+        <figcaption class="mockup-label"><span class="num">Screen 1</span>What happened &amp; what's covered tonight</figcaption>
+        <div class="phone">
+          <div class="status-bar" aria-hidden="true">
+            <span>10:46</span>
+            <span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i></span>
+          </div>
+          <div class="app-header">
+            <span class="brand"><span class="mark" aria-hidden="true"></span>Northstar Air</span>
+          </div>
+
+          <section class="screen" aria-labelledby="s1-heading">
+            <p class="eyebrow">Trip update</p>
+            <h2 class="h-status" id="s1-heading" tabindex="-1">Your <span class="tok">{scheduled_time}</span> flight tomorrow, <span class="tok">{route}</span>, was canceled.</h2>
+            <span class="reason-pill">Reason: <span class="tok">{cancellation_reason}</span></span>
+
+            <!-- Covered tonight — load-bearing, warm-toned, top-of-screen -->
+            <div class="covered" role="region" aria-labelledby="s1-covered">
+              <h3 class="h-covered" id="s1-covered">
+                <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 13V7l6-4 6 4v6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M6 13V9.5h4V13" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                What's covered tonight
+              </h3>
+              <ul class="items">
+                <li class="item">
+                  <span class="icon" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <rect x="2" y="5" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M2 8h12" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                  </span>
+                  <span>
+                    <span class="label">Hotel</span>
+                    <span class="detail">Status: <span class="tok">{hotel_entitlement_status}</span> · Amount: <span class="tok">{hotel_entitlement_amount}</span></span>
+                  </span>
+                </li>
+                <li class="item">
+                  <span class="icon" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M4 3v6a2 2 0 0 0 4 0V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M11 3v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M6 9v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                  </span>
+                  <span>
+                    <span class="label">Meals</span>
+                    <span class="detail">Status: <span class="tok">{meal_entitlement_status}</span> · Amount: <span class="tok">{meal_entitlement_amount}</span></span>
+                  </span>
+                </li>
+              </ul>
+              <p class="meta" style="margin:0">How to claim is shown on your confirmation.</p>
+            </div>
+
+            <div class="screen-footer">
+              <a class="btn btn-primary" href="#s2-heading">See my rebooking options</a>
+              <button class="btn-ghost" type="button">Text me this link</button>
+            </div>
+          </section>
+
+          <div class="support" role="complementary" aria-label="Support">
+            <span class="label">Need a human?</span>
+            <a href="tel:{support_phone}">
+              <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 3.5C3 3 3.5 2.5 4 2.5h2l1 3-1.5 1A7 7 0 0 0 9.5 11l1-1.5 3 1v2c0 .5-.5 1-1 1A11 11 0 0 1 3 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              Call Northstar support <span class="tok">{support_phone}</span>
+            </a>
+          </div>
+        </div>
+      </figure>
+
+      <!-- ================= SCREEN 2 ================= -->
+      <figure class="mockup" id="frame-2">
+        <figcaption class="mockup-label"><span class="num">Screen 2</span>Choose how you get there</figcaption>
+        <div class="phone">
+          <div class="status-bar" aria-hidden="true">
+            <span>10:47</span>
+            <span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i></span>
+          </div>
+          <div class="app-header">
+            <span class="brand"><span class="mark" aria-hidden="true"></span>Northstar Air</span>
+          </div>
+
+          <section class="screen" aria-labelledby="s2-heading">
+            <p class="eyebrow">Recovery options</p>
+            <h2 class="h-screen" id="s2-heading" tabindex="-1">How would you like to get there?</h2>
+            <p class="body-text">Pick one. You can review this choice before it's final.</p>
+
+            <ul class="decisions">
+              <li>
+                <button class="decision primary" type="button">
+                  <span class="primary-tag" aria-hidden="true">Primary</span>
+                  <span class="label">
+                    Rebook on another flight
+                    <span class="chev" aria-hidden="true">→</span>
+                  </span>
+                  <span class="consequence">Confirmed seat on a later flight.</span>
+                </button>
+              </li>
+
+              <li>
+                <button class="decision" type="button">
+                  <span class="label">
+                    Cancel and get a refund or travel credit
+                    <span class="chev" aria-hidden="true">→</span>
+                  </span>
+                  <span class="consequence">You won't fly with us on this trip. Refund or credit handled separately.</span>
+                </button>
+              </li>
+
+              <li>
+                <button class="decision subordinate" type="button">
+                  <span class="label">
+                    Join standby
+                    <span class="chev" aria-hidden="true">→</span>
+                  </span>
+                  <span class="consequence">No guaranteed seat. You wait at the airport for an open spot.</span>
+                </button>
+              </li>
+            </ul>
+
+            <div class="screen-footer">
+              <button class="btn-ghost" type="button">Not sure? Talk to an agent</button>
+            </div>
+          </section>
+
+          <div class="support" role="complementary" aria-label="Support">
+            <span class="label">Need a human?</span>
+            <a href="tel:{support_phone}">
+              <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 3.5C3 3 3.5 2.5 4 2.5h2l1 3-1.5 1A7 7 0 0 0 9.5 11l1-1.5 3 1v2c0 .5-.5 1-1 1A11 11 0 0 1 3 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              Call Northstar support <span class="tok">{support_phone}</span>
+            </a>
+          </div>
+        </div>
+      </figure>
+
+      <!-- ================= SCREEN 3 ================= -->
+      <figure class="mockup" id="frame-3">
+        <figcaption class="mockup-label"><span class="num">Screen 3</span>Pick a flight</figcaption>
+        <div class="phone">
+          <div class="status-bar" aria-hidden="true">
+            <span>10:47</span>
+            <span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i></span>
+          </div>
+          <div class="app-header">
+            <span class="brand"><span class="mark" aria-hidden="true"></span>Northstar Air</span>
+          </div>
+
+          <section class="screen" aria-labelledby="s3-heading">
+            <p class="eyebrow">Available flights</p>
+            <h2 class="h-screen" id="s3-heading" tabindex="-1">Pick a flight to <span class="tok">{route}</span></h2>
+
+            <div class="filters" role="group" aria-label="Filter flights">
+              <button class="chip" type="button" aria-pressed="true">Arrival time</button>
+              <button class="chip" type="button" aria-pressed="false">Nonstop only</button>
+              <button class="chip" type="button" aria-pressed="false">Same travel party</button>
+            </div>
+
+            <div class="sort-line">
+              <span>Sorted by arrival time.</span>
+              <button type="button">Change sort</button>
+            </div>
+
+            <ul class="flight-list">
+              <li class="flight-card">
+                <div class="top">
+                  <div>
+                    <div class="times"><span class="tok">{flight_a_depart}</span> → <span class="tok">{flight_a_arrive}</span></div>
+                    <div class="duration"><span class="tok">{flight_a_duration}</span> · <span class="tok">{flight_a_stops}</span></div>
+                  </div>
+                  <span class="reason-badge">Earliest arrival</span>
+                </div>
+                <div class="row">
+                  <span class="meta-left">Flight <span class="tok">{flight_a_number}</span></span>
+                  <span class="fare-note">Fare difference: <span class="tok">{flight_a_fare_diff}</span></span>
+                </div>
+                <a class="btn btn-secondary" href="#s4-heading">Confirm this flight</a>
+              </li>
+
+              <li class="flight-card">
+                <div class="top">
+                  <div>
+                    <div class="times"><span class="tok">{flight_b_depart}</span> → <span class="tok">{flight_b_arrive}</span></div>
+                    <div class="duration"><span class="tok">{flight_b_duration}</span> · <span class="tok">{flight_b_stops}</span></div>
+                  </div>
+                  <span class="reason-badge">Nonstop, closest to original time</span>
+                </div>
+                <div class="row">
+                  <span class="meta-left">Flight <span class="tok">{flight_b_number}</span></span>
+                  <span class="fare-note">Fare difference: <span class="tok">{flight_b_fare_diff}</span></span>
+                </div>
+                <a class="btn btn-secondary" href="#s4-heading">Confirm this flight</a>
+              </li>
+
+              <li class="flight-card">
+                <div class="top">
+                  <div>
+                    <div class="times"><span class="tok">{flight_c_depart}</span> → <span class="tok">{flight_c_arrive}</span></div>
+                    <div class="duration"><span class="tok">{flight_c_duration}</span> · <span class="tok">{flight_c_stops}</span></div>
+                  </div>
+                  <span class="reason-badge muted">Later option</span>
+                </div>
+                <div class="row">
+                  <span class="meta-left">Flight <span class="tok">{flight_c_number}</span></span>
+                  <span class="fare-note">Fare difference: <span class="tok">{flight_c_fare_diff}</span></span>
+                </div>
+                <a class="btn btn-secondary" href="#s4-heading">Confirm this flight</a>
+              </li>
+            </ul>
+
+            <div class="screen-footer">
+              <button class="btn-ghost" type="button">Back to options</button>
+            </div>
+          </section>
+
+          <div class="support" role="complementary" aria-label="Support">
+            <span class="label">Need a human?</span>
+            <a href="tel:{support_phone}">
+              <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 3.5C3 3 3.5 2.5 4 2.5h2l1 3-1.5 1A7 7 0 0 0 9.5 11l1-1.5 3 1v2c0 .5-.5 1-1 1A11 11 0 0 1 3 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              Call Northstar support <span class="tok">{support_phone}</span>
+            </a>
+          </div>
+        </div>
+      </figure>
+
+      <!-- ================= SCREEN 4 ================= -->
+      <figure class="mockup" id="frame-4">
+        <figcaption class="mockup-label"><span class="num">Screen 4</span>Review &amp; confirm</figcaption>
+        <div class="phone">
+          <div class="status-bar" aria-hidden="true">
+            <span>10:48</span>
+            <span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i></span>
+          </div>
+          <div class="app-header">
+            <span class="brand"><span class="mark" aria-hidden="true"></span>Northstar Air</span>
+          </div>
+
+          <section class="screen" aria-labelledby="s4-heading">
+            <p class="eyebrow">Review</p>
+            <h2 class="h-screen" id="s4-heading" tabindex="-1">Confirm your rebooking</h2>
+
+            <h3 class="h-section">New flight</h3>
+            <div class="summary-block">
+              <div class="row-item"><span class="k">Flight</span><span class="v"><span class="tok">{rebooked_flight_summary}</span></span></div>
+              <div class="row-item"><span class="k">Depart</span><span class="v"><span class="tok">{rebooked_depart_time}</span></span></div>
+              <div class="row-item"><span class="k">Arrive</span><span class="v"><span class="tok">{rebooked_arrive_time}</span></span></div>
+              <div class="row-item"><span class="k">Fare difference</span><span class="v"><span class="tok">{rebooked_fare_diff}</span></span></div>
+            </div>
+
+            <h3 class="h-section">Tonight</h3>
+            <div class="summary-block">
+              <div class="row-item"><span class="k">Hotel</span><span class="v"><span class="tok">{hotel_entitlement_status}</span> · <span class="tok">{hotel_entitlement_amount}</span></span></div>
+              <div class="row-item"><span class="k">Meals</span><span class="v"><span class="tok">{meal_entitlement_status}</span> · <span class="tok">{meal_entitlement_amount}</span></span></div>
+            </div>
+
+            <h3 class="h-section">Bags</h3>
+            <div class="summary-block">
+              <div class="row-item"><span class="k">Baggage</span><span class="v"><span class="tok">{baggage_status}</span></span></div>
+            </div>
+
+            <h3 class="h-section">Travel party</h3>
+            <div class="summary-block">
+              <div class="row-item"><span class="k">Passengers</span><span class="v"><span class="tok">{passenger_list}</span></span></div>
+            </div>
+
+            <p class="meta" style="margin:0">If this flight changes, we will contact you via <span class="tok">{renotification_channels}</span>. You can re-open these options from <span class="tok">{renotification_entry_point}</span>.</p>
+
+            <div class="screen-footer">
+              <a class="btn btn-primary" href="#s5-heading">Confirm rebooking</a>
+              <button class="btn-secondary btn" type="button">Go back</button>
+            </div>
+          </section>
+
+          <div class="support" role="complementary" aria-label="Support">
+            <span class="label">Need a human?</span>
+            <a href="tel:{support_phone}">
+              <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 3.5C3 3 3.5 2.5 4 2.5h2l1 3-1.5 1A7 7 0 0 0 9.5 11l1-1.5 3 1v2c0 .5-.5 1-1 1A11 11 0 0 1 3 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              Call Northstar support <span class="tok">{support_phone}</span>
+            </a>
+          </div>
+        </div>
+      </figure>
+
+      <!-- ================= SCREEN 5 ================= -->
+      <figure class="mockup" id="frame-5">
+        <figcaption class="mockup-label"><span class="num">Screen 5</span>Your trip is set</figcaption>
+        <div class="phone">
+          <div class="status-bar" aria-hidden="true">
+            <span>10:49</span>
+            <span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i></span>
+          </div>
+          <div class="app-header">
+            <span class="brand"><span class="mark" aria-hidden="true"></span>Northstar Air</span>
+          </div>
+
+          <section class="screen" aria-labelledby="s5-heading">
+            <div class="confirm-hero">
+              <span class="check" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                  <path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <h2 class="h-status" id="s5-heading" tabindex="-1">You're booked on the <span class="tok">{rebooked_depart_time}</span> flight tomorrow, <span class="tok">{route}</span>.</h2>
+            </div>
+
+            <h3 class="h-section">Itinerary</h3>
+            <div class="summary-block">
+              <div class="row-item"><span class="k">Confirmation</span><span class="v"><span class="tok">{confirmation_code}</span></span></div>
+              <div class="row-item"><span class="k">Flight</span><span class="v"><span class="tok">{rebooked_flight_summary}</span></span></div>
+              <div class="row-item"><span class="k">Check-in opens</span><span class="v"><span class="tok">{checkin_open_time}</span></span></div>
+              <div class="row-item"><span class="k">Gate</span><span class="v"><span class="tok">{gate_status}</span></span></div>
+            </div>
+
+            <!-- Tonight re-surface — same warm hue, anchors continuity with Screen 1 -->
+            <h3 class="h-section">Tonight</h3>
+            <div class="tonight-wrap">
+              <div class="tonight-row">
+                <span class="k">Hotel</span>
+                <span class="v"><span class="tok">{hotel_entitlement_status}</span> · <span class="tok">{hotel_entitlement_amount}</span> · how to claim: <span class="tok">{hotel_claim_method}</span></span>
+              </div>
+              <div class="tonight-row">
+                <span class="k">Meals</span>
+                <span class="v"><span class="tok">{meal_entitlement_status}</span> · <span class="tok">{meal_entitlement_amount}</span> · how to claim: <span class="tok">{meal_claim_method}</span></span>
+              </div>
+            </div>
+
+            <h3 class="h-section">Save this trip</h3>
+            <div class="save-options">
+              <button type="button">
+                <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M5 6h6M5 9h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Add to wallet
+              </button>
+              <button type="button">
+                <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <rect x="2" y="4" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M2.5 5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+                Email a copy
+              </button>
+              <button type="button">
+                <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M3 4h10v6H7l-3 3v-3H3V4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+                Text a copy
+              </button>
+              <button type="button">
+                <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 2v9M4.5 7.5L8 11l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Download PDF
+              </button>
+            </div>
+
+            <h3 class="h-section">If this changes again</h3>
+            <div class="next-if">
+              <p class="body-text" style="margin:0">If your flight changes again, we will contact you via <span class="tok">{renotification_channels}</span>. Re-open these options: <span class="tok">{reentry_path_status}</span>.</p>
+              <a href="tel:{support_phone}" class="btn-ghost" style="align-self:flex-start">Or call us: <span class="tok">{support_phone}</span></a>
+            </div>
+
+            <div class="screen-footer">
+              <button class="btn btn-secondary" type="button">View full trip</button>
+            </div>
+          </section>
+
+          <div class="support" role="complementary" aria-label="Support">
+            <span class="label">Need a human?</span>
+            <a href="tel:{support_phone}">
+              <svg class="ic" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 3.5C3 3 3.5 2.5 4 2.5h2l1 3-1.5 1A7 7 0 0 0 9.5 11l1-1.5 3 1v2c0 .5-.5 1-1 1A11 11 0 0 1 3 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              Call Northstar support <span class="tok">{support_phone}</span>
+            </a>
+          </div>
+        </div>
+      </figure>
+
+    </div><!-- /.mockups -->
+  </div><!-- /.page -->
+</body>
+</html>
