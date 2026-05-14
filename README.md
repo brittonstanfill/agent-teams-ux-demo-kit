@@ -4,22 +4,32 @@ A meeting-ready kit for showing — and actually using — Claude Code's agent-t
 
 The kit ships:
 
-- **8 Claude Code subagents** representing distinct UX disciplines (researcher, IA, interaction, content, visual, accessibility, behavioral scientist, devil's advocate). Each is an opinionated, named specialist with an artifact spec and stances for debating teammates.
-- **A structured team-debate prompt** (4-round, with a lightweight variant) for using those agents as a coordinated team on a real product decision.
-- **A demo scenario** (Northstar Air canceled flight recovery) so you can run the team live in a meeting and compare its output against a single-agent baseline.
+- **9 Claude Code subagents** representing distinct UX disciplines plus a Creative Director (researcher, IA, interaction, content, visual, accessibility, behavioral scientist, devil's advocate, creative director). Each is an opinionated, named specialist with an artifact spec and stances for debating teammates.
+- **Two team patterns:** *relay-with-debate* (for synthesis-shaped artifacts) and *parallel-author* (for composition-shaped artifacts). Both ship in the kit; the right one depends on what you're making.
+- **A demo scenario** (Northstar Air canceled flight recovery) so you can run the team live in a meeting and compare its output against a single-agent baseline that *ships the same artifact type* — so the comparison is honest.
 
 ## Demo concept
 
-**Lens Relay:** give a team one flawed product experience, assign each teammate a UX lens, force them to exchange findings, then compare the team output against a single-agent baseline.
+**Lens Relay (or Parallel Author):** give a team one flawed product experience, assign each teammate a UX lens, force them to exchange findings or to author independently, then compare the team output against a single-agent baseline.
 
 The demo problem is a canceled-flight recovery flow for a fictional airline, Northstar Air. Familiar enough for everyone to understand, complex enough that research, IA, interaction, content, accessibility, visual design, and behavioral science all matter.
 
-## Why this works for agent teams
+## Honest framing
 
-- The roles work in parallel without editing the same file
-- The roles need to talk to each other, not just report to the lead
-- The final answer requires tradeoffs: speed, clarity, accessibility, business pressure, emotional state, trust
-- The team output can be measured against a single-agent baseline
+The earlier version of this kit pitched "team output > single output." That is true on some dimensions and false on others. v3+ of the kit is upfront about both:
+
+- **Agent teams win on:** specialist-cited audits (WCAG by criterion, behavioral mechanisms by name), risk surface, visible tradeoff reasoning, dark-pattern detection, decision durability under stakeholder review.
+- **Single agents win on:** visual composition, narrative coherence, distinctive aesthetic, time-to-useful-draft.
+
+A good demo names both. The scorecard in `05-scorecard.md` is built around the "team wins on / single wins on" comparison so the audience leaves with a *how to choose between the patterns*, not a victory lap.
+
+## Why this works for agent teams (when it works)
+
+- The roles work in parallel without editing the same file.
+- The roles need to talk to each other, not just report to the lead.
+- The final answer requires tradeoffs: speed, clarity, accessibility, business pressure, emotional state, trust.
+- The team output can be measured against a single-agent baseline shipping the same artifact type.
+- The Creative Director holds the cross-discipline vision so the team's output doesn't flatten into committee-safe consensus.
 
 ---
 
@@ -29,28 +39,32 @@ The demo problem is a canceled-flight recovery flow for a fictional airline, Nor
 
 | File | What it is |
 | :--- | :--- |
-| `01-facilitator-runbook.md` | Live demo script and timing |
-| `02-master-agent-team-prompt.md` | Original demo prompt for the Northstar scenario |
-| `03-single-agent-baseline-prompt.md` | Baseline prompt for direct comparison |
-| `04-role-cards.md` | Human-readable role briefs |
-| `05-scorecard.md` | Measurement rubric for team vs non-team output |
+| `01-facilitator-runbook.md` | Live demo script and timing — names where the team wins and where it loses |
+| `02-master-agent-team-prompt.md` | Relay-with-debate prompt for the Northstar scenario. Bakes in required debate rounds; ships HTML + doc. |
+| `03-single-agent-baseline-prompt.md` | Baseline prompt — now ships HTML, not just a doc, so the comparison is honest |
+| `04-role-cards.md` | Human-readable role briefs (author + audit framing) |
+| `05-scorecard.md` | Measurement rubric — includes the "team wins on / single wins on" honest comparison |
 | `06-meeting-one-pager.md` | Concise shareable explanation for the meeting |
 | `07-team-debate-master-prompt.md` | **General-purpose 4-round team debate prompt** — use this for real product decisions beyond the demo |
 | `08-single-agent-quick-prompt.md` | **3-line single-agent prompt** — for the 80% of moments where you just need one specialist, not a team |
+| `09-parallel-author-prompt.md` | **Parallel-author team prompt** — use when authorship matters more than peer-challenge (visual composition, distinctive aesthetic). Produces 2–3 distinct authored drafts; team picks a winner. |
 | `agent-teams-meetup-deck.html` | Self-contained HTML talk deck (17 slides, ~20 min). Open in any browser; arrow keys to navigate; `N` for speaker notes; `F` for fullscreen |
 
-### The 8 agents (in `claude-agents/`)
+### The 9 agents (in `claude-agents/`)
 
 | Agent | Discipline / training | Role in a team debate |
 | :--- | :--- | :--- |
+| `creative-director.md` | Cross-discipline design leadership | **Holds the aesthetic anchor against committee flattening. New in v3+.** "Is this the version you'd put in your portfolio? No? Then it's not the version we ship." |
 | `ux-researcher.md` | Cognitive psychology / HCI | "What do users actually do? Where's the evidence?" |
 | `information-architect.md` | Library / information science | "Where should this live? What do we call it?" |
 | `interaction-designer.md` | HCI | "What are all the states? What happens when it fails?" |
 | `content-designer.md` | Linguistics / journalism / UX writing | "Cut the copy. The verb is wrong. The tone is off." |
 | `accessibility-specialist.md` | CPACC / WAS / disability studies | "Walk this with a keyboard. Walk it with VoiceOver." |
-| `visual-designer.md` | Graphic / communication design | "The hierarchy is muddy. The grid is broken. It feels cheap." |
+| `visual-designer.md` | Graphic / communication design | "I author the surface. I do not retreat to 'redline someone else's draft' mode when the work needs authorship." |
 | `behavioral-scientist.md` | Cognitive psychology / behavioral economics | "Will they actually do this? And keep doing it? Ethically?" |
 | `devils-advocate.md` | Red teaming / structured analytic techniques | Steel-mans the consensus, runs the pre-mortem, names the biases |
+
+**Important kit note (v3+):** earlier versions of this kit shipped the role agents with read-only tool permissions (`Read, Glob, Grep`), which meant they couldn't actually write the files they were asked to author. v3+ grants `Write, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage` so team coordination and authoring actually work. The role-card framing also shifted from "Looks for" (review-only) to "Authors + audits" (authoring-first), and the visual-designer's identity changed from a reviewer with permission to write to an author whose audit is a sub-skill. If you copied the agents into `~/.claude/agents/` from an older version of this kit, re-copy them.
 
 ### Supporting
 
