@@ -23,7 +23,7 @@ Ship two things:
    - Respect prefers-color-scheme (light + dark) and prefers-reduced-motion.
    - Hit WCAG 2.1 AA where possible (cite criteria when you make a notable call).
 
-2. A doc at:
+2. A meeting-ready recommendation doc at:
    demo-output/single-agent-baseline.md
    Include:
    - Executive recommendation
@@ -32,7 +32,15 @@ Ship two things:
    - Recommended copy (verbatim, not described)
    - Accessibility and trust risks with proposed mitigations
    - Experiment plan (hypothesis + primary metric + guardrail + exit rule for each)
+
+3. Run metadata at:
+   demo-output/run-metadata.md
+   Include:
    - Run metadata: branch, commit SHA, start/end time, model, and whether clean-room checks passed.
+
+Blind-eval hygiene:
+- Do not put "single-agent", "baseline", "team", "agent-team", branch names, commit SHAs, or run metadata in the recommendation doc or HTML title/body.
+- Keep all origin-identifying information in `demo-output/run-metadata.md` only.
 
 Quality bar:
 - The output should be distinguishable as the work of a designer who cares about craft. Generic, safe, "meeting-template" output is a failure mode, not a default. If your output could have been produced by a Bootstrap starter, you have not earned your presence.

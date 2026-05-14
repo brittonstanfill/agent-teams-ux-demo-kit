@@ -122,12 +122,13 @@ Promote a system change only when:
 ## Blind Evaluation Workflow
 
 1. Seal both outputs in separate commits before scoring.
-2. Copy or link artifacts into blind labels `A` and `B`; hide which one is single-agent vs. team.
-3. Have at least one judge score outcome quality while blind to process.
-4. Reveal process artifacts only after Layer 1 scoring, then score Layer 2 and Layer 3.
-5. Reveal which system produced which output.
-6. Write an evaluation report using `templates/evaluation-report-template.md`.
-7. Decide: promote, hold, revert, or run another experiment.
+2. Copy only the HTML artifact and meeting-ready recommendation into blind labels `A` and `B`; hide which one is single-agent vs. team.
+3. Exclude `run-metadata.md`, role reports, process appendices, branch names, commit SHAs, and origin-identifying headings from Layer 1.
+4. Have at least one judge score outcome quality while blind to process.
+5. Reveal process artifacts only after Layer 1 scoring, then score Layer 2 and Layer 3.
+6. Reveal which system produced which output.
+7. Write an evaluation report using `templates/evaluation-report-template.md`.
+8. Decide: promote, hold, revert, or run another experiment.
 
 For an LLM judge, use `templates/llm-judge-prompt.md`. For human facilitators, use the same rubric and require evidence notes for every score of 0, 1, or 4.
 

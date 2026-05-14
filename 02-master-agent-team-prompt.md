@@ -37,12 +37,14 @@ Quality bar (read this twice):
 Working rules:
 - Each teammate owns one file in `demo-output/role-reports/`.
 - No teammate edits another teammate's role report.
-- The lead owns the final synthesis file: `demo-output/final-recommendation.md`.
+- The lead owns the meeting-ready recommendation file: `demo-output/final-recommendation.md`.
+- The lead owns the process appendix file: `demo-output/process-appendix.md`.
+- The lead owns the run metadata file: `demo-output/run-metadata.md`.
 - The team also produces a working HTML artifact at `demo-output/prototype/index.html`. Visual-designer authors this; other teammates refine in their domain.
-- Include run metadata in the final recommendation: branch, commit SHA, start/end time, model, teammate list, clean-room checks, and whether any teammate was replaced or nudged.
 - Label every major claim as one of: observed from brief, inferred, assumption, or recommendation.
 - Do not invent research data, metrics, laws, airline policies, or user quotes. WCAG criteria and named behavioral principles are standard reference, not invention.
-- Make the teammate messages visible in the final recommendation.
+- Make teammate messages visible in the process appendix, not in the meeting-ready recommendation.
+- Blind-eval hygiene: do not put "agent-team", "team run", branch names, commit SHAs, teammate count, or run metadata in the HTML title/body or in the meeting-ready recommendation. Put origin-identifying details only in `demo-output/run-metadata.md`.
 
 Required role outputs:
 - Creative Director: aesthetic anchor and quality bar briefed BEFORE the team starts authoring. Names the reference language (e.g., "Linear restraint" / "Stripe clarity"), the three moves worth stealing, and the failure mode to avoid. Holds the line against committee flattening.
@@ -90,23 +92,28 @@ Before writing the final recommendation, the lead should show:
 2. The debates that ran, the resolutions, and the dissenting positions preserved.
 3. Which teammate message changed another teammate's recommendation.
 
-Final deliverable:
-Write `demo-output/final-recommendation.md` with these sections:
+Final deliverables:
+Write `demo-output/final-recommendation.md` as a concise meeting-ready memo, target 900 words or fewer, with these sections only:
 
 1. Executive recommendation
 2. Redesigned flow (target 4–5 screens, but if a 6-screen flow is genuinely better, ship 6; explain why)
-3. What each role contributed
-4. Cross-agent handoffs that changed the answer
-5. Debates that ran and their resolutions (including dissenting positions)
-6. Key tradeoffs and rejected alternatives
-7. Accessibility and trust guardrails
-8. Experiment plan
-9. Scorecard-ready comparison against a single-agent baseline (use the same artifact type — both should ship HTML)
-10. Run metadata and clean-room verification
+3. Accessibility and trust guardrails
+4. Experiment plan
 
-Also produce the HTML artifact at `demo-output/prototype/index.html`. Both deliverables ship; one without the other is incomplete.
+Write `demo-output/process-appendix.md` with these sections:
 
-Keep the final synthesis crisp and meeting-ready. Distinctiveness over completeness; named principles over generic best practices; dissenting voices preserved.
+1. What each role contributed
+2. Cross-agent handoffs that changed the answer
+3. Debates that ran and their resolutions, including dissenting positions
+4. Key tradeoffs and rejected alternatives
+5. Scorecard-ready comparison setup against a single-agent baseline, without reading the baseline
+6. Devil's Advocate stress-test summary
+
+Write `demo-output/run-metadata.md` with branch, commit SHA, start/end time, model, teammate list, clean-room checks, and whether any teammate was replaced or nudged.
+
+Also produce the HTML artifact at `demo-output/prototype/index.html`. All deliverables ship; a recommendation without an artifact, an artifact without a recommendation, or a missing process appendix is incomplete.
+
+Keep the final recommendation crisp and meeting-ready. Distinctiveness over completeness; named principles over generic best practices. Preserve dissent in the appendix, not in the first-read memo.
 ```
 
 ## What's different from the V2 version of this prompt
