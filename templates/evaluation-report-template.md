@@ -28,6 +28,7 @@ What result would have disproved the hypothesis?
 | Completeness |  |  |  |
 | Constraint integrity |  |  |  |
 | Accessibility floor |  |  |  |
+| Responsive render floor |  |  |  |
 | Trust floor |  |  |  |
 
 Promotion blocked? `yes/no`

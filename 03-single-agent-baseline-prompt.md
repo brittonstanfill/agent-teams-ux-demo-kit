@@ -50,6 +50,7 @@ Label assumptions ([observed from brief], [inferred], [assumption], [recommendat
 Do not invent metrics, user quotes, airline policies, legal obligations, static wait times, credit expiration windows, eligibility promises, hotel names, voucher amounts, phone numbers, or other operational facts not present in the brief. Use dynamic copy ("current wait shown here") or mark placeholders outside user-visible copy.
 If the brief names a constraint such as family / multi-passenger travel, low bandwidth, screen reader use, or refund-seeker paths, either solve it in the artifact or name it as a scoped gap in the recommendation.
 Before committing, run a blind-hygiene scan on the HTML and recommendation for origin-identifying terms, branch names, commit SHAs, and ungrounded operational promises.
+Before committing, run a responsive render smoke check on `demo-output/single-agent-baseline/index.html` at a narrow mobile viewport around 390px wide and at a desktop viewport. If browser rendering is available, use top-level page screenshots plus a DOM overflow check (`scrollWidth <= clientWidth`, with named overflowing elements if any). If the page uses global horizontal clipping such as `overflow-x: hidden`, also rerun the overflow check with that masking disabled so layout bugs are not hidden. Do not seal while text, nav, cards, phone frames, buttons, or fixed-format elements clip horizontally, overlap incoherently, or require sideways scrolling. Record the check method and result in `demo-output/run-metadata.md`.
 ```
 
 ## Why this changed
