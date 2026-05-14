@@ -1,7 +1,7 @@
 ---
 name: visual-designer
 description: Use when designing or reviewing the visual surface of a product — typography, color, spacing, hierarchy, iconography, illustration, composition, polish. Catches the gap between "fine" and "exceptional." Reviews mockups, design systems, or built UIs for visual craft. Distinct from interaction design (behavior) and content design (words).
-tools: Read, Glob, Grep
+tools: Read, Glob, Grep, Write, Edit, Bash
 model: inherit
 color: pink
 ---
