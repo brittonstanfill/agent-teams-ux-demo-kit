@@ -37,6 +37,7 @@ Working rules:
 - Do not invent research data, metrics, laws, airline policies, user quotes, wait times, credit expiration windows, eligibility promises, hotel names, voucher amounts, phone numbers, or operational facts not present in the brief.
 - If the brief names an edge case or constraint, either solve it in the artifact or name it as a scoped gap in the final recommendation. Do not silently drop family / multi-passenger travel, low bandwidth, screen reader use, refund-seeker paths, or support visibility.
 - Blind-eval hygiene: do not put "agent-team", "team run", branch names, commit SHAs, teammate count, or run metadata in the HTML title/body or meeting-ready recommendation. Put origin details only in `demo-output/run-metadata.md`.
+- Visual craft gate: the HTML artifact should feel like a real, high-trust product flow, not a generic storyboard or a wall of placeholder pills. Mobile-first does not require decorative phone bezels; choose the presentation that best exposes the product decisions for evaluation. Use supplied facts as real values and reserve dynamic placeholders for values the brief does not supply. Style placeholders as unobtrusive dynamic values, not dominant visual decoration. Polish must never come from hiding refund/support choices, shrinking text, masking overflow, or smoothing away uncertainty.
 
 Sequence:
 1. Information Architect sets the user-job spine, revised flow, copy constraints, and scoped gaps.
