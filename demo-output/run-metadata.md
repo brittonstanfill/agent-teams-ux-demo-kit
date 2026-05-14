@@ -4,7 +4,7 @@
 
 - **Branch**: `experiment/northstar-20260514-0656-internalrender-team`
 - **Preflight HEAD**: `320b640` ("Record claim-lint evaluation and tighten render gate")
-- **Sealing commit SHA**: (to be filled by the sealing commit)
+- **Sealing commit SHA**: `c54b63d` (this commit, after amend; metadata patched in-place)
 
 ## Timing
 
