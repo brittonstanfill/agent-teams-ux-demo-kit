@@ -50,9 +50,9 @@ Score this section before revealing which artifact is single-agent vs. team.
 | Flow coherence |  |  |  |
 | Content quality |  |  |  |
 | Recommendation clarity |  |  |  |
-| Accessibility and inclusion |  |  |  |
-| Trust and behavioral ethics |  |  |  |
-| Visual and interaction craft |  |  |  |
+| Visual presentation craft |  |  |  |
+| Interaction/product craft |  |  |  |
+| Accessibility/trust/render robustness |  |  |  |
 | Experiment plan |  |  |  |
 
 Blind winner: `A/B/tie`
@@ -63,10 +63,19 @@ Why?
 
 Reveal process artifacts before scoring this section.
 
+Candidate / champion-challenger evidence, if used:
+
+- Candidate artifacts reviewed:
+- Meaningful differences between candidates:
+- Selected base candidate:
+- Strongest borrowed element:
+- Preserved dissent:
+
 | Layer 2 Dimension | Single Agent | Agent Team | Evidence Notes |
 |---|---:|---:|---|
 | Evidence hygiene |  |  |  |
 | Specialist depth |  |  |  |
+| Candidate generation and selection |  |  |  |
 | Handoffs that changed output |  |  |  |
 | Debate quality |  |  |  |
 | Tradeoff reasoning |  |  |  |
@@ -102,6 +111,10 @@ What did we expect before scoring?
 What surprised us?
 
 Where did the baseline beat the team?
+
+Did the team lose or flatten visual presentation while improving process?
+
+Did candidate comparison improve the final artifact, or average it down?
 
 Where did the team produce value a single agent probably would not?
 

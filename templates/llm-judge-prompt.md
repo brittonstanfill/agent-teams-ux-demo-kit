@@ -1,6 +1,6 @@
 # LLM Judge Prompt
 
-Use this after baseline and team outputs are sealed. For blind judging, copy the two outputs into neutral folders named `artifact-a/` and `artifact-b/` before invoking the judge. Do not reveal which artifact came from which system until after Layer 1 scoring.
+Use this after baseline and team outputs are sealed. For blind judging, copy the final HTML artifact and meeting-ready recommendation into neutral folders named `artifact-a/` and `artifact-b/` before invoking the judge. Do not reveal which artifact came from which system until after Layer 1 scoring.
 
 ```text
 You are evaluating two sealed outputs for the Northstar Air canceled-flight recovery scenario.
@@ -20,6 +20,8 @@ Rules:
 - Do not assume the team output should win.
 - First score Layer 0 gates and Layer 1 outcome quality while blind to which system produced which artifact.
 - Only after Layer 1 scoring, ask for process artifacts if available and score Layer 2 and Layer 3.
+- Score visual presentation craft separately from interaction/product craft and accessibility/trust/render robustness. Do not let strong interaction logic or accessibility work compensate for weaker visual presentation in the visual score.
+- If process artifacts include multiple early candidate artifacts, inspect them only after blind Layer 1 scoring. Use them to judge candidate generation and selection, not to replace the final artifact score.
 - Cite file paths and short section names for every score of 0, 1, or 4.
 - Preserve uncertainty. If you cannot tell, say so and score conservatively.
 
@@ -50,15 +52,18 @@ Output:
 6. After process reveal
    If process artifacts are provided, score Layer 2 and Layer 3:
    Table: Dimension | Single Agent | Agent Team | Evidence notes
+   Include candidate generation and selection when candidate artifacts were part of the system.
 
 7. Coordination Yield
    Estimate overhead penalty and explain whether the team earned its cost.
 
 8. Recommendation
-   Promote, hold and retest, revert, or split and retest. Name the next experiment.
+   Promote, hold and retest, revert, or split and retest. If the team loses visual presentation craft but wins elsewhere, prefer hold/split over promote unless the task explicitly deprioritized visual presentation. Name the next experiment.
 
 Before finalizing, answer:
 - What did you almost overvalue?
+- Did a blended craft impression hide a visual presentation loss?
+- Did candidate comparison improve the final artifact or average it down?
 - What would change your mind?
 - What is the strongest argument against your verdict?
 ```

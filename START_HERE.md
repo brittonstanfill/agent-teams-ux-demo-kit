@@ -14,8 +14,8 @@ For a serious run, use these files in order:
 
 1. `10-clean-room-experiment-runbook.md` - how to run without contaminating the comparison.
 2. `03-single-agent-baseline-prompt.md` - baseline prompt; run in a separate clean checkout.
-3. `13-four-role-agent-team-prompt.md` - current best compact team prompt.
-4. `11-evaluation-system.md` - scoring gates, weighted rubric, coordination yield, and metacognition checks.
+3. `13-four-role-agent-team-prompt.md` - current best compact team prompt; it creates two competing full artifacts early, runs a champion-challenger selection, then seals the final.
+4. `11-evaluation-system.md` - scoring gates, split visual/interaction/robustness rubric, coordination yield, and metacognition checks.
 
 Use `02-master-agent-team-prompt.md`, `09-parallel-author-prompt.md`, or `12-lean-agent-team-prompt.md` only when you are intentionally testing those older or alternative team patterns.
 
@@ -78,7 +78,8 @@ Read the output first, then the process:
 
 1. Open the prototype HTML and final recommendation.
 2. Check Layer 0 gates in `11-evaluation-system.md`: clean-room, completeness, constraint integrity, accessibility, render, and trust.
-3. Only then read role reports, process appendix, and run metadata.
-4. Calculate Coordination Yield before promoting prompt changes.
+3. Score visual presentation craft separately from interaction/product craft and accessibility/trust/render robustness. A team that is safer but visibly worse is a hold/retest result, not a clean win.
+4. Only then read role reports, candidate artifacts, process appendix, and run metadata.
+5. Calculate Coordination Yield before promoting prompt changes.
 
 Promote a change only when the team output is better enough to justify the added process, or when the team catches a severe risk the baseline missed.

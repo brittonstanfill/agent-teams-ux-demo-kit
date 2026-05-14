@@ -18,13 +18,13 @@ A successful output does five things:
 4. Handles hard floors: accessibility, trust, factual honesty, and no invented policy or data.
 5. Justifies its cost: wall time, token use, coordination overhead, and human cleanup.
 
-For this kit, an agent team succeeds only when it beats the single-agent baseline on decision quality or risk coverage without giving away too much artifact quality. If the team finds more issues but ships a worse design, that is a mixed result, not a win.
+For this kit, an agent team succeeds only when it beats the single-agent baseline on decision quality or risk coverage without giving away too much artifact quality, especially visual presentation quality. If the team finds more issues but ships a worse design, that is a mixed result, not a win.
 
 ## Evaluation Layers
 
 ### Layer 0: Gates
 
-Gate failures in the candidate system block promotion, even if the score is high. Gate failures in the comparison output are diagnostic: record them, penalize the comparison where appropriate, and use them as evidence only if the candidate avoided the same failure. If either side fails clean-room integrity or same-artifact-type, the comparison itself is invalid and should be rerun.
+Gate failures in the system under test block promotion, even if the score is high. Gate failures in the comparison output are diagnostic: record them, penalize the comparison where appropriate, and use them as evidence only if the system under test avoided the same failure. If either side fails clean-room integrity or same-artifact-type, the comparison itself is invalid and should be rerun.
 
 | Gate | Pass Standard |
 |---|---|
@@ -46,9 +46,9 @@ Weight: 45 percent.
 | Flow coherence | Screen sequence, state model, and recovery paths are clear without relying on explanation text. |
 | Content quality | Copy is plain, actionable, emotionally appropriate, and concrete at screen level. |
 | Recommendation clarity | The memo has one coherent through-line, separates decisions from rationale, and is easy to present. |
-| Accessibility and inclusion | WCAG-style concerns are handled in the artifact, not only described in the doc. |
-| Trust and behavioral ethics | Choice architecture helps without coercing; dark-pattern risks are named by mechanism and removed. |
-| Visual and interaction craft | The artifact has intentional hierarchy, state visibility, responsive behavior, and is not template-generic. |
+| Visual presentation craft | Composition, hierarchy, type, spacing, color, rhythm, and first-impression quality feel intentionally designed rather than template-generic. Score only what is visible in the artifact, not what the memo claims. |
+| Interaction/product craft | States, affordances, navigation, recovery paths, controls, responsive behavior, and implementation choices make the product usable without relying on explanation text. |
+| Accessibility/trust/render robustness | WCAG-style concerns are executed in the artifact; refund/support and uncertainty remain visible; the rendered UI has no decision-critical clipping, masking, overlap, or broken focus path. |
 | Experiment plan | Hypotheses are falsifiable and include primary metric, guardrail, and exit rule. |
 
 ### Layer 2: Decision Quality
@@ -59,8 +59,9 @@ Weight: 35 percent.
 |---|---|
 | Evidence hygiene | Claims are labeled as observed, inferred, assumption, or recommendation. Load-bearing assumptions are easy to find. |
 | Specialist depth | Role-specific claims use the vocabulary and methods of the discipline, not generic UX advice. |
+| Candidate generation and selection | If the system uses multiple early artifacts, the candidates are meaningfully different, the winner is selected for defensible reasons, and the final preserves the strongest visual/product spine instead of averaging them into bland consensus. If the system did not call for candidates, score whether it used an equivalent early alternative-generation method. |
 | Handoffs that changed output | The report identifies specific teammate messages that changed a decision or artifact. |
-| Debate quality | At least two real disagreements are resolved with the winning argument and dissent preserved. |
+| Debate quality | At least one real disagreement is resolved with the winning argument and dissent preserved. Stronger scores require candidate-level or product-risk disagreement, not only wording preferences. |
 | Tradeoff reasoning | Rejected alternatives are concrete and the reason for rejecting them is defensible. |
 | Falsification | The output says what evidence would change the recommendation. |
 | Red-team value | Failure modes are plausible, specific, and tied to watch-for signals. |
@@ -96,7 +97,7 @@ Layer score = (average dimension score / 4) * layer weight
 Total score = Layer 1 score + Layer 2 score + Layer 3 score
 ```
 
-Layer 0 gates do not add points. Candidate gate failures block promotion. Comparison-only gate failures should be named and scored as outcome risk, not used to pretend the candidate won more cleanly than it did.
+Layer 0 gates do not add points. Gate failures in the system under test block promotion. Comparison-only gate failures should be named and scored as outcome risk, not used to pretend the system under test won more cleanly than it did.
 
 ## Coordination Yield
 
@@ -117,22 +118,25 @@ When the overhead penalty is close to a threshold, or when wall-time and token-c
 
 Promote a system change only when:
 
-- Candidate Layer 0 gates pass and the comparison is valid.
+- System-under-test Layer 0 gates pass and the comparison is valid.
 - Coordination Yield is at least +8 points, or the team catches a severe risk the baseline missed.
-- The team does not drop more than 1 point on visual craft or recommendation clarity unless the task explicitly deprioritized those.
+- The team does not score below the single-agent baseline on visual presentation craft unless the task explicitly deprioritized visual presentation. If it does, the result is at best "hold and retest," even when interaction, accessibility, or trust scores improve.
+- The team does not drop more than 1 point on interaction/product craft, accessibility/trust/render robustness, or recommendation clarity unless the task explicitly deprioritized that dimension.
+- If a combined total says "promote" but visual presentation is clearly worse to a human reviewer, split the result: promote only the non-visual system changes and run another visual-authoring iteration.
 - The evaluator can name what changed in the system and why that change likely caused the improvement.
 
 ## Blind Evaluation Workflow
 
 1. Seal both outputs in separate commits before scoring.
-2. Copy only the HTML artifact and meeting-ready recommendation into blind labels `A` and `B`; hide which one is single-agent vs. team.
-3. Exclude `run-metadata.md`, role reports, process appendices, branch names, commit SHAs, and origin-identifying headings from Layer 1.
-4. Run a hygiene scan on the blind artifacts for origin-identifying terms and ungrounded operational claims. If the artifact has a visual UI, render or screenshot the blind HTML at mobile and desktop sizes before scoring visual craft and accessibility. Prefer a top-level page screenshot plus a DOM overflow check (`scrollWidth <= clientWidth`, plus named offenders if it fails). If the page uses global horizontal clipping such as `overflow-x: hidden`, repeat the overflow probe with that masking disabled to confirm the layout itself fits. Also inspect fixed-format containers in the screenshot: phone frames, cards, tables, mockup screens, and buttons must contain their text, controls, and placeholder tokens. Keep scanning results separate from Layer 1 outcome notes until after the blind score is recorded.
+2. Copy only the final HTML artifact and meeting-ready recommendation into blind labels `A` and `B`; hide which one is single-agent vs. team.
+3. Exclude candidate artifacts, `run-metadata.md`, role reports, process appendices, branch names, commit SHAs, and origin-identifying headings from Layer 1.
+4. Run a hygiene scan on the blind artifacts for origin-identifying terms and ungrounded operational claims. If the artifact has a visual UI, render or screenshot the blind HTML at mobile and desktop sizes before scoring visual presentation craft, interaction/product craft, and accessibility/trust/render robustness. Prefer a top-level page screenshot plus a DOM overflow check (`scrollWidth <= clientWidth`, plus named offenders if it fails). If the page uses global horizontal clipping such as `overflow-x: hidden`, repeat the overflow probe with that masking disabled to confirm the layout itself fits. Also inspect fixed-format containers in the screenshot: phone frames, cards, tables, mockup screens, and buttons must contain their text, controls, and placeholder tokens. Keep scanning results separate from Layer 1 outcome notes until after the blind score is recorded.
 5. Have at least one judge score outcome quality while blind to process.
-6. Reveal process artifacts only after Layer 1 scoring, then score Layer 2 and Layer 3.
-7. Reveal which system produced which output.
-8. Write an evaluation report using `templates/evaluation-report-template.md`.
-9. Decide: promote, hold, revert, or run another experiment.
+6. Reveal process artifacts only after Layer 1 scoring. If candidate artifacts exist, inspect them for Layer 2 candidate generation and selection, not as a substitute for scoring the final artifact.
+7. Score Layer 2 and Layer 3.
+8. Reveal which system produced which output.
+9. Write an evaluation report using `templates/evaluation-report-template.md`.
+10. Decide: promote, hold, revert, or run another experiment.
 
 For an LLM judge, use `templates/llm-judge-prompt.md`. For human facilitators, use the same rubric and require evidence notes for every score of 0, 1, or 4.
 
@@ -160,6 +164,8 @@ Run these before, during, and after each loop. The point is to avoid grounding t
 
 - What surprised us?
 - What did the baseline do better?
+- Did the team improve visual presentation, or did it hide weaker visuals behind better process?
+- Did competing artifacts create a stronger final, or did the team average away the best option?
 - What did the team do better that a single agent probably would not have done?
 - Which improvement was real, and which was just more text?
 - What would change our mind about this conclusion?
@@ -170,6 +176,8 @@ Run these before, during, and after each loop. The point is to avoid grounding t
 - **Verbosity bias:** longer reports feel more rigorous. Penalize repetition.
 - **Team halo:** visible coordination feels valuable even when it did not change a decision.
 - **Artifact blindness:** a strong memo can hide a weak prototype.
+- **Blended craft masking:** a team can win "craft" when visual presentation, interaction logic, and robustness are collapsed into one score. Score them separately.
+- **Committee averaging:** multiple candidates can make the final worse if the team blends them instead of choosing a strong spine and borrowing selectively.
 - **Code-only visual scoring:** HTML that looks semantically careful can still clip, overflow, or break in a small viewport. Render it.
 - **Masked overflow:** `overflow-x: hidden` can make `scrollWidth` look clean while clipping a layout bug. If the page uses global horizontal clipping, run a no-mask overflow check before passing the render floor.
 - **Top-level pass illusion:** a page can have `scrollWidth <= clientWidth` while text or placeholder tokens escape inside a phone mockup, table, card, or other fixed-format container. Treat visible internal clipping as a render-floor failure, not as a cosmetic note.
@@ -183,9 +191,10 @@ Run these before, during, and after each loop. The point is to avoid grounding t
 
 Treat every evaluation as a diagnosis. If the team loses:
 
-- Lost on visual craft: try `09-parallel-author-prompt.md`, fewer authors, stronger Creative Director brief.
-- Lost on decision quality: strengthen debate requirements, role reports, and lead synthesis gates.
-- Lost on accessibility/trust: move those specialists earlier and give them blocking authority.
+- Lost on visual presentation craft: require competing full artifacts earlier, add a protected visual pass, or use a stronger single visual owner. Do not let accessibility or trust gains mask a weaker first impression.
+- Lost on interaction/product craft: add an interaction-state owner or require state matrices before visual authoring.
+- Lost on decision quality: strengthen candidate selection, debate requirements, role reports, and lead synthesis gates.
+- Lost on accessibility/trust/render robustness: move those specialists earlier and give them blocking authority.
 - Lost on time/cost: reduce team size, shorten cross-exam, or use a single specialist.
 - Lost on coherence: make one owner responsible for the final artifact voice or composition.
 

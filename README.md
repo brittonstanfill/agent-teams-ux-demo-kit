@@ -4,12 +4,12 @@ A meeting-ready kit for showing — and actually using — Claude Code's agent-t
 
 **New here? Start with [`START_HERE.md`](START_HERE.md).** It explains the current recommended prompt, where to review the latest sealed output, and why several experiment branches are intentionally left unmerged.
 
-**Current default workflow:** clean-room baseline with `03-single-agent-baseline-prompt.md`, compact team with `13-four-role-agent-team-prompt.md`, then score with `11-evaluation-system.md`.
+**Current default workflow:** clean-room baseline with `03-single-agent-baseline-prompt.md`, compact team with `13-four-role-agent-team-prompt.md`, then score with `11-evaluation-system.md`. The compact team now creates two competing full artifacts early, debates the winner, and scores visual presentation separately from interaction and robustness.
 
 The kit ships:
 
 - **9 Claude Code subagents** representing distinct UX disciplines plus a Creative Director (researcher, IA, interaction, content, visual, accessibility, behavioral scientist, devil's advocate, creative director). Each is an opinionated, named specialist with an artifact spec and stances for debating teammates.
-- **Two team patterns:** *relay-with-debate* (for synthesis-shaped artifacts) and *parallel-author* (for composition-shaped artifacts). Both ship in the kit; the right one depends on what you're making.
+- **Three team patterns:** *relay-with-debate* (for synthesis-shaped artifacts), *parallel-author* (for composition-shaped artifacts), and the current compact champion-challenger path that creates two early full artifacts before synthesis. The right one depends on what you're making.
 - **A demo scenario** (Northstar Air canceled flight recovery) so you can run the team live in a meeting and compare its output against a single-agent baseline that *ships the same artifact type* — so the comparison is honest.
 
 ## Demo concept
@@ -33,7 +33,7 @@ A good demo names both. The scorecard in `05-scorecard.md` is built around the "
 - The roles need to talk to each other, not just report to the lead.
 - The final answer requires tradeoffs: speed, clarity, accessibility, business pressure, emotional state, trust.
 - The team output can be measured against a single-agent baseline shipping the same artifact type.
-- The Creative Director holds the cross-discipline vision so the team's output doesn't flatten into committee-safe consensus.
+- A single surface owner, Creative Director, or champion-challenger selection step holds the cross-discipline vision so the team's output does not flatten into committee-safe consensus.
 
 ---
 
@@ -53,9 +53,9 @@ A good demo names both. The scorecard in `05-scorecard.md` is built around the "
 | `08-single-agent-quick-prompt.md` | **3-line single-agent prompt** — for the 80% of moments where you just need one specialist, not a team |
 | `09-parallel-author-prompt.md` | **Parallel-author team prompt** — use when authorship matters more than peer-challenge (visual composition, distinctive aesthetic). Produces 2–3 distinct authored drafts; team picks a winner. |
 | `10-clean-room-experiment-runbook.md` | **Evaluation protocol** — fresh clone/branch, no prior output contamination, sealed baseline/team outputs, scorecard, and promotion rules |
-| `11-evaluation-system.md` | **Improvement-loop evaluator** — gates, weighted outcome/decision/efficiency scoring, coordination yield, and metacognition checks |
+| `11-evaluation-system.md` | **Improvement-loop evaluator** — gates, split visual/interaction/robustness scoring, candidate-selection scoring, coordination yield, and metacognition checks |
 | `12-lean-agent-team-prompt.md` | **Lean team prompt** — tests whether fewer specialists can preserve artifact quality with lower overhead |
-| `13-four-role-agent-team-prompt.md` | **Compact team prompt** — tests the smallest practical team: IA, Visual, A11y, Behavioral, with lead-run red-team checklist |
+| `13-four-role-agent-team-prompt.md` | **Compact team prompt** — tests the smallest practical team: IA, Visual, A11y, Behavioral, with two early competing artifacts and a lead-run red-team checklist |
 | `agent-teams-meetup-deck.html` | Self-contained HTML talk deck (17 slides, ~20 min). Open in any browser; arrow keys to navigate; `N` for speaker notes; `F` for fullscreen |
 
 ### The 9 agents (in `claude-agents/`)
@@ -120,7 +120,7 @@ Restart your Claude Code session in this project.
 
 1. Open [`demo-inputs/northstar-canceled-flight-brief.md`](demo-inputs/northstar-canceled-flight-brief.md).
 2. Run [`03-single-agent-baseline-prompt.md`](03-single-agent-baseline-prompt.md) first if you want a direct comparison. For a serious evaluation, follow [`10-clean-room-experiment-runbook.md`](10-clean-room-experiment-runbook.md) so the baseline and team run do not see past outputs.
-3. Run [`02-master-agent-team-prompt.md`](02-master-agent-team-prompt.md) and point it at the brief. Use [`12-lean-agent-team-prompt.md`](12-lean-agent-team-prompt.md) when testing whether a smaller team can keep quality while reducing overhead; use [`13-four-role-agent-team-prompt.md`](13-four-role-agent-team-prompt.md) when testing the smallest practical team.
+3. Run [`13-four-role-agent-team-prompt.md`](13-four-role-agent-team-prompt.md) when testing the current compact team. It produces two early candidate artifacts, picks a base, borrows selectively, and then seals the final. Use [`02-master-agent-team-prompt.md`](02-master-agent-team-prompt.md) for the older relay-with-debate pattern or [`12-lean-agent-team-prompt.md`](12-lean-agent-team-prompt.md) when testing whether a larger lean slate earns its cost.
 4. Show the team messages, role-owned files, conflict resolution, and final recommendation.
 5. Score both outputs with [`05-scorecard.md`](05-scorecard.md). For improvement-loop decisions, use [`11-evaluation-system.md`](11-evaluation-system.md) plus `templates/evaluation-report-template.md`.
 

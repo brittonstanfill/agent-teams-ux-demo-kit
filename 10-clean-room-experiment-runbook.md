@@ -94,7 +94,7 @@ git commit -m "Add clean-room agent-team run"
 
 Only after both commits exist may the lead compare outputs. At that point, create a scoring branch or folder that brings the two sealed artifacts side by side.
 
-For blind Layer 1 scoring, copy only the HTML artifact and meeting-ready recommendation into neutral `artifact-a/` and `artifact-b/` folders. Do not include `run-metadata.md`, role reports, process appendices, branch names, or commit SHAs until Layer 2 and Layer 3 scoring.
+For blind Layer 1 scoring, copy only the final HTML artifact (`demo-output/prototype/index.html`) and meeting-ready recommendation into neutral `artifact-a/` and `artifact-b/` folders. Do not include candidate artifacts, `run-metadata.md`, role reports, process appendices, branch names, or commit SHAs until Layer 2 and Layer 3 scoring.
 
 Before scoring, run a quick scan on the blind artifacts for origin-identifying terms and ungrounded operational promises such as static wait times, credit expiration windows, eligibility guarantees, hotel names, voucher amounts, phone numbers, or compensation rules not present in the brief. Treat those as constraint risks; if they appear in the candidate output, promotion is blocked until fixed and rerun.
 
@@ -107,14 +107,18 @@ Use `11-evaluation-system.md` for improvement-loop decisions. Use `05-scorecard.
 - Token usage when available
 - Number of teammate handoffs that changed the output
 - Number of visible debates with preserved dissent
+- Number of full candidate artifacts compared before final
 - Accessibility blockers caught
 - Behavioral/trust risks caught
-- Visual distinctiveness score
+- Visual presentation craft score
+- Interaction/product craft score
+- Accessibility/trust/render robustness score
 - Human edits needed before sharing
 
 Promotion rule:
 
-- Promote a system change only when it improves at least two high-value criteria without materially worsening visual craft or time-to-useful-draft.
+- Promote a system change only when it improves at least two high-value criteria without losing to the baseline on visual presentation craft or materially worsening time-to-useful-draft.
+- If the team wins on interaction or robustness but loses visually, hold or split the change and run another visual-authoring iteration.
 - If the team only produces more text, do not promote the change.
 - If the single agent produces the better visual artifact, keep that finding. Improve the team pattern instead of burying the result.
 

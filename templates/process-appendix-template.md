@@ -16,6 +16,19 @@ Use this for material that proves the team earned its decision, but would slow d
 | Accessibility Specialist |  |  |
 | Devil's Advocate |  |  |
 
+## Candidate Artifacts And Selection Rationale
+
+| Candidate | Distinct strategy | Visual strength | Product/interaction strength | Accessibility/trust risk |
+|---|---|---|---|---|
+| A |  |  |  |  |
+| B |  |  |  |  |
+
+Selected base candidate:
+
+Strongest borrowed element:
+
+Preserved candidate-level dissent:
+
 ## Handoffs That Changed The Answer
 
 | Handoff | What changed in the artifact | Why it mattered |

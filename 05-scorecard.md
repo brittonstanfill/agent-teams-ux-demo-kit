@@ -19,9 +19,12 @@ Score each item 0 to 3.
 | Separates observations from assumptions |  |  |  |
 | Produces a coherent flow |  |  |  |
 | **Authored a visually distinctive artifact** |  |  | New row. Score on craft, not on count. |
+| **Interaction/product craft** |  |  | Score states, affordances, controls, recovery paths, and responsive behavior separately from visual presentation. |
+| **Accessibility/trust/render robustness** |  |  | Score executed accessibility, visible refund/support paths, honest uncertainty, and no clipping or masking as one hard-floor bucket. |
 | Improves labels and content |  |  |  |
 | Catches accessibility blockers (WCAG-cited) |  |  |  |
 | Identifies ethical / behavioral risks (mechanism-named) |  |  |  |
+| Creates competing full artifacts early |  |  | Candidates should differ in structure/presentation/choice architecture, not just styling. |
 | Resolves role conflicts / surfaces debates |  |  |  |
 | Gives concrete screen-level recommendations |  |  |  |
 | Defines a useful experiment plan |  |  |  |
@@ -41,6 +44,7 @@ Record these if you can:
 | Number of contradictions caught |  |  |
 | Number of role handoffs that changed output |  |  |
 | Number of visible debates with preserved dissent |  |  |
+| Number of full candidate artifacts compared before final |  |  |
 | Human edits needed before sharing |  |  |
 | Clean-room checks passed |  |  |
 
@@ -48,7 +52,9 @@ Record these if you can:
 
 The team earns its cost when it does at least two of these:
 
+- Produces visual presentation that at least ties the single-agent baseline while improving the product decision.
 - Finds issues the single agent missed (specifically: cites WCAG criteria by number, names behavioral mechanisms, identifies dark patterns by type).
+- Uses competing full artifacts to create a stronger final, not just more artifacts to review.
 - Produces a better flow because roles challenged each other (handoffs visibly changed decisions; dissent preserved).
 - Catches accessibility or trust risks before synthesis.
 - Makes disagreements visible and resolves them — with the dissenting position preserved, not erased.
@@ -84,7 +90,7 @@ These don't compound — they belong to one author. A team can refine them but r
 ### How to use this in the demo
 
 1. Run the single-agent baseline (`03-`) — note it now ships HTML, not just a doc.
-2. Run the team (`02-` for relay-with-debate, `09-` for parallel-author).
+2. Run the compact team (`13-`) for the current recommended path. Use `02-` or `09-` only when intentionally comparing older patterns.
 3. Score both honestly with the rubric above.
 4. End the demo with the "team wins on / single wins on" comparison. Show the audience *where the team earned its cost* and *where the single agent held its own*.
 
