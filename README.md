@@ -2,6 +2,10 @@
 
 A meeting-ready kit for showing — and actually using — Claude Code's agent-teams feature with a team of specialist UX agents.
 
+**New here? Start with [`START_HERE.md`](START_HERE.md).** It explains the current recommended prompt, where to review the latest sealed output, and why several experiment branches are intentionally left unmerged.
+
+**Current default workflow:** clean-room baseline with `03-single-agent-baseline-prompt.md`, compact team with `13-four-role-agent-team-prompt.md`, then score with `11-evaluation-system.md`.
+
 The kit ships:
 
 - **9 Claude Code subagents** representing distinct UX disciplines plus a Creative Director (researcher, IA, interaction, content, visual, accessibility, behavioral scientist, devil's advocate, creative director). Each is an opinionated, named specialist with an artifact spec and stances for debating teammates.
@@ -74,7 +78,7 @@ A good demo names both. The scorecard in `05-scorecard.md` is built around the "
 
 - `demo-inputs/northstar-canceled-flight-brief.md` — the artifact the agents review
 - `templates/` — optional role-report and final-recommendation templates
-- `demo-output/` — sample outputs from past runs
+- `demo-output/` — empty workspace for generated outputs on `main`; sealed run outputs live on experiment branches
 
 #### A worked example
 
