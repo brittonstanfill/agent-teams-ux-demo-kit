@@ -171,6 +171,7 @@ Run these before, during, and after each loop. The point is to avoid grounding t
 - **Code-only visual scoring:** HTML that looks semantically careful can still clip, overflow, or break in a small viewport. Render it.
 - **Masked overflow:** `overflow-x: hidden` can make `scrollWidth` look clean while clipping a layout bug. If the page uses global horizontal clipping, run a no-mask overflow check before passing the render floor.
 - **Top-level pass illusion:** a page can have `scrollWidth <= clientWidth` while text or placeholder tokens escape inside a phone mockup, table, card, or other fixed-format container. Treat visible internal clipping as a render-floor failure, not as a cosmetic note.
+- **Proof-loop displacement:** exhaustive render proof before the audit/revision pass can burn time on markup that will change anyway. Prefer a quick author sanity check before audits, then one lead-owned exhaustive proof after revisions.
 - **Process blindness:** a good prototype can hide unsafe assumptions or missing edge cases.
 - **Aesthetic overcorrection:** after a generic team artifact, the next run may chase distinctiveness and lose clarity.
 - **Single-scenario overfitting:** one Northstar result is useful signal, not proof. Promote cautiously.

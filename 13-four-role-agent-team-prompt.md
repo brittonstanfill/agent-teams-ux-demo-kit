@@ -50,7 +50,7 @@ Required handoffs:
 - Information Architect -> Visual Designer: screen sequence, primary decision per screen, content hierarchy, copy constraints, and scoped gaps.
 - Accessibility Specialist -> Visual Designer: blockers that must change the HTML.
 - Behavioral Scientist -> Visual Designer and lead: trust risks that must change copy, hierarchy, or instrumentation.
-- Visual Designer -> lead: list of audit fixes applied, any fixes deliberately rejected, and a viewport-fit note for the final HTML.
+- Visual Designer -> lead: list of audit fixes applied, any fixes deliberately rejected, and a quick viewport-fit note for the final HTML. The Visual Designer should do enough local sanity checking to catch obvious clipping before handoff, but the exhaustive top-level, fixed-container, long-token, and no-mask render proof is lead-owned after audits and revision. Do not spend a long pre-audit proof loop unless the prototype is visibly broken.
 
 Red-team checklist the lead must run personally:
 - What is the strongest opposing design that does not use this flow?
