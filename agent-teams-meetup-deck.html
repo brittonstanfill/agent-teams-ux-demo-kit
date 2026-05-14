@@ -465,6 +465,61 @@
     transition: width 0.3s ease;
   }
 
+  /* Copyable prompt cards */
+  .prompt-card {
+    position: relative;
+    background: #0e1117;
+    color: #e6e6e6;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 22px 24px 22px;
+    margin-top: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(11px, 0.95vw, 13px);
+    line-height: 1.55;
+    max-height: 62vh;
+    overflow: auto;
+    white-space: pre-wrap;
+    text-align: left;
+  }
+  .slide:not(.dark) .prompt-card {
+    background: #1d1f23;
+  }
+  .prompt-card .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.08);
+    color: #e6e6e6;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    z-index: 2;
+  }
+  .prompt-card .copy-btn:hover {
+    background: rgba(255,255,255,0.18);
+  }
+  .prompt-card .copy-btn.copied {
+    background: #b8bb26;
+    color: #1d2021;
+    border-color: #b8bb26;
+  }
+  .prompt-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  .slide.dark .prompt-meta { color: rgba(255,255,255,0.55); }
+
   /* Notes panel */
   .notes-panel {
     position: fixed;
@@ -1294,7 +1349,7 @@
           <div>
             <div class="num">01</div>
             <div class="t">Horizontal context</div>
-            <div class="d">The work doesn't fit in one 200k window. Five teammates at 50% beat one session at 90%.</div>
+            <div class="d">The work doesn't fit in one window — even a 1M one. Five teammates at 50% beat one session at 90%.</div>
           </div>
         </div>
         <div class="card-num leg-card">
@@ -1595,6 +1650,43 @@
     </div>
   </section>
 
+  <!-- SLIDE 6.5 — Team size ceiling -->
+  <section class="slide" data-title="Team size">
+    <div class="stack" style="max-width: 1400px;">
+      <div class="eyebrow-row">
+        <div class="eyebrow">More teammates isn't free</div>
+      </div>
+      <p class="pullquote" style="margin-top: 24px;">
+        Communication channels grow as <span class="mono" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">n(n−1)/2</span> — exponentially, not linearly. The same math that breaks human meetings breaks agent teams.
+      </p>
+      <div class="cols-3" style="margin-top: 48px;">
+        <div class="tip">
+          <div class="n">3</div>
+          <div class="t">3 channels</div>
+          <div class="d">A specialist, a challenger, and a lead. Everyone tracks everyone. This is the sweet spot.</div>
+        </div>
+        <div class="tip">
+          <div class="n">15</div>
+          <div class="t">6 teammates → 15 channels</div>
+          <div class="d">Still workable, but you're now paying real reconciliation cost. The <code class="mono" style="font-size: 12px;">07-</code> debate prompt sits here on purpose.</div>
+        </div>
+        <div class="tip">
+          <div class="n">45</div>
+          <div class="t">10 teammates → 45 channels</div>
+          <div class="d">Groupthink, dropped threads, drift. Beyond ~8 you're paying for coordination, not coverage.</div>
+        </div>
+      </div>
+      <div class="caption" style="margin-top: 32px;">
+        The "rule of 7" from meeting research applies here too: 5–8 teammates for decisions, fewer is better. Add lenses, not headcount.
+      </div>
+    </div>
+    <div class="notes" hidden>
+      <p>This is the counterweight to the agent-team hype. Adding agents has the same n(n−1)/2 cost curve as adding people to a meeting — Brooks's law, basically.</p>
+      <p>Land the takeaway: the <code>07-</code> debate prompt deliberately caps at 3–4 specialists + devil's advocate. That's 4–5 teammates, ~10 channels. Resist the urge to spawn all 8 agents at once.</p>
+      <p>If asked "why not just run all 8 UX agents?" — that's 28 channels. The disagreement stops being signal and starts being noise.</p>
+    </div>
+  </section>
+
   <!-- SLIDE 7 — Setup (five-step) -->
   <section class="slide" data-title="Setup">
     <div class="stack" style="max-width: 1500px;">
@@ -1763,7 +1855,7 @@
             Four teammates running in parallel = four streams of output. Splitting into panes lets you watch the debate happen instead of scrolling backwards trying to reconstruct it.
           </div>
 
-          <div class="tmux-section-label">The six commands you need</div>
+          <div class="tmux-section-label">The seven commands you need</div>
           <div class="tmux-cmds">
             <div class="cmd-row">
               <div class="cmd-key">brew install tmux</div>
@@ -1771,7 +1863,11 @@
             </div>
             <div class="cmd-row">
               <div class="cmd-key">tmux new -s teams</div>
-              <div class="cmd-desc">Start a session named <em>teams</em>. Run <code style="font-family:'JetBrains Mono',monospace;">claude</code> inside.</div>
+              <div class="cmd-desc">Start a session named <em>teams</em>. Run <code style="font-family:'JetBrains Mono',monospace;">claude</code> inside. Works in <em>any</em> terminal.</div>
+            </div>
+            <div class="cmd-row">
+              <div class="cmd-key">tmux -CC attach -t teams</div>
+              <div class="cmd-desc"><strong>iTerm2 only.</strong> Renders each pane as a native iTerm2 tab/split — real scrollback, search, copy/paste. Same tmux server underneath.</div>
             </div>
             <div class="cmd-row">
               <div class="cmd-key"><kbd>Ctrl-b</kbd> <kbd>"</kbd> &nbsp; <kbd>Ctrl-b</kbd> <kbd>%</kbd></div>
@@ -1790,6 +1886,13 @@
               <div class="cmd-desc">Reattach. Everything is exactly where you left it.</div>
             </div>
           </div>
+
+          <div class="tmux-section-label" style="margin-top: 18px;">-CC vs plain — when to pick which</div>
+          <div class="body" style="color: rgba(255,255,255,0.8); font-size: 14px; line-height: 1.55;">
+            <strong style="color:#fff;">tmux -CC</strong> — iTerm2 only. Native windows on a projector, easy scrollback, best for the live demo or screen recording. Loses the visual when you switch terminals or SSH out.<br/>
+            <strong style="color:#fff;">tmux new -s</strong> — works <em>everywhere</em> (Terminal.app, Ghostty, Alacritty, Warp, over SSH). Durable detach/reattach across hours or days. The canonical setup the Claude Code agent-teams docs assume.<br/>
+            Both talk to the same tmux server — <code style="font-family:'JetBrains Mono',monospace;">-CC</code> is purely an iTerm2 rendering layer over it. <em>Meetup demo on a Mac → -CC. Overnight runs or remote work → plain.</em>
+          </div>
         </div>
       </div>
     </div>
@@ -1798,6 +1901,130 @@
       <p>The prefix key is <strong>Ctrl-b</strong> by default. A lot of people remap it to <code>Ctrl-a</code> (matches GNU screen muscle memory). Mention it if anyone asks; don't bring it up unprompted.</p>
       <p>If split-pane mode isn't cooperating during the live demo, you can fall back to a single terminal with `claude` in in-process mode — the team still works, you just narrate instead of letting the audience see all four at once. Don't burn time troubleshooting tmux on stage.</p>
       <p>On macOS: <code>brew install tmux</code>. On Ubuntu/Debian: <code>sudo apt install tmux</code>. Iterm2 and Ghostty both have native split panes too, but tmux is the one that lets the session survive a disconnect — handy when your meetup wifi drops.</p>
+      <p><strong>-CC vs plain:</strong> <code>tmux -CC</code> is iTerm2's Control Mode — iTerm2 becomes the tmux client and renders each pane as a real OS-level tab or split, with native scrollback, search, mouse, and themes. Best for the live meetup (Mac + iTerm2 + projector) and for screen recordings. Plain <code>tmux new -s teams</code> works in any terminal and survives disconnects, so it's the right call for SSH, overnight runs, or anything you need to reattach to hours later. Both connect to the same tmux server — <code>-CC</code> is purely an iTerm2 rendering layer over it. Claude Code's <code>teammateMode: "tmux"</code> doesn't care which mode you use.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 8.5 — Baseline prompt (single agent) -->
+  <section class="slide" data-title="Baseline prompt">
+    <div class="stack" style="max-width: 1500px;">
+      <div class="eyebrow-row">
+        <div class="eyebrow">Prompt A · the baseline</div>
+        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">03-single-agent-baseline-prompt.md</div>
+      </div>
+      <div class="h1" style="max-width: 1200px; line-height: 1.1;">
+        One session. <span style="color: var(--muted); font-weight: 500;">Seven disciplines crammed into one head.</span>
+      </div>
+      <div class="prompt-meta">Run this first to set the comparison floor.</div>
+      <div class="prompt-card">
+<button class="copy-btn" data-copy-target="prompt-baseline" type="button">Copy</button>
+<code id="prompt-baseline">Review the canceled-flight recovery experience in:
+
+Agent Teams UX Demo Kit/demo-inputs/northstar-canceled-flight-brief.md
+
+Create a meeting-ready recommendation for improving the experience. Cover UX research, information architecture, interaction design, UX writing, accessibility, visual/UI design, and behavioral science.
+
+Write the result to:
+Agent Teams UX Demo Kit/demo-output/single-agent-baseline.md
+
+Include:
+1. Executive recommendation
+2. Redesigned flow in 5 screens or fewer
+3. Main issues found
+4. Recommended copy
+5. Accessibility and trust risks
+6. Experiment plan
+
+Label assumptions. Do not invent metrics or user quotes.</code>
+      </div>
+    </div>
+    <div class="notes" hidden>
+      <p>Run this first. It produces a competent, generic recommendation — exactly the kind of output people accept because they don't have a better one to compare against.</p>
+      <p>Resist the urge to defend it. The point is to show what "one session juggling seven lenses" looks like before the team version makes it look thin.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 8.6 — Team prompt -->
+  <section class="slide" data-title="Team prompt">
+    <div class="stack" style="max-width: 1500px;">
+      <div class="eyebrow-row">
+        <div class="eyebrow">Prompt B · the team</div>
+        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">02-master-agent-team-prompt.md</div>
+      </div>
+      <div class="h1" style="max-width: 1200px; line-height: 1.1;">
+        Seven teammates. <span style="color: var(--muted); font-weight: 500;">Named owners, named handoffs, named output.</span>
+      </div>
+      <div class="prompt-meta">Same brief. Same deliverable shape. Compare the two outputs side-by-side.</div>
+      <div class="prompt-card">
+<button class="copy-btn" data-copy-target="prompt-team" type="button">Copy</button>
+<code id="prompt-team">Create an agent team named "Northstar UX Recovery Team" to redesign the canceled-flight recovery experience described in:
+
+Agent Teams UX Demo Kit/demo-inputs/northstar-canceled-flight-brief.md
+
+Use these seven teammates. If matching subagent definitions are available, use them. Otherwise create teammates with these roles and instructions:
+
+1. UX Researcher
+2. Information Architect
+3. Interaction Designer
+4. Content Designer / UX Writer
+5. Accessibility Specialist
+6. Visual / UI Designer
+7. Behavioral Scientist
+
+Goal:
+Create a meeting-ready recommendation for a better canceled-flight recovery flow. The output should show how the team improved the product decision through role-specific analysis and teammate communication.
+
+Working rules:
+- Each teammate owns one file in `Agent Teams UX Demo Kit/demo-output/role-reports/`.
+- No teammate should edit another teammate's role report.
+- The lead owns the final synthesis file: `Agent Teams UX Demo Kit/demo-output/final-recommendation.md`.
+- Label every major claim as one of: observed from brief, inferred, assumption, or recommendation.
+- Do not invent research data, metrics, laws, airline policies, or user quotes.
+- Make the teammate messages visible in the final recommendation.
+
+Required role outputs:
+- UX Researcher: user needs, emotional state, research questions, assumptions to validate.
+- Information Architect: revised flow structure, content hierarchy, decision points, navigation labels.
+- Interaction Designer: step-by-step interaction model, states, error recovery, handoff moments.
+- Content Designer / UX Writer: screen-level copy, notification copy, plain-language guidance, tone rules.
+- Accessibility Specialist: blockers, WCAG-style concerns, assistive tech implications, inclusive design fixes.
+- Visual / UI Designer: layout direction, hierarchy, component suggestions, visual system notes.
+- Behavioral Scientist: trust risks, choice architecture, ethical nudges, experiment ideas.
+
+Required peer handoffs:
+- UX Researcher must message Information Architect and Content Designer with top user needs.
+- Information Architect must message Interaction Designer and Content Designer with the proposed flow model.
+- Interaction Designer must message Accessibility Specialist and Visual/UI Designer with proposed states.
+- Accessibility Specialist must message Interaction Designer, Visual/UI Designer, and Content Designer with blockers.
+- Behavioral Scientist must message Content Designer and Interaction Designer with ethical choice-architecture risks.
+- Visual/UI Designer must message Accessibility Specialist before finalizing the UI direction.
+- Content Designer must message Information Architect and Accessibility Specialist before finalizing copy.
+
+Synthesis requirements:
+Before writing the final recommendation, the lead should show:
+1. Top 3 findings from each teammate.
+2. The most important disagreement or tension.
+3. Which teammate message changed another teammate's recommendation.
+
+Final deliverable:
+Write `Agent Teams UX Demo Kit/demo-output/final-recommendation.md` with these sections:
+
+1. Executive recommendation
+2. Redesigned flow in 5 screens or fewer
+3. What each role contributed
+4. Cross-agent handoffs that changed the answer
+5. Key tradeoffs and rejected alternatives
+6. Accessibility and trust guardrails
+7. Experiment plan
+8. Scorecard-ready comparison against a single-agent baseline
+
+Keep the final synthesis crisp and meeting-ready.</code>
+      </div>
+    </div>
+    <div class="notes" hidden>
+      <p>Same brief, same deliverable shape — the only thing that changes is the collaboration model. That's what makes the comparison honest.</p>
+      <p>The named peer handoffs are the load-bearing part of this prompt. Without them you get parallel monologues, not a team.</p>
+      <p>Click the Copy button (top right of the prompt card) to drop straight into Claude Code.</p>
     </div>
   </section>
 
@@ -2257,6 +2484,91 @@
     </div>
   </section>
 
+  <!-- SLIDE 18 — tb-features divider -->
+  <section class="slide dark" data-title="tb-features">
+    <div class="stack" style="max-width: 1400px; text-align: center;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: clamp(72px, 12vw, 180px); letter-spacing: -0.04em; line-height: 1;">
+        tb-features
+      </div>
+    </div>
+    <div class="notes" hidden>
+      <p>Section divider. The next slide is the bonus computer-use watchdog prompt.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 19 — Bonus prompt: computer-use watchdog -->
+  <section class="slide" data-title="Watchdog prompt">
+    <div class="stack" style="max-width: 1500px;">
+      <div class="eyebrow-row">
+        <div class="eyebrow">Bonus · computer-use watchdog</div>
+        <div class="muted mono" style="font-size: 12px; letter-spacing: 0.08em;">paste into Codex / Claude computer use</div>
+      </div>
+      <div class="h1" style="max-width: 1200px; line-height: 1.1;">
+        Keep the team unblocked <span style="color: var(--muted); font-weight: 500;">while you're away from the keyboard.</span>
+      </div>
+      <div class="prompt-meta">Runs every 5 minutes. Watches the tmux session, approves safe prompts, nudges stalled agents, escalates anything risky.</div>
+      <div class="prompt-card">
+<button class="copy-btn" data-copy-target="prompt-watchdog" type="button">Copy</button>
+<code id="prompt-watchdog">You are a watchdog operator for a Claude Code agent team running in a tmux session. Your job is to keep the team unblocked while a human is away. You can see the screen and use mouse + keyboard.
+
+Loop every 5 minutes. Each cycle:
+
+1. Take a screenshot of the active terminal window. If the team is running in tmux, capture each visible pane.
+
+2. Classify each agent pane into exactly one state:
+   - WORKING — tokens streaming, file edits visible, output changed in the last 60s
+   - WAITING — explicit "waiting for X" or "needs decision from Y" in the last 20 lines
+   - PROMPTED — a permission prompt is on screen (Yes/No, Allow/Deny, 1/2/3)
+   - IDLE — no output change for more than 10 minutes AND no pending question
+   - DONE — explicit completion message ("done", "finished", "wrote final-recommendation.md")
+   - ERROR — visible exception, "session expired", red error text, or "rate limit"
+
+3. Take exactly ONE action per pane, in this order of preference:
+   - WORKING or DONE → do nothing.
+   - PROMPTED → if the prompt matches the allowlist below, click the approve option. Otherwise, leave it untouched and append to watchdog.log: "HUMAN NEEDED <pane-name> <prompt-text>".
+   - WAITING → if the named dependency is in DONE state, click into the waiting pane and type a one-line nudge: "@<dependent agent> has finished — see <path>; please proceed." then Enter.
+   - IDLE → click into the pane and type: "Status check: are you blocked? If yes, name the blocker and tag the right teammate. If no, continue with your current task." then Enter.
+   - ERROR → capture the last 30 lines to watchdog.log. Do NOT auto-restart. Mark as HUMAN NEEDED.
+
+4. Allowlist — auto-approve ONLY these prompt types:
+   - read access to any path under the project working directory
+   - bash: ls, cat, head, tail, grep, rg, find, git status, git diff, git log, npm test, npm run *, pytest, python -m pytest
+   - file writes inside the project's outputs/ or demo-output/ directory
+   Anything else → HUMAN NEEDED.
+
+5. Hard stops — do NOT act, escalate immediately, and pause the loop:
+   - any prompt containing: rm, sudo, git push, git reset, --force, drop, delete, DROP TABLE
+   - any pane showing "rate limit", "usage limit", "billing", "quota exceeded"
+   - more than 2 panes in ERROR simultaneously
+   - any prompt asking for credentials, API keys, or 2FA codes
+
+6. After each cycle, append one status row to watchdog.log:
+   [ISO-8601 timestamp] WORKING=N WAITING=N IDLE=N PROMPTED=N DONE=N ERROR=N acted=N escalated=N
+
+7. Stop the loop when ANY of these is true:
+   - all panes are DONE
+   - the HUMAN NEEDED list is non-empty for two consecutive cycles
+   - a pane shows the literal text STOP-WATCHDOG
+   - you have run 24 cycles (2 hours total)
+
+Rules you never break:
+- Never edit code files yourself. You only observe and send short messages.
+- Never approve a prompt outside the allowlist.
+- Never restart a session, never run claude --resume, never kill a pane.
+- If you are uncertain about a state classification, choose the more conservative one (treat WAITING as PROMPTED, treat PROMPTED as HUMAN NEEDED).
+- One action per pane per cycle. If two actions seem warranted, take the safer one and log the other as a suggestion.
+
+Begin the first cycle now. Report what you observed and what you did before sleeping until the next cycle.</code>
+      </div>
+    </div>
+    <div class="notes" hidden>
+      <p>This is for the "overnight run" scenario. Drop the prompt into Codex with computer-use enabled, or into Claude's computer-use tool, point it at the tmux session, and walk away.</p>
+      <p>The allowlist and hard-stop sections are the load-bearing part. Without them you've built a footgun — a computer-use model that will happily approve a <code>git push --force</code> at 3am.</p>
+      <p>The 24-cycle cap is the soft kill switch. If the team can't finish in 2 hours of watchdog babysitting, the team itself is the problem.</p>
+      <p>Honest framing: this is a workaround for the fact that agent teams can stall on permission prompts. Better long-term answer is to pre-approve permissions in <code>.claude/settings.json</code> (see Tip 1). The watchdog is for the cases the pre-approval list doesn't cover.</p>
+    </div>
+  </section>
+
 </div>
 
 <div class="hud">
@@ -2365,10 +2677,47 @@
     }
   });
 
-  // Click to advance — but ignore clicks on links and the notes panel
+  // Click to advance — but ignore clicks on links, the notes panel, and copy buttons / prompt cards
   document.addEventListener('click', function (e) {
-    if (e.target.closest('a, .notes-panel, .help')) return;
+    if (e.target.closest('a, .notes-panel, .help, .copy-btn, .prompt-card')) return;
     next();
+  });
+
+  // Copy buttons on prompt cards
+  document.querySelectorAll('.copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var targetId = btn.getAttribute('data-copy-target');
+      var node = document.getElementById(targetId);
+      if (!node) return;
+      var text = node.innerText;
+      var done = function () {
+        var original = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); done(); } catch (err) {}
+          document.body.removeChild(ta);
+        });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (err) {}
+        document.body.removeChild(ta);
+      }
+    });
   });
 
   // Initial
