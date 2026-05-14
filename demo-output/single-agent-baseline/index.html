@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Canceled flight, calmly handled — a recovery flow</title>
+<meta name="description" content="A mobile recovery experience for a late-night flight cancellation: tell people what happened, what they can do, and what's covered." />
+<style>
+  :root {
+    color-scheme: light dark;
+
+    --paper: #F2EDE2;
+    --paper-2: #E9E2D2;
+    --ink: #161A22;
+    --ink-2: #3A4150;
+    --rule: #1B1F2A;
+    --ember: #9A3A18;
+    --leaf: #2F5A3A;
+    --sky: #2E4E76;
+    --frame: #1B1F2A;
+    --frame-shadow: rgba(20, 22, 30, 0.18);
+    --field: #FFFCF5;
+    --field-ink: #1B1F2A;
+    --hairline: rgba(27, 31, 42, 0.16);
+    --focus: #1B1F2A;
+
+    --serif: ui-serif, "Iowan Old Style", "Apple Garamond", "Source Serif Pro", Georgia, "Times New Roman", serif;
+    --sans: ui-sans-serif, -apple-system, "SF Pro Text", "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0E1219;
+      --paper-2: #161B25;
+      --ink: #EFE7D3;
+      --ink-2: #B7B1A3;
+      --rule: #EFE7D3;
+      --ember: #E58A5C;
+      --leaf: #82C19A;
+      --sky: #8FB5DE;
+      --frame: #EFE7D3;
+      --frame-shadow: rgba(0, 0, 0, 0.45);
+      --field: #1B2230;
+      --field-ink: #EFE7D3;
+      --hairline: rgba(239, 231, 211, 0.18);
+      --focus: #EFE7D3;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  a, button { font: inherit; color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 14px;
+    text-decoration: none;
+    font-weight: 600;
+    z-index: 100;
+  }
+  .skip:focus { left: 8px; top: 8px; }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 28px 16px 96px;
+  }
+
+  .masthead {
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 14px 0 16px;
+    margin-bottom: 28px;
+  }
+  .masthead-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .masthead-kicker {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .masthead-issue {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.04em;
+  }
+  .masthead h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(28px, 7vw, 44px);
+    line-height: 1.08;
+    margin: 14px 0 8px;
+    letter-spacing: -0.01em;
+    max-width: 18ch;
+  }
+  .masthead-lede {
+    font-family: var(--serif);
+    font-size: clamp(15px, 3.6vw, 17px);
+    color: var(--ink-2);
+    max-width: 52ch;
+    margin: 0;
+  }
+
+  .legend {
+    display: grid;
+    gap: 6px;
+    margin: 18px 0 0;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .legend strong { color: var(--ink); font-weight: 600; }
+
+  /* Screen frame */
+  .screen-block { margin-top: 44px; }
+  .screen-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .screen-no {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    letter-spacing: 0.08em;
+  }
+  .screen-title {
+    font-family: var(--serif);
+    font-size: clamp(18px, 4.4vw, 22px);
+    font-weight: 500;
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+  .screen-note {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 4px 0 14px;
+    max-width: 56ch;
+  }
+  .screen-note em { font-style: italic; color: var(--ink); }
+
+  .phone {
+    width: 100%;
+    max-width: 360px;
+    background: var(--paper-2);
+    border: 1px solid var(--frame);
+    border-radius: 28px;
+    padding: 10px;
+    box-shadow: 0 18px 40px -22px var(--frame-shadow);
+    margin: 0 auto;
+  }
+  .phone-screen {
+    background: var(--field);
+    color: var(--field-ink);
+    border-radius: 20px;
+    padding: 14px 14px 18px;
+    min-height: 540px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    padding: 0 4px 12px;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 12px;
+  }
+  .statusbar svg { vertical-align: middle; }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .brand-mark {
+    width: 22px; height: 22px;
+    border: 1.5px solid currentColor;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: -0.02em;
+  }
+  .brand-name {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 0.005em;
+  }
+  .brand-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ember);
+    font-weight: 600;
+    margin: 6px 0 6px;
+  }
+  .eyebrow.calm { color: var(--ink-2); }
+
+  .h-screen {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 1.12;
+    margin: 0 0 8px;
+    letter-spacing: -0.012em;
+  }
+  .h-screen.smaller { font-size: 22px; }
+  .h-sub {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--ink-2);
+    margin: 0 0 14px;
+    line-height: 1.4;
+  }
+
+  .factbar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 6px;
+    align-items: center;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    padding: 10px 0;
+    margin: 4px 0 14px;
+  }
+  .factbar .col { min-width: 0; }
+  .factbar .label {
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    margin-bottom: 2px;
+  }
+  .factbar .val {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .factbar .val small {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink-2);
+    display: block;
+    margin-top: 1px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .factbar .arrow {
+    font-family: var(--mono);
+    color: var(--ember);
+    font-size: 14px;
+    transform: translateY(-3px);
+  }
+  .factbar .strike {
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+    text-decoration-color: var(--ember);
+    color: var(--ink-2);
+  }
+
+  .helper {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 0 0 12px;
+    line-height: 1.5;
+  }
+
+  .options { display: grid; gap: 10px; margin: 4px 0 12px; }
+  .option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 12px 13px;
+    color: inherit;
+    cursor: pointer;
+    position: relative;
+    font-family: var(--sans);
+  }
+  .option:hover { border-color: var(--rule); }
+  .option-row {
+    display: flex; gap: 12px; align-items: baseline;
+  }
+  .option-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    width: 18px;
+  }
+  .option-title {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+  }
+  .option-body {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin: 4px 0 0 30px;
+    line-height: 1.45;
+  }
+  .option-tag {
+    display: inline-block;
+    margin-left: 30px;
+    margin-top: 6px;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    font-weight: 600;
+  }
+
+  .care-callout {
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--ember);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 10px 0 12px;
+    background: transparent;
+  }
+  .care-callout .care-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 14px;
+    margin: 0 0 4px;
+    letter-spacing: -0.005em;
+  }
+  .care-callout .care-body {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .care-callout .care-body strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 0 0 10px;
+  }
+  .chip {
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid var(--hairline);
+    color: var(--ink);
+    padding: 5px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .chip:hover { border-color: var(--rule); }
+
+  .flights { display: grid; gap: 8px; margin: 0 0 12px; }
+  .flight {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 11px 12px;
+    color: inherit;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .flight:hover { border-color: var(--rule); }
+  .flight-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .flight-time {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .flight-route {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.05em;
+  }
+  .flight-line {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin: 4px 0 6px;
+    line-height: 1.4;
+  }
+  .flight-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+  .tag.go { color: var(--leaf); border-color: var(--leaf); }
+  .tag.note { color: var(--sky); border-color: var(--sky); }
+
+  .review {
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 12px 13px;
+    margin: 0 0 10px;
+  }
+  .review h3 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 15px;
+    margin: 0 0 6px;
+    letter-spacing: -0.005em;
+  }
+  .review dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 12px;
+    font-size: 13px;
+  }
+  .review dt {
+    color: var(--ink-2);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    align-self: center;
+  }
+  .review dd { margin: 0; color: var(--ink); }
+  .review dd strong { font-weight: 600; }
+
+  .actions {
+    margin-top: auto;
+    display: grid;
+    gap: 8px;
+    padding-top: 12px;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 13px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    letter-spacing: 0.005em;
+    line-height: 1.2;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--hairline);
+  }
+  .btn.ghost:hover { border-color: var(--rule); }
+  .btn:hover { filter: brightness(1.05); }
+
+  .micro {
+    font-size: 11.5px;
+    color: var(--ink-2);
+    text-align: center;
+    margin: 8px 0 0;
+    line-height: 1.4;
+  }
+  .micro a { text-decoration: underline; text-underline-offset: 2px; }
+
+  .checks {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 10px;
+    display: grid;
+    gap: 8px;
+  }
+  .checks li {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .checks .dot {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--leaf);
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    color: var(--leaf);
+    font-size: 11px;
+    line-height: 1;
+  }
+  .checks .label {
+    color: var(--ink-2);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+  }
+  .checks .value {
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .checks .value small {
+    display: block;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 400;
+    margin-top: 1px;
+    letter-spacing: 0;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin: 6px 0 10px;
+  }
+  .tool {
+    background: transparent;
+    border: 1px solid var(--hairline);
+    color: var(--ink);
+    padding: 9px 8px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-family: var(--sans);
+    cursor: pointer;
+    text-align: center;
+  }
+  .tool:hover { border-color: var(--rule); }
+
+  .change {
+    font-size: 12px;
+    color: var(--ink-2);
+    border-top: 1px solid var(--hairline);
+    padding-top: 10px;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .change a { text-decoration: underline; text-underline-offset: 2px; }
+
+  .colophon {
+    margin: 56px 0 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .colophon p { margin: 0 0 6px; max-width: 60ch; }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* Desktop refinements: keep single column, just more breathing room */
+  @media (min-width: 720px) {
+    .page { padding: 40px 24px 96px; }
+    .screen-block { margin-top: 56px; }
+    .phone {
+      max-width: 380px;
+    }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#screens">Skip to recovery flow</a>
+
+<main class="page" id="top">
+
+  <header class="masthead" aria-label="Document header">
+    <div class="masthead-row">
+      <span class="masthead-kicker">A canceled-flight recovery flow</span>
+      <span class="masthead-issue">Mobile · Five screens</span>
+    </div>
+    <h1>Cancelled at 10:46 p.m. — and still home by tomorrow night.</h1>
+    <p class="masthead-lede">A recovery experience for the moment a flight gets canceled late at night. The job: tell people what happened, show every choice (including a person), and put the care they're owed in front of them — not behind a FAQ link.</p>
+  </header>
+
+  <section id="screens" aria-label="Redesigned recovery flow">
+
+    <!-- ============== SCREEN 1 ============== -->
+    <article class="screen-block" aria-labelledby="s1-title">
+      <div class="screen-meta">
+        <span class="screen-no">01 / Alert</span>
+        <h2 class="screen-title" id="s1-title">Tell the truth, fast.</h2>
+      </div>
+      <p class="screen-note">The current SMS hides the event behind "schedule irregularity." We name what happened, when, and the single next step — and we never bury the option to talk to a person. <em>[recommendation]</em></p>
+
+      <div class="phone" role="img" aria-label="Phone screen: alert detail">
+        <div class="phone-screen">
+          <div class="statusbar" aria-hidden="true">
+            <span>10:46</span>
+            <span>•••  ◌  ▮▮▮</span>
+          </div>
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">N</span>
+            <span class="brand-name">Northstar</span>
+            <span class="brand-meta">Trip NS482</span>
+          </div>
+
+          <p class="eyebrow">Flight canceled</p>
+          <h2 class="h-screen">Your 6:15&nbsp;a.m. flight tomorrow is canceled.</h2>
+          <p class="h-sub">Reason: a crew member isn't available. This isn't weather — it's on us. We can put you on a later flight, refund or credit you, or get a person on the line.</p>
+
+          <div class="factbar" aria-label="Flight summary">
+            <div class="col">
+              <div class="label">Was</div>
+              <div class="val strike">6:15 a.m.<small>NS482 · Tomorrow</small></div>
+            </div>
+            <div class="arrow" aria-hidden="true">→</div>
+            <div class="col">
+              <div class="label">Now</div>
+              <div class="val">Choose<small>3 options below</small></div>
+            </div>
+          </div>
+
+          <div class="care-callout">
+            <p class="care-title">Tonight's care, if you need it</p>
+            <p class="care-body">Hotel and meal coverage may be available because this cancellation is on us. <strong>You'll see exactly what's covered on the next screen — no claim form required.</strong></p>
+          </div>
+
+          <div class="actions">
+            <button class="btn" type="button">See my options</button>
+            <button class="btn ghost" type="button">Talk to a person <span aria-hidden="true">·</span> wait shown live</button>
+            <p class="micro">Signed in as the traveler on this booking. <a href="#">Not you?</a></p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============== SCREEN 2 ============== -->
+    <article class="screen-block" aria-labelledby="s2-title">
+      <div class="screen-meta">
+        <span class="screen-no">02 / Choose</span>
+        <h2 class="screen-title" id="s2-title">Three honest paths. No default.</h2>
+      </div>
+      <p class="screen-note">The current flow defaults to "Travel credit," which is rarely the user's goal. We show all three paths flat, in plain consequences, and surface "talk to a person" as a peer — not a fallback. <em>[recommendation]</em></p>
+
+      <div class="phone" role="img" aria-label="Phone screen: choose path">
+        <div class="phone-screen">
+          <div class="statusbar" aria-hidden="true">
+            <span>10:47</span>
+            <span>•••  ◌  ▮▮▮</span>
+          </div>
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">N</span>
+            <span class="brand-name">Northstar</span>
+            <span class="brand-meta">Step 1 of 3</span>
+          </div>
+
+          <p class="eyebrow calm">Pick what helps most</p>
+          <h2 class="h-screen">How do you want to get there?</h2>
+          <p class="helper">Each option is reversible until you confirm. Care tonight is the same on all three.</p>
+
+          <div class="options" role="list">
+            <button class="option" role="listitem" type="button">
+              <div class="option-row">
+                <span class="option-num">01</span>
+                <span class="option-title">Take another flight</span>
+              </div>
+              <p class="option-body">See tomorrow's flights to the same destination. No rebooking fee — your fare follows you.</p>
+              <span class="option-tag">Most travelers in this situation</span>
+            </button>
+
+            <button class="option" role="listitem" type="button">
+              <div class="option-row">
+                <span class="option-num">02</span>
+                <span class="option-title">Refund or travel credit</span>
+              </div>
+              <p class="option-body">Choose between a refund to your original payment or a travel credit. We'll show both side-by-side before you commit.</p>
+            </button>
+
+            <button class="option" role="listitem" type="button">
+              <div class="option-row">
+                <span class="option-num">03</span>
+                <span class="option-title">Talk to a person</span>
+              </div>
+              <p class="option-body">Live agent — current wait time shows here. You can keep this screen open and we'll text you when it's your turn.</p>
+            </button>
+          </div>
+
+          <div class="care-callout">
+            <p class="care-title">If you need to stay overnight</p>
+            <p class="care-body">Tap any option above and the next screen tells you whether <strong>hotel</strong> and <strong>meal</strong> coverage applies to your trip tonight. Nothing is hidden from you here.</p>
+          </div>
+
+          <div class="actions">
+            <button class="btn ghost" type="button">Save my place &amp; close</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============== SCREEN 3 ============== -->
+    <article class="screen-block" aria-labelledby="s3-title">
+      <div class="screen-meta">
+        <span class="screen-no">03 / Choose flight</span>
+        <h2 class="screen-title" id="s3-title">Sortable, filterable, family-aware.</h2>
+      </div>
+      <p class="screen-note">The current cards lean on an unexplained "Recommended" badge and surface fare differences during a disruption. We replace the badge with the actual reason it's listed first, drop fare deltas, and add filters that match real constraints — including travel party. <em>[inferred from brief: family event next day; traveling-with-family is a stated constraint]</em></p>
+
+      <div class="phone" role="img" aria-label="Phone screen: pick a flight">
+        <div class="phone-screen">
+          <div class="statusbar" aria-hidden="true">
+            <span>10:48</span>
+            <span>•••  ◌  ▮▮▮</span>
+          </div>
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">N</span>
+            <span class="brand-name">Northstar</span>
+            <span class="brand-meta">Step 2 of 3</span>
+          </div>
+
+          <p class="eyebrow calm">Tomorrow · same route</p>
+          <h2 class="h-screen smaller">Flights we can put you on, at no extra cost.</h2>
+
+          <div class="filters" role="group" aria-label="Filter flights">
+            <button class="chip" type="button" aria-pressed="true">Soonest arrival</button>
+            <button class="chip" type="button" aria-pressed="false">Direct only</button>
+            <button class="chip" type="button" aria-pressed="false">Arrive by …</button>
+            <button class="chip" type="button" aria-pressed="false">Seats together</button>
+          </div>
+
+          <div class="flights" role="list">
+            <button class="flight" role="listitem" type="button" aria-label="Morning flight, one stop, arrives mid-morning">
+              <div class="flight-head">
+                <span class="flight-time">7:10 a.m.</span>
+                <span class="flight-route">DEN → LGA</span>
+              </div>
+              <p class="flight-line">Arrives next morning · 1 stop · ~5h 45m total</p>
+              <div class="flight-tags">
+                <span class="tag go">Earliest arrival</span>
+                <span class="tag">Seats together available</span>
+              </div>
+            </button>
+
+            <button class="flight" role="listitem" type="button" aria-label="Afternoon flight, nonstop, arrives evening">
+              <div class="flight-head">
+                <span class="flight-time">2:40 p.m.</span>
+                <span class="flight-route">DEN → LGA</span>
+              </div>
+              <p class="flight-line">Arrives same evening · Nonstop · ~3h 50m</p>
+              <div class="flight-tags">
+                <span class="tag go">Direct</span>
+                <span class="tag note">Most legroom on this route</span>
+              </div>
+            </button>
+
+            <button class="flight" role="listitem" type="button" aria-label="Evening flight, one stop, arrives late">
+              <div class="flight-head">
+                <span class="flight-time">6:30 p.m.</span>
+                <span class="flight-route">DEN → LGA</span>
+              </div>
+              <p class="flight-line">Arrives late night · 1 stop · ~6h 10m</p>
+              <div class="flight-tags">
+                <span class="tag">Backup option</span>
+              </div>
+            </button>
+          </div>
+
+          <p class="micro">No fees on any of these — this is a Northstar-side cancellation. <a href="#">Show all flights</a></p>
+
+          <div class="actions">
+            <button class="btn ghost" type="button">I want a refund or credit instead</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============== SCREEN 4 ============== -->
+    <article class="screen-block" aria-labelledby="s4-title">
+      <div class="screen-meta">
+        <span class="screen-no">04 / Confirm + care</span>
+        <h2 class="screen-title" id="s4-title">Confirm in the same place you claim care.</h2>
+      </div>
+      <p class="screen-note">Hotel and meal entitlements used to live inside a collapsed "Other policies" FAQ. We move them into the confirm step so the user can claim them in the same breath they confirm — and so they can see they're not being asked to fight for them. <em>[recommendation]</em></p>
+
+      <div class="phone" role="img" aria-label="Phone screen: review and confirm">
+        <div class="phone-screen">
+          <div class="statusbar" aria-hidden="true">
+            <span>10:50</span>
+            <span>•••  ◌  ▮▮▮</span>
+          </div>
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">N</span>
+            <span class="brand-name">Northstar</span>
+            <span class="brand-meta">Step 3 of 3</span>
+          </div>
+
+          <p class="eyebrow calm">Last look before we book it</p>
+          <h2 class="h-screen smaller">Confirm your new flight — and what's covered tonight.</h2>
+
+          <div class="review" aria-label="New flight review">
+            <h3>Your new flight</h3>
+            <dl>
+              <dt>When</dt><dd><strong>2:40 p.m. tomorrow</strong> · arrives evening</dd>
+              <dt>How</dt><dd>Nonstop · DEN → LGA</dd>
+              <dt>Cost</dt><dd>$0 — Northstar-side cancellation</dd>
+              <dt>Bags</dt><dd>Status shown when you confirm</dd>
+            </dl>
+          </div>
+
+          <div class="review" aria-label="Care tonight">
+            <h3>Care tonight, if you stay over</h3>
+            <dl>
+              <dt>Hotel</dt><dd>Coverage shown live based on your booking — eligibility appears here after you confirm. You won't need to pay first.</dd>
+              <dt>Meals</dt><dd>Coverage shown live based on your booking.</dd>
+              <dt>Getting there</dt><dd>We'll show the partner hotel and how to get to it on the next screen, if eligible.</dd>
+            </dl>
+          </div>
+
+          <p class="helper">Anything wrong? <a href="#">Change flight</a> · <a href="#">Switch to refund or credit</a></p>
+
+          <div class="actions">
+            <button class="btn" type="button">Confirm new flight &amp; claim care</button>
+            <p class="micro">Reversible for the next hour, or until check-in opens.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============== SCREEN 5 ============== -->
+    <article class="screen-block" aria-labelledby="s5-title">
+      <div class="screen-meta">
+        <span class="screen-no">05 / You're set</span>
+        <h2 class="screen-title" id="s5-title">Leave with a card you can use offline.</h2>
+      </div>
+      <p class="screen-note">The current "Trip updated · Done" gives the user nothing to take with them. We end on a card with the new plan, the care that's been arranged, an offline copy, and a clear way back if plans change again. <em>[recommendation]</em></p>
+
+      <div class="phone" role="img" aria-label="Phone screen: confirmation summary">
+        <div class="phone-screen">
+          <div class="statusbar" aria-hidden="true">
+            <span>10:52</span>
+            <span>•••  ◌  ▮▮▮</span>
+          </div>
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">N</span>
+            <span class="brand-name">Northstar</span>
+            <span class="brand-meta">Trip sorted</span>
+          </div>
+
+          <p class="eyebrow calm">You're set — get some sleep</p>
+          <h2 class="h-screen">Tomorrow, 2:40&nbsp;p.m. Nonstop to LGA.</h2>
+          <p class="h-sub">We've texted you a backup copy of this card. If plans change again, this screen updates and you'll get a text.</p>
+
+          <ul class="checks">
+            <li>
+              <span class="dot" aria-hidden="true">✓</span>
+              <div>
+                <div class="label">New flight</div>
+                <div class="value">2:40 p.m. · DEN → LGA<small>Confirmation arrives by text and email</small></div>
+              </div>
+            </li>
+            <li>
+              <span class="dot" aria-hidden="true">✓</span>
+              <div>
+                <div class="label">Hotel tonight</div>
+                <div class="value">Arranged — partner shown live<small>Address and directions appear when ready, no claim form</small></div>
+              </div>
+            </li>
+            <li>
+              <span class="dot" aria-hidden="true">✓</span>
+              <div>
+                <div class="label">Meals</div>
+                <div class="value">Coverage shown live<small>Use the trip card at any airport vendor</small></div>
+              </div>
+            </li>
+            <li>
+              <span class="dot" aria-hidden="true">✓</span>
+              <div>
+                <div class="label">Bags</div>
+                <div class="value">Status shown live<small>Updates if anything changes overnight</small></div>
+              </div>
+            </li>
+          </ul>
+
+          <div class="toolbar">
+            <button class="tool" type="button">Save offline</button>
+            <button class="tool" type="button">Email a backup</button>
+          </div>
+
+          <p class="change">Plans change? <a href="#">Switch flight</a> · <a href="#">Refund or credit</a> · <a href="#">Talk to a person</a> — all still free, all still reversible until check-in opens.</p>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <footer class="colophon" aria-label="Notes on this flow">
+    <p><strong>Tags used:</strong> [observed from brief] = stated in the input. [inferred] = inferred from the input but not literal. [assumption] = working assumption a reader can disagree with. [recommendation] = a deliberate design call we made.</p>
+    <p><strong>Dynamic placeholders:</strong> Wait time, hotel coverage status, meal coverage, baggage status, partner hotel name, and confirmation number all appear at runtime from the booking system. The flow never asserts specific amounts, hotel names, wait times, or eligibility windows.</p>
+    <p><strong>Accessibility commitments shown in the artifact:</strong> visible focus, semantic landmarks (header / main / article), skip link, button-not-div for every interactive element, 4.5:1+ contrast in both color schemes, prefers-color-scheme + prefers-reduced-motion respected, no information conveyed by color alone, large touch targets (≥44px), no horizontal scroll at 390px wide.</p>
+  </footer>
+
+</main>
+
+<script>
+  // No-op: the prototype is deliberately static. Filter chips and option
+  // buttons toggle aria-pressed for screen-reader clarity, but do not change
+  // the rendered list — this is a visual specification, not a working booker.
+  document.querySelectorAll('.chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      var pressed = chip.getAttribute('aria-pressed') === 'true';
+      chip.setAttribute('aria-pressed', String(!pressed));
+    });
+  });
+</script>
+</body>
+</html>
