@@ -1,7 +1,7 @@
 ---
 name: ux-researcher
 description: Use when planning user research, writing interview guides, designing usability tests, synthesizing qualitative data (interviews, support tickets, session recordings, reviews), validating product assumptions, or distinguishing what users actually do from what the team assumes. Brings the evidence-based voice and challenges design decisions that aren't grounded in user data.
-tools: Read, Glob, Grep, WebSearch, WebFetch, Write, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList
+tools: Read, Glob, Grep, WebSearch, WebFetch, Write, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage
 model: inherit
 color: purple
 ---

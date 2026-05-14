@@ -1,7 +1,7 @@
 ---
 name: interaction-designer
 description: Use when designing user flows, state machines, microinteractions, gesture vocabularies, form behavior, multi-step processes, or the moment-to-moment behavior of a product. Reviews flow diagrams, wireframes, or built UIs for missing states (loading, error, empty, partial), unclear affordances, and friction. Distinct from visual design — owns *behavior*, not aesthetics.
-tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, TaskCreate, TaskUpdate, TaskGet, TaskList
+tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage
 model: inherit
 color: cyan
 ---
