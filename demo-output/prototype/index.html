@@ -1,0 +1,1864 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Northstar Air — Trip recovery</title>
+<style>
+/* =========================================================
+   DESIGN TOKENS
+   Aesthetic anchor: Linear restraint + Things deliberateness,
+   tuned for a tired traveler at 11pm. Quiet, calm, text-first.
+   Color is for state, never decoration.
+   ========================================================= */
+:root {
+  /* Type — one face, two roles. System stack so it works offline / low-bw. */
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter",
+               "Helvetica Neue", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Type scale — modest, fatigue-friendly. 1.125 ratio at small sizes,
+     widens at headings so hierarchy is exaggerated. */
+  --t-12: 0.75rem;     /* 12 — meta, micro labels */
+  --t-14: 0.875rem;    /* 14 — secondary body */
+  --t-16: 1rem;        /* 16 — body, default tap target font */
+  --t-18: 1.125rem;    /* 18 — section lead */
+  --t-22: 1.375rem;    /* 22 — screen H2 */
+  --t-28: 1.75rem;     /* 28 — screen H1 */
+
+  /* Weight scale — only three weights, used deliberately. */
+  --w-reg: 400;
+  --w-med: 500;
+  --w-semi: 600;
+
+  /* Spacing — 4pt base, used in 4/8/12/16/24/32/48 steps. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  /* Radii — gentle, not loud. 10/14 for cards, 999 for chips. */
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-full: 999px;
+
+  /* Color — sage/slate neutrals, one ink, one quiet accent.
+     Accent is reserved for the primary action of the screen. */
+  --bg:        #f6f5f1;   /* warm paper, calmer than pure white */
+  --surface:   #ffffff;
+  --surface-2: #fbfaf7;   /* sub-card / inset */
+  --ink:       #15201c;   /* near-black with green undertone */
+  --ink-2:     #3c4a45;   /* secondary text */
+  --ink-2b:    #52605a;   /* functional small text (~4.7:1 on --bg) — use when text carries decision-relevant content */
+  --ink-3:     #6b766f;   /* decorative meta only — does NOT meet 4.5:1, never use for functional copy */
+  --line:      #e3e0d6;   /* hairline */
+  --line-2:    #d0cdc2;   /* stronger divider */
+  --line-3:    #232f2a;   /* selected outline */
+
+  --accent:    #1f4a3a;   /* deep evergreen — calm, not loud */
+  --accent-ink:#ffffff;
+  --accent-soft:#e8efe9;  /* selection / focus halo */
+
+  --warn:      #8a5a1a;   /* amber for "check with agent" — not red */
+  --warn-soft: #f4ead5;
+  --ok:        #2f6a4a;   /* confirmed leaf */
+  --ok-soft:   #e3ede5;
+
+  --focus:     #2563eb;   /* high-contrast focus, blue, used only for ring */
+
+  /* Shadow — one elevation, barely there. */
+  --shadow-1: 0 1px 2px rgba(21,32,28,0.04), 0 1px 1px rgba(21,32,28,0.03);
+  --shadow-2: 0 6px 24px rgba(21,32,28,0.07), 0 1px 2px rgba(21,32,28,0.04);
+}
+
+/* =========================================================
+   RESET (minimal)
+   ========================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  font-size: var(--t-16);
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4, p, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend { padding: 0; }
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* =========================================================
+   PAGE FRAME — mobile-first, audit-friendly stack
+   ========================================================= */
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 0 var(--s-8);
+}
+
+.audit-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(246, 245, 241, 0.92);
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.audit-bar__inner {
+  display: flex;
+  gap: var(--s-1);
+  align-items: center;
+  overflow-x: auto;
+  padding: var(--s-2) var(--s-4);
+  font-size: var(--t-12);
+  color: var(--ink-2);
+  scrollbar-width: none;
+}
+.audit-bar__inner::-webkit-scrollbar { display: none; }
+.audit-bar__label {
+  font-weight: var(--w-med);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-right: var(--s-2);
+  white-space: nowrap;
+}
+.audit-bar a {
+  text-decoration: none;
+  color: var(--ink-2);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-full);
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  white-space: nowrap;
+  font-weight: var(--w-med);
+}
+.audit-bar a:hover { color: var(--ink); border-color: var(--ink-3); }
+
+/* =========================================================
+   SCREEN — each of the five screens. Each is its own
+   semantic landmark with its own h1.
+   ========================================================= */
+.screen {
+  background: var(--bg);
+  padding: var(--s-5) var(--s-4) var(--s-7);
+  border-top: 1px dashed var(--line-2);
+}
+.screen:first-of-type { border-top: 0; }
+
+.screen__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: var(--s-3);
+}
+.screen__tag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--line-3);
+}
+
+/* Status header rail — shows trip + party context.
+   Persists in visible form on screens 2–5. */
+.context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.context__trip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.context__route {
+  font-family: var(--font-mono);
+  font-size: var(--t-14);
+  font-weight: var(--w-med);
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+.context__meta {
+  font-size: var(--t-12);
+  color: var(--ink-3);
+}
+.context__party {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  font-size: var(--t-12);
+  font-weight: var(--w-med);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.context__party svg { width: 14px; height: 14px; }
+
+/* Typography roles inside a screen */
+.eyebrow {
+  font-size: var(--t-12);
+  font-weight: var(--w-med);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--s-2);
+}
+.h1 {
+  font-size: var(--t-28);
+  font-weight: var(--w-semi);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: var(--s-3);
+}
+.h2 {
+  font-size: var(--t-22);
+  font-weight: var(--w-semi);
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  margin-bottom: var(--s-3);
+}
+.lead {
+  font-size: var(--t-18);
+  line-height: 1.45;
+  color: var(--ink-2);
+  margin-bottom: var(--s-4);
+}
+.body {
+  font-size: var(--t-16);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.meta {
+  font-size: var(--t-14);
+  color: var(--ink-3);
+}
+
+/* =========================================================
+   BUTTONS — one primary, one quiet, one ghost
+   ========================================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 48px;
+  padding: var(--s-3) var(--s-5);
+  border-radius: var(--r-md);
+  font-size: var(--t-16);
+  font-weight: var(--w-med);
+  letter-spacing: 0.005em;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, transform 80ms ease;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn--primary:hover { background: #173a2d; }
+.btn--primary:active { transform: translateY(1px); }
+.btn--secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line-2);
+}
+.btn--secondary:hover { border-color: var(--ink-3); }
+.btn--ghost {
+  background: transparent;
+  color: var(--ink-2);
+  border-color: transparent;
+}
+.btn--ghost:hover { color: var(--ink); }
+.btn--block { width: 100%; }
+
+/* =========================================================
+   PERSISTENT "TALK TO AN AGENT" — appears at the bottom
+   of every screen as a calm, non-competing affordance.
+   Not a floating widget — that competes; this sits in the
+   document flow so it scrolls with content but is always
+   reachable at the screen's end.
+   ========================================================= */
+.agent {
+  margin-top: var(--s-5);
+  padding: var(--s-3) var(--s-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.agent__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.agent__label strong {
+  font-size: var(--t-14);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+}
+.agent__label span {
+  font-size: var(--t-12);
+  color: var(--ink-3);
+}
+.agent__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-full);
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: var(--t-14);
+  font-weight: var(--w-med);
+  text-decoration: none;
+}
+.agent__cta:hover { background: var(--ink); color: var(--surface); }
+
+/* =========================================================
+   SCREEN 1 — Status
+   ========================================================= */
+.status-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+  box-shadow: var(--shadow-1);
+}
+.status-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+.pip {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--r-full);
+  background: var(--warn);
+  box-shadow: 0 0 0 4px var(--warn-soft);
+}
+.status-card__label {
+  font-size: var(--t-12);
+  font-weight: var(--w-semi);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+.status-card__reason {
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line);
+}
+.status-card__reason dt {
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: var(--s-1);
+}
+.status-card__reason dd {
+  margin: 0;
+  font-size: var(--t-16);
+  color: var(--ink);
+}
+.reassure {
+  margin-top: var(--s-4);
+  padding: var(--s-4);
+  background: var(--accent-soft);
+  border-radius: var(--r-md);
+  font-size: var(--t-14);
+  color: var(--ink);
+}
+.reassure strong { font-weight: var(--w-semi); }
+
+.actions {
+  margin-top: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+/* =========================================================
+   SCREEN 2 — Path cards (three peers, no default)
+   The three are visually equal except Standby, which is
+   intentionally non-equivalent to Rebook.
+   ========================================================= */
+.party-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
+  background: var(--surface-2);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+}
+.party-toggle__label {
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+.stepper button {
+  width: 44px;
+  height: 44px;
+  font-size: var(--t-18);
+  color: var(--ink);
+}
+.stepper button:hover { background: var(--surface-2); }
+.stepper__value {
+  min-width: 32px;
+  padding: 0 var(--s-1);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--w-med);
+}
+
+.paths {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.path {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-4) var(--s-4) var(--s-4) var(--s-5);
+  position: relative;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.path:hover { border-color: var(--ink-3); }
+.path[aria-pressed="true"] {
+  border-color: var(--line-3);
+  box-shadow: 0 0 0 2px var(--line-3);
+}
+.path__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.path__title {
+  font-size: var(--t-18);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+  margin-bottom: var(--s-1);
+}
+.path__sub {
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.path__radio {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--line-2);
+  background: var(--surface);
+  position: relative;
+  margin-top: 2px;
+}
+.path[aria-pressed="true"] .path__radio {
+  border-color: var(--line-3);
+  background: var(--line-3);
+}
+.path[aria-pressed="true"] .path__radio::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+}
+
+/* Standby — visually subordinated. Smaller, no card chrome.
+   It must not look like a peer-decorated equal of Rebook. */
+.path--standby {
+  background: transparent;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  margin-top: var(--s-2);
+}
+.path--standby .path__title {
+  font-size: var(--t-16);
+  font-weight: var(--w-med);
+  color: var(--ink-2);
+}
+.path--standby .path__sub {
+  color: var(--ink-2b);
+  font-size: var(--t-12);
+}
+.path--standby .path__radio {
+  width: 18px;
+  height: 18px;
+}
+.path__note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-top: var(--s-2);
+  padding: 2px var(--s-2);
+  font-size: var(--t-12);
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: var(--r-sm);
+  font-weight: var(--w-med);
+}
+.path__note svg { width: 12px; height: 12px; }
+
+.path-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin: var(--s-4) 0 var(--s-2);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.path-divider::before, .path-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.explainer-link {
+  display: inline-block;
+  margin-top: var(--s-3);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+
+/* =========================================================
+   SCREEN 3 — Rebook
+   ========================================================= */
+.chips {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  padding: var(--s-1) 0 var(--s-3);
+  margin: 0 calc(-1 * var(--s-4));
+  padding-left: var(--s-4);
+  padding-right: var(--s-4);
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 36px;
+  padding: var(--s-1) var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-full);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.chip:hover { border-color: var(--ink-3); }
+.chip[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+.chip[aria-pressed="true"] .chip__check { opacity: 1; }
+.chip__check {
+  opacity: 0;
+  width: 12px;
+  height: 12px;
+}
+
+.flights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+.flight {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-4);
+  transition: border-color 120ms ease;
+}
+.flight:hover { border-color: var(--ink-3); }
+.flight[aria-checked="true"] {
+  border-color: var(--line-3);
+  box-shadow: 0 0 0 2px var(--line-3);
+}
+.flight__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.flight__times {
+  font-family: var(--font-mono);
+  font-size: var(--t-18);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.flight__arrow {
+  display: inline-block;
+  margin: 0 var(--s-2);
+  color: var(--ink-3);
+}
+.flight__route {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-2b);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.flight__meta {
+  margin-top: var(--s-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-4);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.flight__meta span { display: inline-flex; align-items: center; gap: var(--s-1); }
+.flight__criterion {
+  display: inline-block;
+  margin-top: var(--s-2);
+  font-size: var(--t-12);
+  font-weight: var(--w-med);
+  color: var(--ok);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.flight__fare {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--t-14);
+}
+.flight__fare-label { color: var(--ink-3); }
+.flight__fare-value {
+  font-weight: var(--w-semi);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Refund branch — peer pattern, not buried */
+.refund-peers {
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--line);
+}
+.refund-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+.refund-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+.refund-card:hover { border-color: var(--ink-3); }
+.refund-card[aria-pressed="true"] {
+  border-color: var(--line-3);
+  box-shadow: 0 0 0 2px var(--line-3);
+}
+.refund-card__title {
+  font-size: var(--t-14);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+  margin-bottom: var(--s-1);
+}
+.refund-card__sub {
+  font-size: var(--t-12);
+  color: var(--ink-2b);
+  line-height: 1.45;
+}
+
+/* =========================================================
+   SCREEN 4 — Support rows
+   Confirmed vs. check-with-agent are visually distinct.
+   ========================================================= */
+.support-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.support-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: var(--s-3);
+  align-items: start;
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.support-row--confirmed {
+  border-left: 3px solid var(--ok);
+  padding-left: calc(var(--s-4) - 2px);
+}
+.support-row--unconfirmed {
+  background: var(--surface-2);
+  border-style: dashed;
+}
+.support-row__icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+}
+.support-row--confirmed .support-row__icon {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.support-row__body { min-width: 0; }
+.support-row__title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-16);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.support-row__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-size: var(--t-12);
+  font-weight: var(--w-med);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px var(--s-2);
+  border-radius: var(--r-full);
+}
+.support-row__state--ok {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.support-row__state--check {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.support-row__state svg { width: 12px; height: 12px; }
+/* Tappable state-as-action variant: used on Screen 5 for Pending items
+   so the user has an obvious resolution path instead of a dead label. */
+a.support-row__state--action,
+a.support-row__state--action:visited {
+  text-decoration: none;
+  cursor: pointer;
+  min-height: 32px;
+  padding-right: var(--s-3);
+  border: 1px solid currentColor;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+a.support-row__state--action:hover,
+a.support-row__state--action:focus-visible {
+  background: var(--warn);
+  color: var(--surface);
+}
+.support-row__detail {
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.support-row__placeholder {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.support-row__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  font-size: var(--t-14);
+  font-weight: var(--w-med);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.support-row__action:hover { border-color: var(--ink-3); }
+.support-row__action--primary {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+.support-row__action--primary:hover { background: #000; }
+.support-row__action--decline {
+  background: transparent;
+  color: var(--ink-2b);
+  border-color: var(--line);
+}
+.support-row__action--decline:hover { color: var(--ink); border-color: var(--ink-3); }
+.support-row__actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  align-items: stretch;
+}
+.support-row__action--quiet {
+  border-color: transparent;
+  color: var(--ink-3);
+}
+.support-row__action--quiet:hover { color: var(--ink); }
+
+.support-decline {
+  margin-top: var(--s-3);
+  font-size: var(--t-14);
+  color: var(--ink-3);
+}
+
+/* =========================================================
+   SCREEN 5 — Confirmation
+   ========================================================= */
+.summary {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.summary__section {
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--line);
+}
+.summary__section:last-child { border-bottom: 0; }
+.summary__eyebrow {
+  font-size: var(--t-12);
+  font-weight: var(--w-semi);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--s-2);
+}
+.summary__line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-1) 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.summary__line dt { color: var(--ink-3); }
+.summary__line dd {
+  margin: 0;
+  font-weight: var(--w-med);
+  color: var(--ink);
+  text-align: right;
+}
+.summary__hero {
+  font-family: var(--font-mono);
+  font-size: var(--t-22);
+  font-weight: var(--w-semi);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.summary__hero-meta {
+  font-size: var(--t-14);
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.step {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: var(--s-3);
+  align-items: start;
+}
+.step__num {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-full);
+  background: var(--ink);
+  color: var(--surface);
+  display: grid;
+  place-items: center;
+  font-size: var(--t-12);
+  font-weight: var(--w-semi);
+  margin-top: 2px;
+}
+.step__title {
+  font-size: var(--t-14);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+}
+.step__when {
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.offline {
+  margin-top: var(--s-4);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.offline__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-14);
+  font-weight: var(--w-semi);
+  color: var(--ink);
+}
+.offline__actions {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+.offline__btn {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: var(--t-14);
+  font-weight: var(--w-med);
+  color: var(--ink);
+  cursor: pointer;
+}
+.offline__btn:hover { border-color: var(--ink-3); }
+
+.reentry {
+  margin-top: var(--s-4);
+  padding: var(--s-4);
+  background: var(--surface-2);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.reentry strong { color: var(--ink); font-weight: var(--w-semi); }
+.reentry a { display: inline-block; margin-top: var(--s-1); }
+
+/* =========================================================
+   RESPONSIVE — 768px graceful
+   ========================================================= */
+@media (min-width: 768px) {
+  .page { max-width: 560px; }
+  .h1 { font-size: 2rem; }
+  .screen { padding: var(--s-6) var(--s-5) var(--s-7); }
+}
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* Print-friendly summary screen (useful for the offline backup affordance) */
+@media print {
+  .audit-bar, .agent, .actions, .offline__btn { display: none; }
+  body { background: white; }
+  .screen { border: 0; page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ===================================================
+       AUDIT NAV — lets reviewers jump between screens.
+       Marked as a labeled landmark.
+       =================================================== -->
+  <nav class="audit-bar" aria-label="Screen anchors">
+    <div class="audit-bar__inner">
+      <span class="audit-bar__label">Screens</span>
+      <a href="#screen-1">1. Status</a>
+      <a href="#screen-2">2. Choose</a>
+      <a href="#screen-3">3. Rebook</a>
+      <a href="#screen-4">4. Support</a>
+      <a href="#screen-5">5. Confirm</a>
+    </div>
+  </nav>
+
+  <main id="main">
+
+  <!-- ===================================================
+       SCREEN 1 — Status & what this means
+       Primary decision: read and proceed.
+       =================================================== -->
+  <section class="screen" id="screen-1" aria-labelledby="s1-h1">
+    <div class="screen__tag">Screen 1 of 5</div>
+
+    <div class="status-card">
+      <div class="status-card__head">
+        <span class="pip" aria-hidden="true"></span>
+        <span class="status-card__label">Flight canceled</span>
+      </div>
+
+      <h1 class="h1" id="s1-h1">
+        Your 6:15 AM flight to LGA was canceled.
+      </h1>
+      <p class="body">
+        We're sorry — this isn't on you. We'll walk you through your options now, and flag anything we still need to confirm.
+      </p>
+
+      <dl class="status-card__reason">
+        <dt>Reason</dt>
+        <dd>Crew availability.</dd>
+      </dl>
+
+      <div class="reassure">
+        <strong>Here's what you can do now.</strong> Rebook on another flight, take a refund or travel credit, or talk to an agent. If you need a hotel, meals, or help with bags tonight, we'll walk through that too.
+      </div>
+
+      <div class="actions">
+        <a href="#screen-2" class="btn btn--primary btn--block">See my options</a>
+        <a href="#flight-detail" class="btn btn--ghost btn--block">View full flight details</a>
+      </div>
+    </div>
+
+    <!-- Persistent agent affordance -->
+    <div class="agent" role="complementary" aria-label="Talk to an agent">
+      <div class="agent__label">
+        <strong>Prefer a person?</strong>
+        <span>Available now, no menu tree.</span>
+      </div>
+      <a href="#agent" class="agent__cta" aria-label="Talk to an agent">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        Talk to an agent
+      </a>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SCREEN 2 — Choose a recovery path
+       Three peers, NO default selection. Standby is
+       intentionally non-equivalent.
+       =================================================== -->
+  <section class="screen" id="screen-2" aria-labelledby="s2-h1">
+    <div class="screen__tag">Screen 2 of 5</div>
+
+    <!-- Persistent trip + party context, carried through screens 2–5 -->
+    <div class="context" aria-label="Trip context">
+      <div class="context__trip">
+        <span class="context__route">NS482 · DEN → LGA</span>
+        <span class="context__meta">Originally 6:15 AM, [date from system]</span>
+      </div>
+      <span class="context__party" aria-label="Party of 2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Party of 2
+      </span>
+    </div>
+
+    <h1 class="h1" id="s2-h1">How do you want to recover?</h1>
+    <p class="body" style="margin-bottom: var(--s-4);">
+      Three real choices. None of them is selected for you — pick what fits your night.
+    </p>
+
+    <!-- Party size stepper — carries to screens 3–5.
+         role="spinbutton" with aria-valuetext so announcement
+         includes the label, not just the bare number. -->
+    <div class="party-toggle">
+      <span class="party-toggle__label" id="party-label">Traveling with others?</span>
+      <div
+        class="stepper"
+        role="spinbutton"
+        aria-labelledby="party-label"
+        aria-valuemin="1"
+        aria-valuemax="9"
+        aria-valuenow="1"
+        aria-valuetext="Party size: 1 traveler"
+        tabindex="0"
+      >
+        <button type="button" aria-label="Decrease party size" data-step="-1">&minus;</button>
+        <span class="stepper__value" aria-hidden="true">1</span>
+        <button type="button" aria-label="Increase party size" data-step="1">+</button>
+      </div>
+    </div>
+
+    <!-- Single-select toggle set: fieldset + legend names the group,
+         each button uses aria-pressed only. JS enforces one-pressed.
+         Replaces the broken aria-radio + aria-pressed contradiction. -->
+    <fieldset class="paths">
+      <legend class="visually-hidden">How do you want to recover?</legend>
+
+      <!-- Peer 1: Rebook -->
+      <button type="button" class="path" aria-pressed="false">
+        <div class="path__top">
+          <div>
+            <div class="path__title">Rebook on another flight</div>
+            <div class="path__sub">Get to LGA on a confirmed seat. We'll show flights that fit your party.</div>
+          </div>
+          <span class="path__radio" aria-hidden="true"></span>
+        </div>
+      </button>
+
+      <!-- Peer 2: Refund or credit (paired, not credit-only) -->
+      <button type="button" class="path" aria-pressed="false">
+        <div class="path__top">
+          <div>
+            <div class="path__title">Refund or travel credit</div>
+            <div class="path__sub">Don't fly. Get your money back to your original payment, or keep it as credit for later.</div>
+          </div>
+          <span class="path__radio" aria-hidden="true"></span>
+        </div>
+      </button>
+
+      <div class="path-divider" aria-hidden="true">Or, a non-confirmed option</div>
+
+      <!-- Peer 3: Standby — visually NON-equivalent to Rebook -->
+      <button type="button" class="path path--standby" aria-pressed="false">
+        <div class="path__top">
+          <div>
+            <div class="path__title">Standby only</div>
+            <div class="path__sub">No confirmed seat. You wait at the airport for an open one — and may not get on.</div>
+            <span class="path__note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 9v4"/>
+                <path d="M12 17h.01"/>
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              </svg>
+              Not equivalent to rebooking
+            </span>
+          </div>
+          <span class="path__radio" aria-hidden="true"></span>
+        </div>
+      </button>
+    </fieldset>
+
+    <a href="#explain" class="explainer-link">What's the difference between these?</a>
+
+    <div class="actions">
+      <a href="#screen-3" class="btn btn--primary btn--block" aria-disabled="false">Continue with my choice</a>
+    </div>
+
+    <div class="agent" role="complementary" aria-label="Talk to an agent">
+      <div class="agent__label">
+        <strong>Not sure which fits?</strong>
+        <span>An agent can think it through with you.</span>
+      </div>
+      <a href="#agent" class="agent__cta">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        Talk to an agent
+      </a>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SCREEN 3 — Rebook (with Refund branch as peer)
+       =================================================== -->
+  <section class="screen" id="screen-3" aria-labelledby="s3-h1">
+    <div class="screen__tag">Screen 3 of 5</div>
+
+    <div class="context" aria-label="Trip context">
+      <div class="context__trip">
+        <span class="context__route">NS482 · DEN → LGA</span>
+        <span class="context__meta">Rebooking to LGA</span>
+      </div>
+      <span class="context__party">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+        Party of 2
+      </span>
+    </div>
+
+    <h1 class="h1" id="s3-h1">Pick a flight to LGA.</h1>
+    <p class="body" style="margin-bottom: var(--s-3);">
+      No fare difference applies during this recovery.
+    </p>
+
+    <!-- Filter chips — horizontally scrollable, no hidden filters.
+         No chips pre-pressed: no implicit defaults on choice surfaces. -->
+    <div class="chips" role="group" aria-label="Flight filters, multiple allowed">
+      <button type="button" class="chip" aria-pressed="false">
+        <svg class="chip__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        Earliest arrival
+      </button>
+      <button type="button" class="chip" aria-pressed="false">
+        <svg class="chip__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        Nonstop only
+      </button>
+      <button type="button" class="chip" aria-pressed="false">
+        <svg class="chip__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        Seats together (2)
+      </button>
+      <button type="button" class="chip" aria-pressed="false">
+        <svg class="chip__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        Accessibility needs
+      </button>
+    </div>
+
+    <!-- Flight cards as a proper radiogroup.
+         role="radio" + aria-checked (only), roving tabindex,
+         ArrowUp/ArrowDown/Home/End to move selection.
+         The <fieldset>/<legend> names the group for SR users. -->
+    <fieldset class="flights" id="flight-group">
+      <legend class="visually-hidden">Choose a flight to LGA</legend>
+
+      <!-- Flight card 1 — criterion stated, not "Recommended" -->
+      <button type="button" class="flight" role="radio" aria-checked="false" tabindex="0">
+        <div class="flight__row">
+          <div>
+            <span class="flight__times">7:10 AM</span>
+            <span class="flight__arrow" aria-hidden="true">→</span>
+            <span class="flight__times">3:48 PM</span>
+          </div>
+          <span class="flight__route">DEN → ORD → LGA</span>
+        </div>
+        <div class="flight__meta">
+          <span>1 stop · 5h 38m</span>
+          <span>Seats together available</span>
+        </div>
+        <span class="flight__criterion">Earliest arrival to LGA</span>
+        <div class="flight__fare">
+          <span class="flight__fare-label">Fare difference</span>
+          <span class="flight__fare-value">$0</span>
+        </div>
+      </button>
+
+      <!-- Flight card 2 — nonstop, later -->
+      <button type="button" class="flight" role="radio" aria-checked="false" tabindex="-1">
+        <div class="flight__row">
+          <div>
+            <span class="flight__times">2:40 PM</span>
+            <span class="flight__arrow" aria-hidden="true">→</span>
+            <span class="flight__times">8:36 PM</span>
+          </div>
+          <span class="flight__route">DEN → LGA</span>
+        </div>
+        <div class="flight__meta">
+          <span>Nonstop · 3h 56m</span>
+          <span>Seats together available</span>
+        </div>
+        <div class="flight__fare">
+          <span class="flight__fare-label">Fare difference</span>
+          <span class="flight__fare-value">$0</span>
+        </div>
+      </button>
+
+      <!-- Flight card 3 — later -->
+      <button type="button" class="flight" role="radio" aria-checked="false" tabindex="-1">
+        <div class="flight__row">
+          <div>
+            <span class="flight__times">6:30 PM</span>
+            <span class="flight__arrow" aria-hidden="true">→</span>
+            <span class="flight__times">3:12 AM</span>
+          </div>
+          <span class="flight__route">DEN → DFW → LGA</span>
+        </div>
+        <div class="flight__meta">
+          <span>1 stop · 6h 42m</span>
+          <span>Seats together — only 1 row</span>
+        </div>
+        <div class="flight__fare">
+          <span class="flight__fare-label">Fare difference</span>
+          <span class="flight__fare-value">$0</span>
+        </div>
+      </button>
+    </fieldset>
+
+    <!-- Refund branch as a peer pattern, not buried -->
+    <div class="refund-peers" aria-labelledby="refund-h2">
+      <h2 class="h2" id="refund-h2" style="font-size: var(--t-18);">Not flying instead?</h2>
+      <p class="body" style="font-size: var(--t-14);">
+        Refund and credit are equal options. Pick the one that fits.
+      </p>
+      <fieldset class="refund-grid">
+        <legend class="visually-hidden">Refund or travel credit</legend>
+        <button type="button" class="refund-card" aria-pressed="false">
+          <div class="refund-card__title">Refund to original payment</div>
+          <div class="refund-card__sub">Money goes back the way it came in. Timing depends on your bank.</div>
+        </button>
+        <button type="button" class="refund-card" aria-pressed="false">
+          <div class="refund-card__title">Travel credit</div>
+          <div class="refund-card__sub">Keep the value for a future Northstar trip. Terms shown before you confirm.</div>
+        </button>
+      </fieldset>
+    </div>
+
+    <div class="actions">
+      <a href="#screen-4" class="btn btn--primary btn--block">Confirm flight choice</a>
+      <a href="#screen-2" class="btn btn--ghost btn--block">Back to options</a>
+    </div>
+
+    <div class="agent" role="complementary" aria-label="Talk to an agent">
+      <div class="agent__label">
+        <strong>Don't see what you need?</strong>
+        <span>An agent can search beyond these.</span>
+      </div>
+      <a href="#agent" class="agent__cta">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        Talk to an agent
+      </a>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SCREEN 4 — Support tonight
+       Each entitlement is its own row.
+       Confirmed vs. "Check with an agent" are visually distinct.
+       =================================================== -->
+  <section class="screen" id="screen-4" aria-labelledby="s4-h1">
+    <div class="screen__tag">Screen 4 of 5</div>
+
+    <div class="context" aria-label="Trip context">
+      <div class="context__trip">
+        <span class="context__route">Rebooked · DEN → LGA</span>
+        <span class="context__meta">7:10 AM, [date from system]</span>
+      </div>
+      <span class="context__party">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+        Party of 2
+      </span>
+    </div>
+
+    <h1 class="h1" id="s4-h1">Support for tonight.</h1>
+    <p class="body" style="margin-bottom: var(--s-4);">
+      Here's what's confirmed for your party, and what an agent needs to check on. Nothing is added unless you accept it.
+    </p>
+
+    <ul class="support-list">
+      <!-- Available for you: Hotel (pre-acceptance) -->
+      <li class="support-row support-row--confirmed">
+        <span class="support-row__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l8-4v18"/>
+            <path d="M19 21V11l-6-4"/>
+            <path d="M9 9h.01"/>
+            <path d="M9 13h.01"/>
+            <path d="M9 17h.01"/>
+          </svg>
+        </span>
+        <div class="support-row__body">
+          <div class="support-row__title">
+            Hotel near DEN
+            <span class="support-row__state support-row__state--ok">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Available for you
+            </span>
+          </div>
+          <div class="support-row__detail">
+            Room for 2 for tonight at <span class="support-row__placeholder">[hotel name from system]</span>. Shuttle from baggage claim.
+          </div>
+        </div>
+        <div class="support-row__actions-group">
+          <button type="button" class="support-row__action support-row__action--primary">Accept</button>
+          <button type="button" class="support-row__action support-row__action--decline">Decline</button>
+        </div>
+      </li>
+
+      <!-- Unconfirmed: Meals -->
+      <li class="support-row support-row--unconfirmed">
+        <span class="support-row__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/>
+            <line x1="6" y1="1" x2="6" y2="4"/>
+            <line x1="10" y1="1" x2="10" y2="4"/>
+            <line x1="14" y1="1" x2="14" y2="4"/>
+          </svg>
+        </span>
+        <div class="support-row__body">
+          <div class="support-row__title">
+            Meals
+            <span class="support-row__state support-row__state--check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+              </svg>
+              Check with agent
+            </span>
+          </div>
+          <div class="support-row__detail">
+            Eligibility depends on tonight's delay window. An agent can confirm for your party of 2.
+          </div>
+        </div>
+        <div class="support-row__actions-group">
+          <button type="button" class="support-row__action support-row__action--primary">Check</button>
+          <button type="button" class="support-row__action support-row__action--decline">Decline</button>
+        </div>
+      </li>
+
+      <!-- Available for you: Ground transport (pre-acceptance) -->
+      <li class="support-row support-row--confirmed">
+        <span class="support-row__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="18" height="12" rx="2"/>
+            <circle cx="8" cy="18" r="1.5"/><circle cx="16" cy="18" r="1.5"/>
+            <path d="M3 12h18"/>
+          </svg>
+        </span>
+        <div class="support-row__body">
+          <div class="support-row__title">
+            Hotel shuttle
+            <span class="support-row__state support-row__state--ok">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Available for you
+            </span>
+          </div>
+          <div class="support-row__detail">
+            Pickup at <span class="support-row__placeholder">[shuttle stop from system]</span>, every <span class="support-row__placeholder">[interval]</span>.
+          </div>
+        </div>
+        <div class="support-row__actions-group">
+          <button type="button" class="support-row__action support-row__action--primary">Accept</button>
+          <button type="button" class="support-row__action support-row__action--decline">Decline</button>
+        </div>
+      </li>
+
+      <!-- Unconfirmed: Baggage -->
+      <li class="support-row support-row--unconfirmed">
+        <span class="support-row__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="7" width="14" height="13" rx="2"/>
+            <path d="M9 7V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v3"/>
+            <line x1="9" y1="11" x2="9" y2="18"/>
+            <line x1="15" y1="11" x2="15" y2="18"/>
+          </svg>
+        </span>
+        <div class="support-row__body">
+          <div class="support-row__title">
+            Checked bag handling
+            <span class="support-row__state support-row__state--check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+              </svg>
+              Check with agent
+            </span>
+          </div>
+          <div class="support-row__detail">
+            Your bags may already be moving — an agent can confirm where to pick them up tonight or in the morning.
+          </div>
+        </div>
+        <div class="support-row__actions-group">
+          <button type="button" class="support-row__action support-row__action--primary">Check</button>
+          <button type="button" class="support-row__action support-row__action--decline">Decline</button>
+        </div>
+      </li>
+    </ul>
+
+    <p class="support-decline">
+      Don't need something? Decline it on the row — silence isn't consent.
+    </p>
+
+    <div class="actions">
+      <a href="#screen-5" class="btn btn--primary btn--block">Confirm support choices</a>
+    </div>
+
+    <div class="agent" role="complementary" aria-label="Talk to an agent">
+      <div class="agent__label">
+        <strong>Eligibility unclear?</strong>
+        <span>An agent can confirm what applies to your trip.</span>
+      </div>
+      <a href="#agent" class="agent__cta">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        Talk to an agent
+      </a>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       SCREEN 5 — Confirmation & what happens next
+       Durable summary + offline/share + re-entry path
+       =================================================== -->
+  <section class="screen" id="screen-5" aria-labelledby="s5-h1">
+    <div class="screen__tag">Screen 5 of 5</div>
+
+    <div class="context" aria-label="Trip context">
+      <div class="context__trip">
+        <span class="context__route">Rebooked · DEN → LGA</span>
+        <span class="context__meta">Confirmation [code from system]</span>
+      </div>
+      <span class="context__party">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+        Party of 2
+      </span>
+    </div>
+
+    <h1 class="h1" id="s5-h1">You're set for tomorrow.</h1>
+    <p class="body" style="margin-bottom: var(--s-4);">
+      Here's everything in one place. Save it for offline — and if anything changes, come back here.
+    </p>
+
+    <div class="summary">
+      <!-- New flight -->
+      <div class="summary__section">
+        <div class="summary__eyebrow">New flight</div>
+        <div class="summary__hero">7:10 AM → 3:48 PM</div>
+        <div class="summary__hero-meta">DEN → ORD → LGA · 1 stop · [date from system]</div>
+        <dl style="margin-top: var(--s-3);">
+          <div class="summary__line"><dt>Confirmation</dt><dd><span class="support-row__placeholder">[code]</span></dd></div>
+          <div class="summary__line"><dt>Seats</dt><dd>2, together · <span class="support-row__placeholder">[row]</span></dd></div>
+          <div class="summary__line"><dt>Gate</dt><dd><span class="support-row__placeholder">[gate at check-in]</span></dd></div>
+        </dl>
+      </div>
+
+      <!-- Support secured -->
+      <div class="summary__section">
+        <div class="summary__eyebrow">Support secured</div>
+        <dl>
+          <div class="summary__line">
+            <dt>Hotel</dt>
+            <dd>
+              <span class="support-row__state support-row__state--ok" style="margin-right: 4px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                Confirmed
+              </span>
+              <span class="support-row__placeholder">[hotel name]</span>
+            </dd>
+          </div>
+          <div class="summary__line">
+            <dt>Shuttle</dt>
+            <dd>
+              <span class="support-row__state support-row__state--ok" style="margin-right: 4px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                Confirmed
+              </span>
+              Pickup info in your hotel email
+            </dd>
+          </div>
+          <div class="summary__line">
+            <dt>Meals</dt>
+            <dd>
+              <a href="#s5-agent"
+                 class="support-row__state support-row__state--check support-row__state--action"
+                 aria-label="Meals: pending agent confirmation — resolve with an agent">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+                </svg>
+                Resolve with agent
+              </a>
+            </dd>
+          </div>
+          <div class="summary__line">
+            <dt>Bags</dt>
+            <dd>
+              <a href="#s5-agent"
+                 class="support-row__state support-row__state--check support-row__state--action"
+                 aria-label="Bags: pending agent confirmation — resolve with an agent">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+                </svg>
+                Resolve with agent
+              </a>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Next three steps -->
+      <div class="summary__section">
+        <div class="summary__eyebrow">What happens next</div>
+        <ol class="steps">
+          <li class="step">
+            <span class="step__num">1</span>
+            <div>
+              <div class="step__title">Hotel shuttle from DEN baggage claim</div>
+              <div class="step__when">Tonight · within [window from system]</div>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step__num">2</span>
+            <div>
+              <div class="step__title">Check in for your 7:10 AM flight</div>
+              <div class="step__when">Opens [24h before departure, time zone from system]</div>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step__num">3</span>
+            <div>
+              <div class="step__title">Arrive at DEN</div>
+              <div class="step__when">By [arrive-by time from system]</div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Offline / share -->
+    <div class="offline" role="region" aria-label="Save offline">
+      <div class="offline__head">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Save this where you can find it later
+      </div>
+      <div class="offline__actions">
+        <button type="button" class="offline__btn">Text to me</button>
+        <button type="button" class="offline__btn">Email a copy</button>
+        <button type="button" class="offline__btn">Save PDF</button>
+      </div>
+    </div>
+
+    <!-- Re-entry path if plans change again -->
+    <div class="reentry" role="region" aria-label="If plans change again">
+      <strong>Plans changed again?</strong><br>
+      You can come back into recovery without starting over — your party, trip, and tonight's support stay with you.
+      <br>
+      <a href="#screen-2">Re-open recovery options →</a>
+    </div>
+
+    <div class="agent" id="s5-agent" role="complementary" aria-label="Talk to an agent">
+      <div class="agent__label">
+        <strong>Anything still unclear?</strong>
+        <span>An agent can confirm the pending items.</span>
+      </div>
+      <a href="#agent" class="agent__cta">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        Talk to an agent
+      </a>
+    </div>
+  </section>
+
+  </main>
+
+</div>
+
+<script>
+/* Vanilla JS — interactions only.
+   - Single-select toggle sets (path cards on Screen 2, refund pair on
+     Screen 3) use aria-pressed only. No role=radio on these; group is
+     named via <fieldset><legend>.
+   - Flight cards on Screen 3 are a true radiogroup: role=radio,
+     aria-checked, roving tabindex, ArrowUp/Down/Home/End to move.
+   - Filter chips toggle independently.
+   - Stepper is role=spinbutton; updates aria-valuenow and aria-valuetext
+     so screen readers announce "Party size: N traveler(s)" not bare N.
+*/
+(function() {
+
+  // -----------------------------------------------------------------
+  // Single-select toggle set (aria-pressed only)
+  // Used for path cards (Screen 2) and refund pair (Screen 3).
+  // -----------------------------------------------------------------
+  function wireToggleSet(selector) {
+    var group = document.querySelectorAll(selector);
+    group.forEach(function(el) {
+      el.addEventListener('click', function() {
+        group.forEach(function(other) {
+          other.setAttribute('aria-pressed', other === el ? 'true' : 'false');
+        });
+      });
+    });
+  }
+  wireToggleSet('#screen-2 .path');
+  wireToggleSet('#screen-3 .refund-card');
+
+  // -----------------------------------------------------------------
+  // True radiogroup with roving tabindex (Screen 3 flight cards)
+  // ArrowUp/ArrowDown/Home/End to move; Space/Enter to select.
+  // Selection moves focus and sets aria-checked on a single radio.
+  // -----------------------------------------------------------------
+  (function wireFlightRadiogroup() {
+    var radios = Array.prototype.slice.call(
+      document.querySelectorAll('#flight-group [role="radio"]')
+    );
+    if (!radios.length) return;
+
+    function select(idx) {
+      idx = (idx + radios.length) % radios.length;
+      radios.forEach(function(r, i) {
+        var on = i === idx;
+        r.setAttribute('aria-checked', on ? 'true' : 'false');
+        r.setAttribute('tabindex', on ? '0' : '-1');
+      });
+      radios[idx].focus();
+    }
+
+    radios.forEach(function(radio, idx) {
+      radio.addEventListener('click', function() { select(idx); });
+      radio.addEventListener('keydown', function(e) {
+        switch (e.key) {
+          case 'ArrowDown':
+          case 'ArrowRight':
+            e.preventDefault(); select(idx + 1); break;
+          case 'ArrowUp':
+          case 'ArrowLeft':
+            e.preventDefault(); select(idx - 1); break;
+          case 'Home':
+            e.preventDefault(); select(0); break;
+          case 'End':
+            e.preventDefault(); select(radios.length - 1); break;
+          case ' ':
+          case 'Enter':
+            e.preventDefault(); select(idx); break;
+        }
+      });
+    });
+  })();
+
+  // -----------------------------------------------------------------
+  // Independent toggle for filter chips
+  // -----------------------------------------------------------------
+  document.querySelectorAll('.chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      var on = chip.getAttribute('aria-pressed') === 'true';
+      chip.setAttribute('aria-pressed', on ? 'false' : 'true');
+    });
+  });
+
+  // -----------------------------------------------------------------
+  // Party-size stepper (role=spinbutton)
+  // Announces "Party size: N traveler(s)" via aria-valuetext, so
+  // screen readers don't speak a bare number on change.
+  // -----------------------------------------------------------------
+  document.querySelectorAll('.stepper').forEach(function(stepper) {
+    var val = stepper.querySelector('.stepper__value');
+    var min = parseInt(stepper.getAttribute('aria-valuemin'), 10) || 1;
+    var max = parseInt(stepper.getAttribute('aria-valuemax'), 10) || 9;
+
+    function update(n) {
+      n = Math.max(min, Math.min(max, n));
+      val.textContent = n;
+      stepper.setAttribute('aria-valuenow', n);
+      stepper.setAttribute(
+        'aria-valuetext',
+        'Party size: ' + n + ' traveler' + (n === 1 ? '' : 's')
+      );
+    }
+
+    stepper.querySelectorAll('button[data-step]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var current = parseInt(stepper.getAttribute('aria-valuenow'), 10) || min;
+        update(current + parseInt(btn.getAttribute('data-step'), 10));
+      });
+    });
+
+    // Keyboard support on the spinbutton itself
+    stepper.addEventListener('keydown', function(e) {
+      var current = parseInt(stepper.getAttribute('aria-valuenow'), 10) || min;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+        e.preventDefault(); update(current + 1);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+        e.preventDefault(); update(current - 1);
+      } else if (e.key === 'Home') {
+        e.preventDefault(); update(min);
+      } else if (e.key === 'End') {
+        e.preventDefault(); update(max);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
