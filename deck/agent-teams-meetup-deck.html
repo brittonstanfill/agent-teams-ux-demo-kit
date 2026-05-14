@@ -485,10 +485,24 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: clamp(11px, 0.95vw, 13px);
     line-height: 1.55;
-    max-height: 62vh;
-    overflow: auto;
+    max-height: 56vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     white-space: pre-wrap;
     text-align: left;
+  }
+  /* Prompt slides top-align their content so the scrollable card stays fully inside the viewport
+     (default .slide is justify-content: center, which pushes long content above the fold). */
+  .slide.has-prompt {
+    justify-content: flex-start;
+    padding-top: 6vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .slide.has-prompt .stack {
+    width: 100%;
   }
   .slide:not(.dark) .prompt-card {
     background: #1d1f23;
@@ -1925,7 +1939,7 @@
   </section>
 
   <!-- SLIDE 8.5 — Baseline prompt (single agent) -->
-  <section class="slide" data-title="Baseline prompt">
+  <section class="slide has-prompt" data-title="Baseline prompt">
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Prompt A · the baseline</div>
@@ -1980,7 +1994,7 @@ or other operational facts not in the brief.</code>
   </section>
 
   <!-- SLIDE 8.6 — Team prompt -->
-  <section class="slide" data-title="Team prompt">
+  <section class="slide has-prompt" data-title="Team prompt">
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Prompt B · the team</div>
@@ -2582,7 +2596,7 @@ Keep the final memo crisp; the appendix carries evidence and dissent.</code>
   </section>
 
   <!-- SLIDE 19 — Bonus prompt: computer-use watchdog -->
-  <section class="slide" data-title="Watchdog prompt">
+  <section class="slide has-prompt" data-title="Watchdog prompt">
     <div class="stack" style="max-width: 1500px;">
       <div class="eyebrow-row">
         <div class="eyebrow">Bonus · computer-use watchdog</div>
