@@ -7,7 +7,13 @@ Copy/paste this into Claude Code from the project folder that contains this kit.
 ```text
 Create an agent team named "Northstar UX Recovery Team" to redesign the canceled-flight recovery experience described in:
 
-Agent Teams UX Demo Kit/demo-inputs/northstar-canceled-flight-brief.md
+demo-inputs/northstar-canceled-flight-brief.md
+
+Clean-room rule:
+- Do not open, search, summarize, or reuse anything in `demo-output/` except to create the deliverables for this run.
+- Do not inspect prior demo branches, PR #2, single-agent output branches, or any past Northstar outputs before the team deliverables are sealed.
+- If `demo-output/` already contains generated outputs, stop and ask the facilitator to start from a fresh clone or clean branch.
+- The lead may read the baseline only after both the team deliverables and baseline deliverables are complete, when scoring begins.
 
 Use these eight teammates. If matching subagent definitions are available, use them. Otherwise create teammates with these roles and instructions:
 
@@ -29,10 +35,11 @@ Quality bar (read this twice):
 - "Could you defend this in a portfolio review?" is the bar for visual and interaction work. "Would the user thank you in six months?" is the bar for behavioral work. "Would a screen-reader user complete this without resorting to a phone call?" is the bar for accessibility work.
 
 Working rules:
-- Each teammate owns one file in `Agent Teams UX Demo Kit/demo-output/role-reports/`.
+- Each teammate owns one file in `demo-output/role-reports/`.
 - No teammate edits another teammate's role report.
-- The lead owns the final synthesis file: `Agent Teams UX Demo Kit/demo-output/final-recommendation.md`.
-- The team also produces a working HTML artifact at `Agent Teams UX Demo Kit/demo-output/prototype/index.html`. Visual-designer authors this; other teammates refine in their domain.
+- The lead owns the final synthesis file: `demo-output/final-recommendation.md`.
+- The team also produces a working HTML artifact at `demo-output/prototype/index.html`. Visual-designer authors this; other teammates refine in their domain.
+- Include run metadata in the final recommendation: branch, commit SHA, start/end time, model, teammate list, clean-room checks, and whether any teammate was replaced or nudged.
 - Label every major claim as one of: observed from brief, inferred, assumption, or recommendation.
 - Do not invent research data, metrics, laws, airline policies, or user quotes. WCAG criteria and named behavioral principles are standard reference, not invention.
 - Make the teammate messages visible in the final recommendation.
@@ -84,7 +91,7 @@ Before writing the final recommendation, the lead should show:
 3. Which teammate message changed another teammate's recommendation.
 
 Final deliverable:
-Write `Agent Teams UX Demo Kit/demo-output/final-recommendation.md` with these sections:
+Write `demo-output/final-recommendation.md` with these sections:
 
 1. Executive recommendation
 2. Redesigned flow (target 4–5 screens, but if a 6-screen flow is genuinely better, ship 6; explain why)
@@ -95,6 +102,7 @@ Write `Agent Teams UX Demo Kit/demo-output/final-recommendation.md` with these s
 7. Accessibility and trust guardrails
 8. Experiment plan
 9. Scorecard-ready comparison against a single-agent baseline (use the same artifact type — both should ship HTML)
+10. Run metadata and clean-room verification
 
 Also produce the HTML artifact at `demo-output/prototype/index.html`. Both deliverables ship; one without the other is incomplete.
 

@@ -5,21 +5,26 @@ Use this before the team run if you want to show the difference. **This prompt n
 ```text
 Review the canceled-flight recovery experience in:
 
-Agent Teams UX Demo Kit/demo-inputs/northstar-canceled-flight-brief.md
+demo-inputs/northstar-canceled-flight-brief.md
+
+Clean-room rule:
+- Do not open, search, summarize, or reuse anything in `demo-output/` except to create the files listed below.
+- Do not inspect prior demo branches, PR #2, or any past Northstar outputs before writing this baseline.
+- If `demo-output/` already contains generated outputs, stop and ask the facilitator to start from a fresh clone or clean branch.
 
 Create a meeting-ready recommendation for improving the experience. Cover UX research, information architecture, interaction design, UX writing, accessibility, visual/UI design, and behavioral science.
 
 Ship two things:
 
 1. A working HTML prototype at:
-   Agent Teams UX Demo Kit/demo-output/single-agent-baseline/index.html
+   demo-output/single-agent-baseline/index.html
    - Mobile-first, self-contained (inline CSS + JS).
    - Render the redesigned flow as actual screens (phone-frame style), not as a description of screens.
    - Respect prefers-color-scheme (light + dark) and prefers-reduced-motion.
    - Hit WCAG 2.1 AA where possible (cite criteria when you make a notable call).
 
 2. A doc at:
-   Agent Teams UX Demo Kit/demo-output/single-agent-baseline.md
+   demo-output/single-agent-baseline.md
    Include:
    - Executive recommendation
    - Redesigned flow in 4–5 screens (target, not a hard cap)
@@ -27,6 +32,7 @@ Ship two things:
    - Recommended copy (verbatim, not described)
    - Accessibility and trust risks with proposed mitigations
    - Experiment plan (hypothesis + primary metric + guardrail + exit rule for each)
+   - Run metadata: branch, commit SHA, start/end time, model, and whether clean-room checks passed.
 
 Quality bar:
 - The output should be distinguishable as the work of a designer who cares about craft. Generic, safe, "meeting-template" output is a failure mode, not a default. If your output could have been produced by a Bootstrap starter, you have not earned your presence.

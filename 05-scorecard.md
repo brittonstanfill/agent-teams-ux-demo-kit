@@ -25,6 +25,7 @@ Score each item 0 to 3.
 | Defines a useful experiment plan |  |  |  |
 | Requires low human rework |  |  |  |
 | **Output is distinguishable from a Bootstrap template** |  |  | New row. The "could a single junior designer have produced this in an afternoon?" check. |
+| **Clean-room protocol followed** |  |  | No prior outputs, branches, PRs, or screenshots inspected before both sides were sealed. |
 
 ## Additional Measures
 
@@ -39,6 +40,7 @@ Record these if you can:
 | Number of role handoffs that changed output |  |  |
 | Number of visible debates with preserved dissent |  |  |
 | Human edits needed before sharing |  |  |
+| Clean-room checks passed |  |  |
 
 ## What Counts As A Real Agent-Team Win
 

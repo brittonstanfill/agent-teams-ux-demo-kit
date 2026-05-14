@@ -22,7 +22,14 @@ Before the meeting:
 - Enable agent teams if needed with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
 - Put the optional files in `claude-agents/` into `.claude/agents/` if you want the team to use named subagent definitions. (Make sure tool permissions include `Write, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage` — earlier versions of the kit shipped read-only agent definitions that couldn't actually produce files.)
 - Keep `demo-inputs/northstar-canceled-flight-brief.md` open.
-- Create an empty `demo-output/` folder before the run.
+- Create an empty `demo-output/` folder before the run. For a real evaluation, use `10-clean-room-experiment-runbook.md`: fresh clone, fresh branch, no prior outputs, no prior demo PRs opened until scoring.
+- Before pasting either prompt, verify the output folder is clean:
+
+```bash
+find demo-output -type f ! -name .gitkeep -print
+```
+
+That command should print nothing. If it prints generated files, stop and use a fresh checkout.
 
 ## 25 Minute Live Demo
 

@@ -48,6 +48,7 @@ A good demo names both. The scorecard in `05-scorecard.md` is built around the "
 | `07-team-debate-master-prompt.md` | **General-purpose 4-round team debate prompt** — use this for real product decisions beyond the demo |
 | `08-single-agent-quick-prompt.md` | **3-line single-agent prompt** — for the 80% of moments where you just need one specialist, not a team |
 | `09-parallel-author-prompt.md` | **Parallel-author team prompt** — use when authorship matters more than peer-challenge (visual composition, distinctive aesthetic). Produces 2–3 distinct authored drafts; team picks a winner. |
+| `10-clean-room-experiment-runbook.md` | **Evaluation protocol** — fresh clone/branch, no prior output contamination, sealed baseline/team outputs, scorecard, and promotion rules |
 | `agent-teams-meetup-deck.html` | Self-contained HTML talk deck (17 slides, ~20 min). Open in any browser; arrow keys to navigate; `N` for speaker notes; `F` for fullscreen |
 
 ### The 9 agents (in `claude-agents/`)
@@ -109,7 +110,7 @@ Restart your Claude Code session in this project.
 ## Run the demo (live meeting flow)
 
 1. Open [`demo-inputs/northstar-canceled-flight-brief.md`](demo-inputs/northstar-canceled-flight-brief.md).
-2. Run [`03-single-agent-baseline-prompt.md`](03-single-agent-baseline-prompt.md) first if you want a direct comparison.
+2. Run [`03-single-agent-baseline-prompt.md`](03-single-agent-baseline-prompt.md) first if you want a direct comparison. For a serious evaluation, follow [`10-clean-room-experiment-runbook.md`](10-clean-room-experiment-runbook.md) so the baseline and team run do not see past outputs.
 3. Run [`02-master-agent-team-prompt.md`](02-master-agent-team-prompt.md) and point it at the brief.
 4. Show the team messages, role-owned files, conflict resolution, and final recommendation.
 5. Score both outputs with [`05-scorecard.md`](05-scorecard.md).
@@ -174,6 +175,9 @@ This kit follows the current Claude Code docs. Agent teams are experimental, use
 - [Agent teams](https://code.claude.com/docs/en/agent-teams)
 - [Sub-agents](https://code.claude.com/docs/en/sub-agents)
 - [Agents (overview)](https://code.claude.com/docs/en/agents)
+- [Run parallel sessions with worktrees](https://code.claude.com/docs/en/worktrees)
+- [How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system)
+- [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
 
 ---
 
