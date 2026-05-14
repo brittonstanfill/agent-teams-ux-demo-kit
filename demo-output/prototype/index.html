@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Canceled-Flight Recovery — Prototype</title>
+  <style>
+    /* -------------------------------------------------------------
+       Design tokens
+       ------------------------------------------------------------- */
+    :root {
+      /* Palette — calm, high-trust, single warm action color */
+      --ink-900: #0E1726;   /* primary text */
+      --ink-700: #2A3447;   /* secondary text */
+      --ink-500: #5B6678;   /* tertiary / token text */
+      --ink-300: #B7BFCB;   /* hairlines on dark */
+      --ink-200: #D8DDE5;   /* hairlines */
+      --ink-100: #EEF1F5;   /* subtle fill */
+      --ink-050: #F6F8FA;   /* page wash */
+      --paper:   #FFFFFF;
+
+      --brand-700: #0C4A6E; /* deep teal-navy, action hover */
+      --brand-600: #0E5A85; /* primary action */
+      --brand-100: #E3F0F7; /* selected wash */
+
+      --alert-700: #7A4B0A; /* alert text */
+      --alert-100: #FCEFD5; /* alert fill */
+      --alert-line:#E6B767; /* alert stripe */
+
+      --good-700: #1F5A3C;  /* confirmation text */
+      --good-100: #E2F1E8;  /* confirmation fill */
+
+      --token-bg: #F2F4F8;  /* dynamic value chip */
+      --token-line: #C9D1DC;
+
+      /* Type scale — restrained, 4-step */
+      --t-display: 22px;    /* page H1 */
+      --t-h2:      17px;    /* section heading */
+      --t-body:    15px;    /* body */
+      --t-small:   13px;    /* meta */
+      --t-micro:   11px;    /* labels, status chrome */
+
+      --lh-tight:  1.25;
+      --lh-body:   1.45;
+
+      /* Spacing — 4pt grid */
+      --s-1: 4px;
+      --s-2: 8px;
+      --s-3: 12px;
+      --s-4: 16px;
+      --s-5: 20px;
+      --s-6: 24px;
+      --s-7: 32px;
+      --s-8: 40px;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+
+      --shadow-card: 0 1px 2px rgba(14, 23, 38, 0.04),
+                     0 4px 16px rgba(14, 23, 38, 0.06);
+      --shadow-screen: 0 2px 4px rgba(14, 23, 38, 0.05),
+                       0 12px 32px rgba(14, 23, 38, 0.08);
+
+      /* Focus: solid 2px white inner halo + 3px solid brand-600 outer.
+         Yields >=3:1 against both #fff (brand-600 vs white = 6.0:1) and
+         the page wash #F6F8FA. Replaces a 35%-alpha ring that failed 1.4.11. */
+      --focus: 0 0 0 2px #fff, 0 0 0 5px var(--brand-600);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--ink-050);
+      color: var(--ink-900);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      font-size: var(--t-body);
+      line-height: var(--lh-body);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* -------------------------------------------------------------
+       Layout — vertical stack of mobile-width screens
+       ------------------------------------------------------------- */
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: var(--s-7) var(--s-4) var(--s-8);
+    }
+
+    .page-intro {
+      max-width: 720px;
+      margin: 0 auto var(--s-7);
+      padding: 0 var(--s-2);
+      color: var(--ink-700);
+    }
+    .page-intro h1 {
+      font-size: 20px;
+      line-height: var(--lh-tight);
+      margin: 0 0 var(--s-2);
+      color: var(--ink-900);
+      letter-spacing: -0.01em;
+    }
+    .page-intro p {
+      margin: 0;
+      font-size: var(--t-small);
+      color: var(--ink-500);
+    }
+
+    .stack {
+      display: grid;
+      /* min(100%, 360px) lets the track shrink with the viewport at 320px
+         instead of forcing horizontal scroll. Desktop multi-column behavior
+         is preserved via the 900px breakpoint below. */
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+      gap: var(--s-6);
+      max-width: 1280px;
+      margin: 0 auto;
+      align-items: start;
+      justify-content: center;
+    }
+
+    @media (min-width: 900px) {
+      .stack {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 420px));
+      }
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      background: var(--paper);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-screen);
+      overflow: visible; /* never mask layout bugs */
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Screen label sits above the surface so it doesn't compete
+       with the H1 inside */
+    .screen-label {
+      display: flex;
+      align-items: baseline;
+      gap: var(--s-2);
+      font-size: var(--t-micro);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-500);
+      margin: 0 var(--s-2) var(--s-2);
+      font-weight: 600;
+    }
+    .screen-label .num {
+      color: var(--ink-900);
+    }
+    .screen-label .pipe {
+      color: var(--ink-200);
+    }
+    .screen-label .job {
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 500;
+      color: var(--ink-500);
+    }
+
+    /* Status-bar abstraction — anchors the surface as "mobile"
+       without a kitsch phone bezel */
+    .chrome {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--s-3) var(--s-4) var(--s-1);
+      font-size: var(--t-micro);
+      font-variant-numeric: tabular-nums;
+      color: var(--ink-500);
+      font-weight: 600;
+    }
+    .chrome .dots {
+      display: inline-flex;
+      gap: 3px;
+    }
+    .chrome .dots span {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--ink-300);
+    }
+
+    .app-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--s-3);
+      padding: var(--s-3) var(--s-4) var(--s-3);
+      border-bottom: 1px solid var(--ink-100);
+    }
+    .app-bar .back {
+      width: 28px; height: 28px;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--ink-700);
+      border-radius: 6px;
+    }
+    .app-bar .brand {
+      font-size: var(--t-small);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--ink-700);
+    }
+    .app-bar .brand .mark {
+      color: var(--brand-600);
+      margin-right: 6px;
+    }
+
+    .body {
+      padding: var(--s-5) var(--s-4) var(--s-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-4);
+    }
+
+    /* -------------------------------------------------------------
+       Typography primitives
+       ------------------------------------------------------------- */
+    /* `.event` applies to whichever heading level carries the screen title.
+       In this stacked storyboard the page-level h1 is the page intro;
+       each screen's hero heading is an h2 demoted from the v1 h1 pattern. */
+    h1.event, h2.event {
+      font-size: var(--t-display);
+      line-height: var(--lh-tight);
+      letter-spacing: -0.01em;
+      font-weight: 700;
+      color: var(--ink-900);
+      margin: 0;
+      text-wrap: balance;
+    }
+    h2.section {
+      font-size: var(--t-h2);
+      line-height: var(--lh-tight);
+      font-weight: 600;
+      color: var(--ink-900);
+      margin: 0;
+      letter-spacing: -0.005em;
+    }
+    p.lede {
+      margin: 0;
+      color: var(--ink-700);
+      font-size: var(--t-body);
+    }
+    p.meta {
+      margin: 0;
+      color: var(--ink-500);
+      font-size: var(--t-small);
+    }
+
+    /* Dynamic value token — body-weight, never dominant.
+       A dotted underline is the only signal it's a placeholder. */
+    .tok {
+      color: var(--ink-700);
+      background: var(--token-bg);
+      border: 1px solid var(--token-line);
+      border-radius: 4px;
+      padding: 0 5px;
+      font-family: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    /* -------------------------------------------------------------
+       Alert / event stripe — Screen 1 hero block
+       ------------------------------------------------------------- */
+    .event-block {
+      display: flex;
+      gap: var(--s-3);
+      padding: var(--s-4);
+      background: var(--alert-100);
+      border: 1px solid var(--alert-line);
+      border-radius: var(--radius-md);
+    }
+    .event-block .icon {
+      flex: 0 0 22px;
+      width: 22px; height: 22px;
+      color: var(--alert-700);
+      margin-top: 2px;
+    }
+    .event-block .stack-y {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .event-block .cause {
+      font-size: var(--t-small);
+      color: var(--alert-700);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .event-block .route {
+      font-size: var(--t-small);
+      color: var(--ink-700);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .reassure {
+      color: var(--ink-700);
+      font-size: var(--t-body);
+    }
+    .reassure strong {
+      color: var(--ink-900);
+      font-weight: 600;
+    }
+
+    /* -------------------------------------------------------------
+       Buttons
+       ------------------------------------------------------------- */
+    .btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      font: inherit;
+      font-weight: 600;
+      font-size: var(--t-body);
+      padding: 14px var(--s-4);
+      min-height: 48px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--s-2);
+      text-decoration: none;
+      width: 100%;
+      line-height: 1.2;
+      text-align: center;
+    }
+    .btn-primary {
+      background: var(--brand-600);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--brand-700); }
+    .btn-primary:focus-visible { outline: none; box-shadow: var(--focus); }
+
+    .btn-secondary {
+      background: var(--paper);
+      color: var(--ink-900);
+      border-color: var(--ink-200);
+    }
+    .btn-secondary:hover { background: var(--ink-050); }
+    .btn-secondary:focus-visible { outline: none; box-shadow: var(--focus); }
+
+    /* -------------------------------------------------------------
+       Path cards — Screen 2
+       ------------------------------------------------------------- */
+    .path-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .path-card {
+      display: flex;
+      gap: var(--s-3);
+      padding: var(--s-4);
+      background: var(--paper);
+      border: 1px solid var(--ink-200);
+      border-radius: var(--radius-md);
+      text-align: left;
+      width: 100%;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      min-height: 44px;
+      align-items: flex-start;
+      transition: border-color .12s ease, background .12s ease;
+    }
+    .path-card:hover {
+      border-color: var(--brand-600);
+      background: var(--brand-100);
+    }
+    .path-card:focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+      border-color: var(--brand-600);
+    }
+    .path-card .icon {
+      flex: 0 0 36px;
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: var(--ink-100);
+      color: var(--brand-600);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .path-card .text {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .path-card .label {
+      font-weight: 600;
+      color: var(--ink-900);
+      font-size: var(--t-body);
+      line-height: 1.3;
+    }
+    .path-card .consequence {
+      font-size: var(--t-small);
+      color: var(--ink-500);
+      line-height: 1.4;
+    }
+    .path-card .caret {
+      flex: 0 0 16px;
+      color: var(--ink-300);
+      margin-top: 3px;
+    }
+
+    /* Refund honest dead-end note */
+    .refund-note {
+      font-size: var(--t-small);
+      color: var(--ink-500);
+      background: var(--ink-050);
+      border: 1px solid var(--ink-200);
+      border-radius: var(--radius-md);
+      padding: var(--s-3) var(--s-4);
+      margin: 0;
+    }
+    .refund-note strong { color: var(--ink-700); font-weight: 600; }
+
+    /* -------------------------------------------------------------
+       Flight cards — Screen 3
+       ------------------------------------------------------------- */
+    .flight-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .flight-card {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
+      padding: var(--s-4);
+      border: 1px solid var(--ink-200);
+      border-radius: var(--radius-md);
+      background: var(--paper);
+    }
+    .flight-card .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--s-3);
+    }
+    .flight-card .time {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ink-900);
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+    .flight-card .fare {
+      font-size: var(--t-small);
+      font-weight: 600;
+      color: var(--ink-700);
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .flight-card .fare.zero {
+      color: var(--good-700);
+    }
+    .flight-card .fare.plus {
+      color: var(--ink-700);
+    }
+    .flight-card .meta-row {
+      font-size: var(--t-small);
+      color: var(--ink-500);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s-1) var(--s-3);
+    }
+    .flight-card .meta-row .dot {
+      color: var(--ink-300);
+    }
+    .flight-card .cta {
+      margin-top: var(--s-1);
+    }
+
+    /* -------------------------------------------------------------
+       Confirmation — Screen 4
+       ------------------------------------------------------------- */
+    .confirm-banner {
+      display: flex;
+      gap: var(--s-3);
+      padding: var(--s-4);
+      background: var(--good-100);
+      border-radius: var(--radius-md);
+      align-items: flex-start;
+    }
+    .confirm-banner .icon {
+      flex: 0 0 22px;
+      width: 22px; height: 22px;
+      color: var(--good-700);
+      margin-top: 2px;
+    }
+    .confirm-banner .text {
+      font-size: var(--t-small);
+      color: var(--good-700);
+      font-weight: 600;
+    }
+
+    .summary {
+      border: 1px solid var(--ink-200);
+      border-radius: var(--radius-md);
+      padding: var(--s-2) var(--s-4);
+      margin: 0;
+    }
+    .summary div.row {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s-3);
+      padding: var(--s-3) 0;
+      border-bottom: 1px solid var(--ink-100);
+      align-items: baseline;
+    }
+    .summary div.row:last-child { border-bottom: none; }
+    .summary dt {
+      font-size: var(--t-small);
+      color: var(--ink-500);
+      flex: 0 0 auto;
+      margin: 0;
+    }
+    .summary dd {
+      font-size: var(--t-small);
+      color: var(--ink-900);
+      font-weight: 600;
+      margin: 0;
+      text-align: right;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .support-block {
+      background: var(--ink-050);
+      border: 1px solid var(--ink-200);
+      border-radius: var(--radius-md);
+      padding: var(--s-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-2);
+    }
+    .support-block h4 {
+      margin: 0;
+      font-size: var(--t-body);
+      font-weight: 600;
+      color: var(--ink-900);
+    }
+    .support-block p {
+      margin: 0;
+      font-size: var(--t-small);
+      color: var(--ink-700);
+    }
+    .support-block .status {
+      font-size: var(--t-small);
+      color: var(--ink-700);
+    }
+
+    /* Persistent talk-to-someone footer */
+    .talk-foot {
+      border-top: 1px solid var(--ink-100);
+      padding: var(--s-3) var(--s-4) var(--s-4);
+      display: flex;
+      justify-content: center;
+    }
+    .talk-link {
+      font-size: var(--t-small);
+      color: var(--brand-600);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: var(--s-2) var(--s-3);
+      min-height: 44px;
+      border-radius: 8px;
+    }
+    .talk-link:hover { background: var(--ink-100); }
+    .talk-link:focus-visible { outline: none; box-shadow: var(--focus); }
+
+    /* -------------------------------------------------------------
+       SMS screen — Screen 0
+       ------------------------------------------------------------- */
+    .sms-frame {
+      padding: var(--s-5) var(--s-4) var(--s-6);
+      background: var(--ink-050);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-4);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+    .sms-time {
+      text-align: center;
+      font-size: var(--t-micro);
+      color: var(--ink-500);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .sms-sender {
+      text-align: center;
+      font-size: var(--t-small);
+      color: var(--ink-500);
+    }
+    .sms-sender strong {
+      color: var(--ink-900);
+      font-weight: 600;
+    }
+    .sms-bubble {
+      background: #fff;
+      border: 1px solid var(--ink-200);
+      border-radius: 16px 16px 16px 4px;
+      padding: var(--s-4);
+      font-size: var(--t-body);
+      color: var(--ink-900);
+      line-height: var(--lh-body);
+      align-self: flex-start;
+      max-width: 92%;
+    }
+    .sms-bubble a {
+      color: var(--brand-600);
+      text-decoration: underline;
+      word-break: break-all;
+    }
+    .sms-caption {
+      font-size: var(--t-small);
+      color: var(--ink-500);
+      text-align: center;
+    }
+
+    /* -------------------------------------------------------------
+       Footer / page caption
+       ------------------------------------------------------------- */
+    .page-foot {
+      max-width: 720px;
+      margin: var(--s-8) auto 0;
+      padding: 0 var(--s-2);
+      color: var(--ink-500);
+      font-size: var(--t-micro);
+      text-align: center;
+      letter-spacing: 0.03em;
+    }
+
+    /* Motion respect */
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+
+    /* High-contrast focus for keyboard users */
+    a:focus-visible, button:focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+    }
+
+    /* Skip link / nicety */
+    .visually-hidden {
+      position: absolute;
+      width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-intro">
+    <h1>Canceled-Flight Recovery</h1>
+    <p>Mobile-first prototype, five screens. Designed at ~390px width; renders the full flow as a stack so the sequence is readable at a glance. Dynamic values are shown as <span class="tok">{tokens}</span> at body weight.</p>
+  </header>
+
+  <main class="stack" aria-label="Recovery flow screens">
+
+    <!-- ============================================================
+         SCREEN 1 / 5 — SMS entry
+         ============================================================ -->
+    <section class="screen" aria-labelledby="s1-title">
+      <div class="screen-label" aria-hidden="true">
+        <span class="num">01</span>
+        <span class="pipe">/</span>
+        <span>SMS entry</span>
+        <span class="pipe">|</span>
+        <span class="job">Trust the alert is real</span>
+      </div>
+
+      <div class="chrome" aria-hidden="true">
+        <span>10:46 PM</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <div class="app-bar" aria-hidden="true">
+        <span class="back" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand"><span class="mark">●</span>Messages</span>
+      </div>
+
+      <div class="sms-frame">
+        <h2 id="s1-title" class="visually-hidden">SMS entry — your flight was canceled</h2>
+        <div class="sms-time">Tonight, 10:46 PM</div>
+        <div class="sms-sender"><strong>Northstar Air</strong> &nbsp;·&nbsp; verified sender</div>
+
+        <div class="sms-bubble">
+          Your 6:15&nbsp;a.m. flight <strong>NS482 DEN&rarr;LGA</strong> tomorrow was canceled (crew availability).<br><br>
+          Tap to see your options, including hotel and meal support for tonight:<br>
+          <a href="#screen-2">northstar.app/trip/<span class="tok">{link}</span></a>
+        </div>
+
+        <div class="sms-caption">Sent from a no-reply line. If anything looks off, call the number on the back of your boarding pass or your card.</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SCREEN 2 / 5 — Status & Plan
+         ============================================================ -->
+    <section class="screen" id="screen-2" aria-labelledby="s2-title">
+      <div class="screen-label" aria-hidden="true">
+        <span class="num">02</span>
+        <span class="pipe">/</span>
+        <span>Status &amp; Plan</span>
+        <span class="pipe">|</span>
+        <span class="job">Acknowledge &amp; orient</span>
+      </div>
+
+      <div class="chrome" aria-hidden="true">
+        <span>10:46 PM</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <div class="app-bar">
+        <span class="back" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand"><span class="mark">●</span>Northstar Air</span>
+      </div>
+
+      <div class="body">
+
+        <h2 class="event" id="s2-title">
+          Your 6:15&nbsp;a.m. flight to LGA was canceled.
+        </h2>
+
+        <p class="lede">
+          Hi <span class="tok">{first_name}</span> &mdash; we&rsquo;re sorry. You have options, and we can help cover tonight&rsquo;s stay and food.
+        </p>
+
+        <div class="event-block" role="status">
+          <span class="icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M11 2L20 18H2L11 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M11 9V13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="11" cy="15.5" r="1" fill="currentColor"/>
+            </svg>
+          </span>
+          <div class="stack-y">
+            <div class="cause">Cause: crew availability &mdash; not weather</div>
+            <div class="route">Flight NS482 &nbsp;·&nbsp; DEN &rarr; LGA &nbsp;·&nbsp; tomorrow, 6:15 AM</div>
+          </div>
+        </div>
+
+        <p class="meta">
+          Traveling with others on this trip? They&rsquo;ll appear on the next screen so you can rebook everyone together.
+        </p>
+
+        <a href="#screen-3" class="btn btn-primary">See my options</a>
+        <a href="#talk" class="btn btn-secondary">Talk to someone</a>
+      </div>
+
+      <div class="talk-foot">
+        <a href="#talk" class="talk-link">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3 3.5C3 3 3.5 2.5 4 2.5H5.5L7 5.5L5.5 6.5C6 8 7 9 8.5 9.5L9.5 8L12.5 9.5V11C12.5 11.5 12 12 11.5 12C7 11.8 3.2 8 3 3.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          Need a human? Talk to someone
+        </a>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SCREEN 3 / 5 — Choose your path
+         ============================================================ -->
+    <section class="screen" id="screen-3" aria-labelledby="s3-title">
+      <div class="screen-label" aria-hidden="true">
+        <span class="num">03</span>
+        <span class="pipe">/</span>
+        <span>Choose your path</span>
+        <span class="pipe">|</span>
+        <span class="job">Pick a recovery behavior</span>
+      </div>
+
+      <div class="chrome" aria-hidden="true">
+        <span>10:47 PM</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <div class="app-bar">
+        <span class="back" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand"><span class="mark">●</span>Northstar Air</span>
+      </div>
+
+      <div class="body">
+
+        <h2 class="event" id="s3-title">What works best for you?</h2>
+        <p class="lede">
+          Pick a path. Nothing is selected yet &mdash; you&rsquo;re in charge.
+        </p>
+
+        <ul class="path-list">
+
+          <li>
+            <button class="path-card" type="button">
+              <span class="icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M3 11L17 11M17 11L13 7M17 11L13 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M3 5V15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="text">
+                <span class="label">Rebook on a Northstar flight</span>
+                <span class="consequence">Confirmed seat on the next available flights.</span>
+              </span>
+              <span class="caret" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+          </li>
+
+          <li>
+            <button class="path-card" type="button">
+              <span class="icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M10 6V10L12.5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="text">
+                <span class="label">Try standby on an earlier flight</span>
+                <span class="consequence">No confirmed seat. You wait at the gate and may not get on.</span>
+              </span>
+              <span class="caret" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+          </li>
+
+          <li>
+            <button class="path-card" type="button">
+              <span class="icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="3" y="6" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M3 9H17" stroke="currentColor" stroke-width="1.6"/>
+                </svg>
+              </span>
+              <span class="text">
+                <span class="label">Take travel credit</span>
+                <span class="consequence">Keep the value of your ticket for a future trip.</span>
+              </span>
+              <span class="caret" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+          </li>
+
+          <li>
+            <button class="path-card" type="button">
+              <span class="icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M3 16V8L10 3L17 8V16" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                  <path d="M8 16V11H12V16" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="text">
+                <span class="label">Hotel &amp; meal support for tonight</span>
+                <span class="consequence">We can help cover tonight&rsquo;s stay and food.</span>
+              </span>
+              <span class="caret" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+          </li>
+        </ul>
+
+        <p class="refund-note">
+          <strong>Looking for a refund instead of credit?</strong>
+          Refunds aren&rsquo;t handled in this flow. Use <a href="#talk" style="color:var(--brand-600);font-weight:600;">Talk to someone</a> and an agent can help.
+        </p>
+
+      </div>
+
+      <div class="talk-foot">
+        <a href="#talk" class="talk-link">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3 3.5C3 3 3.5 2.5 4 2.5H5.5L7 5.5L5.5 6.5C6 8 7 9 8.5 9.5L9.5 8L12.5 9.5V11C12.5 11.5 12 12 11.5 12C7 11.8 3.2 8 3 3.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          Need a human? Talk to someone
+        </a>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SCREEN 4 / 5 — Pick a flight
+         ============================================================ -->
+    <section class="screen" id="screen-4" aria-labelledby="s4-title">
+      <div class="screen-label" aria-hidden="true">
+        <span class="num">04</span>
+        <span class="pipe">/</span>
+        <span>Pick a flight</span>
+        <span class="pipe">|</span>
+        <span class="job">Choose a specific rebooking</span>
+      </div>
+
+      <div class="chrome" aria-hidden="true">
+        <span>10:48 PM</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <div class="app-bar">
+        <span class="back" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand"><span class="mark">●</span>Confirmed rebooking</span>
+      </div>
+
+      <div class="body">
+
+        <h2 class="event" id="s4-title">Three flights tomorrow to LGA</h2>
+        <p class="lede">
+          Each one is a confirmed seat. Arrival times are shown as <span class="tok">{new_arrival_time}</span> &mdash; the booking screen confirms them.
+        </p>
+
+        <ul class="flight-list">
+
+          <li class="flight-card">
+            <div class="row">
+              <div class="time">7:10 AM</div>
+              <div class="fare zero">Same fare</div>
+            </div>
+            <div class="meta-row">
+              <span>1 stop</span>
+              <span class="dot">·</span>
+              <span>arrives <span class="tok">{new_arrival_time}</span></span>
+              <span class="dot">·</span>
+              <span>earliest option</span>
+            </div>
+            <a href="#screen-5" class="btn btn-secondary cta">Choose this flight</a>
+          </li>
+
+          <li class="flight-card">
+            <div class="row">
+              <div class="time">2:40 PM</div>
+              <div class="fare plus">+&thinsp;$84</div>
+            </div>
+            <div class="meta-row">
+              <span>Nonstop</span>
+              <span class="dot">·</span>
+              <span>arrives <span class="tok">{new_arrival_time}</span></span>
+              <span class="dot">·</span>
+              <span>fare difference</span>
+            </div>
+            <a href="#screen-5" class="btn btn-secondary cta">Choose this flight</a>
+          </li>
+
+          <li class="flight-card">
+            <div class="row">
+              <div class="time">6:30 PM</div>
+              <div class="fare zero">Same fare</div>
+            </div>
+            <div class="meta-row">
+              <span>1 stop</span>
+              <span class="dot">·</span>
+              <span>arrives <span class="tok">{new_arrival_time}</span></span>
+              <span class="dot">·</span>
+              <span>latest tomorrow</span>
+            </div>
+            <a href="#screen-5" class="btn btn-secondary cta">Choose this flight</a>
+          </li>
+        </ul>
+
+        <p class="meta">
+          Filters for nonstop-only and arrival time are coming. For now, all three are shown.
+        </p>
+
+      </div>
+
+      <div class="talk-foot">
+        <a href="#talk" class="talk-link">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3 3.5C3 3 3.5 2.5 4 2.5H5.5L7 5.5L5.5 6.5C6 8 7 9 8.5 9.5L9.5 8L12.5 9.5V11C12.5 11.5 12 12 11.5 12C7 11.8 3.2 8 3 3.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          Need a human? Talk to someone
+        </a>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SCREEN 5 / 5 — Confirm & save
+         ============================================================ -->
+    <section class="screen" id="screen-5" aria-labelledby="s5-title">
+      <div class="screen-label" aria-hidden="true">
+        <span class="num">05</span>
+        <span class="pipe">/</span>
+        <span>Confirm &amp; save</span>
+        <span class="pipe">|</span>
+        <span class="job">Leave with proof</span>
+      </div>
+
+      <div class="chrome" aria-hidden="true">
+        <span>10:49 PM</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <div class="app-bar">
+        <span class="back" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand"><span class="mark">●</span>Trip details</span>
+      </div>
+
+      <div class="body">
+
+        <div class="confirm-banner">
+          <span class="icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M7 11L10 14L15 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="text">Booked. A copy is being sent to your email and phone.</span>
+        </div>
+
+        <h2 class="event" id="s5-title">
+          You&rsquo;re booked on the 7:10&nbsp;AM flight to LGA.
+        </h2>
+
+        <dl class="summary">
+          <div class="row">
+            <dt>Flight</dt>
+            <dd><span class="tok">{new_flight_number}</span></dd>
+          </div>
+          <div class="row">
+            <dt>Departs</dt>
+            <dd>7:10 AM &nbsp;·&nbsp; DEN</dd>
+          </div>
+          <div class="row">
+            <dt>Arrives</dt>
+            <dd><span class="tok">{new_arrival_time}</span> &nbsp;·&nbsp; LGA</dd>
+          </div>
+          <div class="row">
+            <dt>Stops</dt>
+            <dd>1 stop</dd>
+          </div>
+          <div class="row">
+            <dt>Confirmation</dt>
+            <dd><span class="tok">{confirmation_code}</span></dd>
+          </div>
+          <div class="row">
+            <dt>Checked bag</dt>
+            <dd><span class="tok">{baggage_status}</span></dd>
+          </div>
+        </dl>
+
+        <div class="support-block">
+          <h4>Tonight&rsquo;s stay and food</h4>
+          <p class="status">
+            <span class="tok">{hotel_status}</span> &nbsp;·&nbsp; <span class="tok">{meal_status}</span>
+          </p>
+          <p>If support isn&rsquo;t showing as added in 10 minutes, tap Talk to someone &mdash; we won&rsquo;t leave you stuck.</p>
+        </div>
+
+        <a href="#" class="btn btn-primary">
+          Send me a copy by email and text
+        </a>
+        <a href="#screen-3" class="btn btn-secondary">If plans change again, see options</a>
+
+        <p class="meta">
+          If your plans change again, you can come back here or talk to someone. Your booking and any added support stay saved.
+        </p>
+
+      </div>
+
+      <div class="talk-foot">
+        <a href="#talk" class="talk-link" id="talk">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3 3.5C3 3 3.5 2.5 4 2.5H5.5L7 5.5L5.5 6.5C6 8 7 9 8.5 9.5L9.5 8L12.5 9.5V11C12.5 11.5 12 12 11.5 12C7 11.8 3.2 8 3 3.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          Need a human? Talk to someone
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <p class="page-foot">
+    Prototype &mdash; all dynamic values shown as <span class="tok">{tokens}</span>.
+    No invented hotel names, voucher amounts, or phone numbers.
+  </p>
+
+</div>
+
+</body>
+</html>
