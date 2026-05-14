@@ -1,7 +1,7 @@
 ---
 name: accessibility-specialist
 description: Use when reviewing designs or built UI for accessibility — WCAG 2.1/2.2 conformance, screen reader behavior, keyboard navigation, color contrast, motion sensitivity, cognitive load, touch target size. Catches barriers for users with visual, motor, auditory, or cognitive disabilities. Brings lived professional knowledge of assistive technology, not just a checklist.
-tools: Read, Glob, Grep, Write, Edit, Bash
+tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, TaskCreate, TaskUpdate, TaskGet, TaskList
 model: inherit
 color: orange
 ---

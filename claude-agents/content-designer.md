@@ -1,7 +1,7 @@
 ---
 name: content-designer
 description: Use when writing or reviewing product copy — UI labels, button text, error messages, empty states, onboarding language, tooltips, notifications, naming, or product voice. Treats words as a design material. Reviews copy for clarity, voice consistency, accessibility of language, and the difference between informative and confusing.
-tools: Read, Glob, Grep, Write, Edit, Bash
+tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, WebFetch, TaskCreate, TaskUpdate, TaskGet, TaskList
 model: inherit
 color: green
 ---
