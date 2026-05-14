@@ -63,9 +63,12 @@ Install the bundled agents globally for personal use:
 ```bash
 mkdir -p ~/.claude/agents
 cp claude-agents/*.md ~/.claude/agents/
+grep '^tools:' ~/.claude/agents/*.md
 ```
 
 Then restart Claude Code and verify the agents with `/agents`.
+
+If a previous live demo failed because agents could not write files or coordinate, re-copy the agents before presenting. The current definitions give every role `Write`, `Edit`, `Bash`, task-list tools, and `SendMessage`.
 
 For a clean experiment, do not run directly in this checkout. Follow `10-clean-room-experiment-runbook.md` and create fresh baseline/team worktrees or clones.
 

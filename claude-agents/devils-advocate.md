@@ -1,7 +1,7 @@
 ---
 name: devils-advocate
 description: Use AFTER consensus has formed, when a design decision, plan, or recommendation is about to be committed. Stress-tests the team's reasoning by steel-manning the proposal, then attacking it from its strongest opposing position. Surfaces hidden assumptions, predicts failure modes, runs pre-mortems, and names biases the team is likely falling into. Do not invoke during open exploration — its job is to harden a decision, not derail discovery.
-tools: Read, Glob, Grep, WebSearch, WebFetch
+tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, WebFetch, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage
 model: inherit
 color: red
 ---

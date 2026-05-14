@@ -72,7 +72,7 @@ A good demo names both. The scorecard in `05-scorecard.md` is built around the "
 | `behavioral-scientist.md` | Cognitive psychology / behavioral economics | "Will they actually do this? And keep doing it? Ethically?" |
 | `devils-advocate.md` | Red teaming / structured analytic techniques | Steel-mans the consensus, runs the pre-mortem, names the biases |
 
-**Important kit note (v3+):** earlier versions of this kit shipped the role agents with read-only tool permissions (`Read, Glob, Grep`), which meant they couldn't actually write the files they were asked to author. v3+ grants `Write, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage` so team coordination and authoring actually work. The role-card framing also shifted from "Looks for" (review-only) to "Authors + audits" (authoring-first), and the visual-designer's identity changed from a reviewer with permission to write to an author whose audit is a sub-skill. If you copied the agents into `~/.claude/agents/` from an older version of this kit, re-copy them.
+**Important kit note (v3+):** earlier versions of this kit shipped some role agents with read-only tool permissions (`Read, Glob, Grep`), which meant they couldn't actually write the files they were asked to author. Current agents use a live-demo-safe allowlist: `Read, Glob, Grep, Write, Edit, Bash, WebSearch, WebFetch, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage`. That lets teammates write role reports, edit artifacts, run checks, coordinate tasks, and message each other. The role-card framing also shifted from "Looks for" (review-only) to "Authors + audits" (authoring-first), and the visual-designer's identity changed from a reviewer with permission to write to an author whose audit is a sub-skill. If you copied the agents into `~/.claude/agents/` from an older version of this kit, re-copy them before a live demo.
 
 ### Supporting
 
@@ -97,6 +97,7 @@ Available in every project on your machine.
 ```bash
 mkdir -p ~/.claude/agents
 cp claude-agents/*.md ~/.claude/agents/
+grep '^tools:' ~/.claude/agents/*.md
 ```
 
 Then in Claude Code, run `/agents` to verify they loaded, or restart your session.
@@ -108,6 +109,7 @@ Available only inside this project (and checkable into version control with the 
 ```bash
 mkdir -p .claude/agents
 cp claude-agents/*.md .claude/agents/
+grep '^tools:' .claude/agents/*.md
 ```
 
 Restart your Claude Code session in this project.

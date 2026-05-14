@@ -1,7 +1,7 @@
 ---
 name: behavioral-scientist
 description: Use when designing for behavior change, habit formation, motivation, conversion, retention, or any moment where the question is "will users actually do this — and keep doing it?". Applies decision architecture, behavioral economics, and behavior-change models. Also the in-house check against dark patterns — names the line between nudge and manipulation.
-tools: Read, Glob, Grep, WebSearch, Write, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage
+tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, WebFetch, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage
 model: inherit
 color: yellow
 ---

@@ -1,7 +1,7 @@
 ---
 name: information-architect
 description: Use when designing site/app navigation, taxonomies, content hierarchies, URL/route structures, search facets, or any time the question is "where should this live?" or "how should users find this?". Audits existing IA for orphan pages, dead ends, mental-model mismatches, and labeling problems.
-tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage
+tools: Read, Glob, Grep, Write, Edit, Bash, WebSearch, WebFetch, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage
 model: inherit
 color: blue
 ---
