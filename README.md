@@ -36,6 +36,8 @@ The demo problem is a canceled-flight recovery flow for a fictional airline, Nor
 | `05-scorecard.md` | Measurement rubric for team vs non-team output |
 | `06-meeting-one-pager.md` | Concise shareable explanation for the meeting |
 | `07-team-debate-master-prompt.md` | **General-purpose 4-round team debate prompt** — use this for real product decisions beyond the demo |
+| `08-single-agent-quick-prompt.md` | **3-line single-agent prompt** — for the 80% of moments where you just need one specialist, not a team |
+| `agent-teams-meetup-deck.html` | Self-contained HTML talk deck (17 slides, ~20 min). Open in any browser; arrow keys to navigate; `N` for speaker notes; `F` for fullscreen |
 
 ### The 8 agents (in `claude-agents/`)
 
@@ -102,7 +104,7 @@ For a deeper, debate-style run (recommended once the demo proves the concept), u
 
 The kit isn't just for demos. For real decisions:
 
-**Quick path — single specialist.** When you just need one lens (e.g., "review this copy" or "audit this for accessibility"), invoke a single agent by name. No team needed.
+**Quick path — single specialist.** When you just need one lens (e.g., "review this copy" or "audit this for accessibility"), invoke a single agent by name. Use [`08-single-agent-quick-prompt.md`](08-single-agent-quick-prompt.md) for a copy-paste 3-line template plus 8 worked examples.
 
 **Phased path — sequence specialists.** For larger work, invoke 2–3 agents per phase:
 - **Discovery:** `ux-researcher` + `behavioral-scientist`
