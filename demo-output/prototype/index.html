@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Northstar Air — canceled flight recovery (concept)</title>
+<meta name="description" content="Concept flow for recovering from a canceled Northstar Air flight." />
+<style>
+  /* ---------- Tokens ---------- */
+  :root {
+    /* Neutrals — warm grays, not airline blue */
+    --ink-900: #14171c;       /* primary text */
+    --ink-700: #3b424d;       /* secondary text */
+    --ink-500: #6b7280;       /* tertiary text */
+    --ink-300: #c8ccd2;       /* hairline borders */
+    --ink-200: #e3e5ea;       /* dividers */
+    --ink-100: #f1f2f5;       /* subtle fills */
+    --paper:   #ffffff;       /* card surface */
+    --canvas:  #f6f4ef;       /* page canvas — slightly warm */
+
+    /* Brand + state — used sparingly */
+    --action:  #0f4d3a;       /* deep forest green — primary action */
+    --action-700: #0a3a2c;
+    --action-100: #e5efe9;
+    --alert:   #8a2a1f;       /* canceled / error — deep, not red-red */
+    --alert-100: #f6e7e3;
+    --notice:  #6b4a00;       /* "not guaranteed" / caution */
+    --notice-100: #faf1d8;
+    --good:    #1f5132;       /* "you're set" affirmation */
+    --good-100: #e3eee6;
+
+    /* Type scale */
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --fs-xs: 13px;
+    --fs-sm: 14px;
+    --fs-base: 16px;
+    --fs-md: 17px;
+    --fs-lg: 20px;
+    --fs-xl: 24px;
+    --fs-xxl: 28px;
+    --lh-tight: 1.25;
+    --lh-body: 1.55;
+
+    /* Rhythm — 4pt grid */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+    --s-9: 56px;
+
+    /* Shape */
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --r-xl: 24px;     /* phone frame */
+    --r-pill: 999px;
+
+    /* Elevation */
+    --shadow-frame: 0 1px 2px rgba(20,23,28,0.04), 0 24px 48px -24px rgba(20,23,28,0.18);
+    --shadow-card: 0 1px 0 rgba(20,23,28,0.04);
+  }
+
+  /* ---------- Reset / base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;       /* no horizontal scroll, ever */
+    max-width: 100%;
+  }
+  html { background: var(--canvas); }
+  body {
+    font-family: var(--font);
+    font-size: var(--fs-base);
+    line-height: var(--lh-body);
+    color: var(--ink-900);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  img, svg { max-width: 100%; display: block; }
+
+  /* Long codes (flight numbers, URLs) must wrap inside containers */
+  .wrap-anywhere { overflow-wrap: anywhere; word-break: break-word; }
+
+  /* ---------- Page chrome (desktop only) ---------- */
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(20px, 4vw, 56px) clamp(16px, 4vw, 40px) 80px;
+  }
+  .page-header {
+    margin-bottom: var(--s-7);
+  }
+  .page-header h1 {
+    font-size: clamp(22px, 3.5vw, 32px);
+    line-height: 1.2;
+    margin: 0 0 var(--s-2);
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+  .page-header p {
+    color: var(--ink-700);
+    margin: 0;
+    max-width: 56ch;
+  }
+  .page-footer {
+    margin-top: var(--s-8);
+    color: var(--ink-500);
+    font-size: var(--fs-xs);
+    max-width: 56ch;
+  }
+
+  /* Screen grid — single column on mobile, multi-column on desktop */
+  .screens {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-8);
+  }
+  @media (min-width: 760px) {
+    .screens { grid-template-columns: repeat(2, 1fr); gap: var(--s-8) var(--s-7); }
+  }
+  @media (min-width: 1100px) {
+    .screens { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .screen-slot { display: flex; flex-direction: column; align-items: center; gap: var(--s-3); min-width: 0; }
+  .screen-caption {
+    font-size: var(--fs-sm);
+    color: var(--ink-500);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .screen-caption strong {
+    color: var(--ink-900);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+    font-size: var(--fs-md);
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ---------- Phone frame ---------- */
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    background: var(--paper);
+    border-radius: var(--r-xl);
+    border: 1px solid var(--ink-200);
+    box-shadow: var(--shadow-frame);
+    overflow: hidden;       /* keep round corners crisp */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* On 390px viewports, drop the desktop frame chrome so content uses the full width */
+  @media (max-width: 420px) {
+    .page { padding: 12px 0 48px; }
+    .page-header { padding: 0 16px; }
+    .page-footer { padding: 0 16px; }
+    .screen-slot { gap: var(--s-2); }
+    .screen-caption { padding: 0 16px; }
+    .phone {
+      max-width: 100%;
+      border-radius: 0;
+      border-left: 0;
+      border-right: 0;
+      box-shadow: none;
+    }
+  }
+
+  .status-bar {
+    background: var(--ink-100);
+    color: var(--ink-500);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 6px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .status-bar .brand { font-weight: 600; color: var(--ink-700); letter-spacing: 0; }
+
+  /* ---------- Screen skeleton ---------- */
+  .screen-header {
+    padding: var(--s-5) var(--s-5) var(--s-3);
+    border-bottom: 1px solid var(--ink-200);
+    background: var(--paper);
+  }
+  .screen-eyebrow {
+    font-size: var(--fs-xs);
+    color: var(--ink-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .screen-title {
+    font-size: var(--fs-xl);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.01em;
+    font-weight: 600;
+    margin: 0;
+    color: var(--ink-900);
+  }
+  .screen-body {
+    padding: var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+  }
+  .screen-footer {
+    border-top: 1px solid var(--ink-200);
+    padding: var(--s-4) var(--s-5) var(--s-5);
+    background: var(--ink-100);
+  }
+
+  /* Persistent Call Northstar link in every footer */
+  .call-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-2);
+    min-height: 44px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 1px solid var(--ink-300);
+    border-radius: var(--r-md);
+    color: var(--ink-900);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: var(--fs-base);
+  }
+  .call-link:hover { background: var(--paper); border-color: var(--ink-500); }
+  .call-link:focus-visible { outline: 3px solid var(--action); outline-offset: 2px; }
+  .call-link .num { color: var(--ink-700); font-weight: 500; }
+
+  /* ---------- Reusable bits ---------- */
+  h1, h2, h3, h4 { letter-spacing: -0.01em; }
+  p { margin: 0; }
+
+  .lede {
+    font-size: var(--fs-md);
+    color: var(--ink-700);
+    line-height: var(--lh-body);
+  }
+
+  .flight-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    align-items: baseline;
+    font-size: var(--fs-md);
+    color: var(--ink-900);
+  }
+  .flight-line .code { font-weight: 700; letter-spacing: 0.02em; }
+  .flight-line .route { color: var(--ink-700); }
+  .flight-line .when { color: var(--ink-700); }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--alert-100);
+    color: var(--alert);
+    border: 1px solid color-mix(in srgb, var(--alert) 25%, transparent);
+    padding: 4px 10px;
+    border-radius: var(--r-pill);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .status-badge::before {
+    content: "";
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--alert);
+    display: inline-block;
+    flex: 0 0 auto;
+  }
+  .status-badge.good {
+    background: var(--good-100);
+    color: var(--good);
+    border-color: color-mix(in srgb, var(--good) 25%, transparent);
+  }
+  .status-badge.good::before { background: var(--good); }
+  .status-badge.notice {
+    background: var(--notice-100);
+    color: var(--notice);
+    border-color: color-mix(in srgb, var(--notice) 30%, transparent);
+  }
+  .status-badge.notice::before { background: var(--notice); }
+
+  .meta-line {
+    color: var(--ink-700);
+    font-size: var(--fs-sm);
+  }
+
+  /* Primary / secondary buttons */
+  .btn {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: var(--action);
+    color: #fff;
+    font-family: inherit;
+    font-size: var(--fs-md);
+    font-weight: 600;
+    padding: 14px 18px;
+    min-height: 48px;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    text-align: center;
+    line-height: 1.2;
+    width: 100%;
+    letter-spacing: 0.01em;
+  }
+  .btn:hover { background: var(--action-700); }
+  /* Two-tone focus ring: white inner halo against the green button, dark outer ring against the page canvas.
+     Meets 1.4.11 against BOTH --action (button bg) and --paper / --canvas (surrounding). */
+  .btn:focus-visible {
+    outline: 3px solid var(--paper);
+    outline-offset: -3px;
+    box-shadow: 0 0 0 6px var(--ink-900);
+  }
+  .btn[disabled], .btn[aria-disabled="true"] {
+    background: var(--ink-300);
+    color: var(--ink-700);
+    cursor: not-allowed;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-900);
+    border: 1px solid var(--ink-300);
+  }
+  .btn-ghost:hover { background: var(--ink-100); border-color: var(--ink-500); }
+
+  .link-btn {
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 6px 0;
+    color: var(--action);
+    font-family: inherit;
+    font-size: var(--fs-base);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    min-height: 44px;
+    text-align: left;
+  }
+  .link-btn:focus-visible { outline: 3px solid var(--action); outline-offset: 2px; border-radius: 4px; }
+
+  .text-link {
+    color: var(--action);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 600;
+  }
+  .text-link:focus-visible { outline: 3px solid var(--action); outline-offset: 2px; border-radius: 4px; }
+
+  /* Option card (Screen 2) */
+  .option-card {
+    width: 100%;
+    text-align: left;
+    background: var(--paper);
+    border: 1px solid var(--ink-300);
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-2) var(--s-4);
+    align-items: start;
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+  }
+  .option-card:hover { border-color: var(--ink-500); }
+  .option-card:focus-visible { outline: 3px solid var(--action); outline-offset: 2px; }
+  .option-card[aria-disabled="true"] {
+    background: var(--ink-100);
+    color: var(--ink-500);
+    border-style: dashed;
+    cursor: not-allowed;
+  }
+  .option-card .label {
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--ink-900);
+    line-height: 1.3;
+  }
+  .option-card[aria-disabled="true"] .label { color: var(--ink-500); }
+  .option-card .consequence {
+    grid-column: 1 / -1;
+    color: var(--ink-700);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-body);
+  }
+  .option-card .choose {
+    color: var(--action);
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+  }
+  .option-card[aria-disabled="true"] .choose { color: var(--ink-500); }
+  .option-card .why-disabled {
+    grid-column: 1 / -1;
+    color: var(--ink-700);
+    font-size: var(--fs-xs);
+    font-style: italic;
+  }
+
+  /* Support row at bottom of Screen 2 */
+  .support-row {
+    background: var(--action-100);
+    border: 1px solid color-mix(in srgb, var(--action) 25%, transparent);
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .support-row h4 {
+    font-size: var(--fs-base);
+    margin: 0;
+    color: var(--action);
+    font-weight: 600;
+  }
+  .support-row p { color: var(--ink-700); font-size: var(--fs-sm); }
+
+  /* Recap chip (Screen 3) */
+  .recap-chip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-3);
+    align-items: center;
+    justify-content: space-between;
+    background: var(--ink-100);
+    border-radius: var(--r-md);
+    padding: 10px var(--s-3);
+    font-size: var(--fs-sm);
+    color: var(--ink-700);
+  }
+  .recap-chip strong { color: var(--ink-900); font-weight: 600; }
+
+  /* Filter row */
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+  .filter-chip {
+    appearance: none;
+    background: var(--paper);
+    border: 1px solid var(--ink-300);
+    border-radius: var(--r-pill);
+    padding: 8px 12px;
+    font-size: var(--fs-sm);
+    font-family: inherit;
+    color: var(--ink-900);
+    min-height: 36px;
+    cursor: pointer;
+  }
+  .filter-chip[aria-pressed="true"] {
+    background: var(--ink-900);
+    color: #fff;
+    border-color: var(--ink-900);
+  }
+  .filter-chip:focus-visible { outline: 3px solid var(--action); outline-offset: 2px; }
+  .filter-meta { font-size: var(--fs-xs); color: var(--ink-500); }
+  /* Helper line: tells the user why the primary CTA is disabled. Stronger weight + ink-700
+     so it reads as guidance, not throwaway meta. */
+  .pick-prompt {
+    font-size: var(--fs-sm);
+    color: var(--ink-700);
+    font-weight: 600;
+  }
+
+  /* Flight card (Screen 3 rebook variant) */
+  .flight-card {
+    width: 100%;
+    text-align: left;
+    background: var(--paper);
+    border: 1px solid var(--ink-300);
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px var(--s-3);
+    font-family: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  .flight-card:hover { border-color: var(--ink-500); }
+  /* Default focus ring uses ink-900 — readable against --paper. */
+  .flight-card:focus-visible {
+    outline: 3px solid var(--ink-900);
+    outline-offset: 2px;
+  }
+  .flight-card[aria-pressed="true"] {
+    border-color: var(--action);
+    box-shadow: inset 0 0 0 1px var(--action);
+    background: var(--action-100);
+  }
+  /* When a card is BOTH selected AND focused, the focus ring must be visually distinct from
+     the selection-state border. Keep ink-900 (already used above) so the two states never collapse. */
+  .flight-card[aria-pressed="true"]:focus-visible {
+    outline-color: var(--ink-900);
+  }
+  .flight-card .times {
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--ink-900);
+    font-variant-numeric: tabular-nums;
+  }
+  .flight-card .duration { color: var(--ink-700); font-size: var(--fs-sm); white-space: nowrap; }
+  .flight-card .stops { color: var(--ink-700); font-size: var(--fs-sm); grid-column: 1 / -1; }
+  .flight-card .seats {
+    grid-column: 1 / -1;
+    font-size: var(--fs-xs);
+    color: var(--notice);
+    font-weight: 600;
+  }
+  .flight-card .selected-mark {
+    grid-column: 1 / -1;
+    font-size: var(--fs-xs);
+    color: var(--action);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: none;
+  }
+  .flight-card[aria-pressed="true"] .selected-mark { display: block; }
+
+  /* Support block (Screen 3) */
+  .support-block {
+    border: 1px solid var(--ink-200);
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .support-block h3 {
+    font-size: var(--fs-md);
+    margin: 0;
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .support-block .lede { font-size: var(--fs-sm); color: var(--ink-700); }
+  .support-block .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-3);
+    padding: var(--s-3) 0;
+    border-top: 1px solid var(--ink-200);
+  }
+  .support-block .item:first-of-type { border-top: 0; padding-top: 0; }
+  .support-block .item .name { font-weight: 600; color: var(--ink-900); }
+  .support-block .item p { font-size: var(--fs-sm); color: var(--ink-700); margin-top: 2px; }
+  .support-block .item .status { font-size: var(--fs-xs); color: var(--ink-500); white-space: nowrap; }
+  .support-block .toggle-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-3);
+    border-top: 1px solid var(--ink-200);
+    padding-top: var(--s-3);
+  }
+  .support-block .toggle-row input[type="checkbox"] {
+    width: 20px; height: 20px;
+    margin-top: 2px;
+    accent-color: var(--action);
+    flex: 0 0 auto;
+  }
+  .support-block .not-included {
+    background: var(--ink-100);
+    border-radius: var(--r-sm);
+    padding: var(--s-3);
+    font-size: var(--fs-sm);
+    color: var(--ink-700);
+  }
+  .support-block .not-included strong { color: var(--ink-900); }
+
+  /* Review list (Screen 4) */
+  .recap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--ink-200);
+    border-radius: var(--r-md);
+    background: var(--paper);
+  }
+  .recap-list .row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px var(--s-3);
+    padding: var(--s-4);
+    border-top: 1px solid var(--ink-200);
+  }
+  .recap-list .row:first-child { border-top: 0; }
+  .recap-list .row .key {
+    font-size: var(--fs-xs);
+    color: var(--ink-500);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    grid-column: 1 / -1;
+    margin-bottom: 2px;
+  }
+  .recap-list .row .val { color: var(--ink-900); font-size: var(--fs-base); }
+  .recap-list .row .edit { align-self: end; }
+  /* Support row: itemized consent. Per-item Accept / Decline replaces the pre-checked toggle.
+     Stack to full-width on the recap card so on a 390px viewport the two buttons sit side-by-side
+     without crowding the value text. */
+  .recap-list .row.support-row-item {
+    grid-template-columns: 1fr;
+  }
+  .consent-pair {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: var(--s-2);
+    margin-top: var(--s-2);
+    flex-wrap: wrap;
+  }
+  .consent-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: 1 1 120px;
+    min-height: 44px;
+    padding: 10px 14px;
+    background: var(--paper);
+    border: 1px solid var(--ink-300);
+    border-radius: var(--r-md);
+    color: var(--ink-900);
+    font-family: inherit;
+    font-size: var(--fs-base);
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .consent-btn:hover { border-color: var(--ink-500); }
+  .consent-btn:focus-visible {
+    outline: 3px solid var(--ink-900);
+    outline-offset: 2px;
+  }
+  .consent-btn[aria-pressed="true"] {
+    background: var(--action-100);
+    border-color: var(--action);
+    color: var(--action);
+    box-shadow: inset 0 0 0 1px var(--action);
+  }
+  .consent-btn[aria-pressed="true"]:focus-visible {
+    outline-color: var(--ink-900);
+  }
+
+  /* Confirmation hero (Screen 5) */
+  .confirm-hero {
+    background: var(--good-100);
+    border: 1px solid color-mix(in srgb, var(--good) 25%, transparent);
+    border-radius: var(--r-md);
+    padding: var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+  .confirm-hero h3 {
+    margin: 0;
+    font-size: var(--fs-xl);
+    color: var(--good);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .confirm-hero p { color: var(--ink-900); font-size: var(--fs-md); }
+
+  /* Numbered next-steps */
+  ol.next-steps {
+    margin: 0;
+    padding: 0 0 0 var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  ol.next-steps li {
+    font-size: var(--fs-base);
+    color: var(--ink-900);
+    padding-left: 6px;
+  }
+  ol.next-steps li span.sub {
+    display: block;
+    color: var(--ink-700);
+    font-size: var(--fs-sm);
+    margin-top: 2px;
+  }
+
+  /* Offline summary block */
+  .offline-card {
+    border: 1px dashed var(--ink-300);
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .offline-card h3 {
+    font-size: var(--fs-base);
+    margin: 0;
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .offline-card dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px var(--s-3);
+    font-size: var(--fs-sm);
+  }
+  .offline-card dt { color: var(--ink-500); }
+  .offline-card dd { margin: 0; color: var(--ink-900); }
+
+  /* Section divider with label */
+  .section-label {
+    font-size: var(--fs-xs);
+    color: var(--ink-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  /* Live-region (visible inline) */
+  .live-status {
+    font-size: var(--fs-sm);
+    color: var(--ink-700);
+  }
+
+  /* Reduced motion respect */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-header">
+    <p class="section-label" aria-hidden="true">Concept prototype</p>
+    <h1>Northstar Air — canceled flight recovery</h1>
+    <p>Five screens, mobile-first. Scroll to walk the flow. Each frame represents what one user sees on their phone after a late-night cancellation text.</p>
+  </header>
+
+  <main class="screens">
+
+    <!-- =========================================================
+         SCREEN 1 — What happened
+         ========================================================= -->
+    <section class="screen-slot" aria-labelledby="cap-1">
+      <p class="screen-caption" id="cap-1">Screen 1<strong>What happened</strong></p>
+
+      <article class="phone" aria-label="Screen 1: What happened">
+        <div class="status-bar" aria-hidden="true">
+          <span>10:48</span>
+          <span class="brand">Northstar Air</span>
+          <span>5G</span>
+        </div>
+
+        <header class="screen-header">
+          <p class="screen-eyebrow">Trip update</p>
+          <h2 class="screen-title">What happened</h2>
+        </header>
+
+        <div class="screen-body">
+          <!-- Live region intentionally not used here: ATs do not announce role=status text
+               that exists at parse time. In production, this string is injected by JS after first
+               paint into an empty live region. For the prototype, the sentence reads in natural order. -->
+          <div class="live-status">
+            Your Northstar flight has been canceled.
+          </div>
+
+          <div>
+            <p class="flight-line wrap-anywhere">
+              <span class="code">NS482</span>
+              <span class="route">DEN to LGA</span>
+              <span class="when">tomorrow, 6:15 a.m.</span>
+            </p>
+            <p style="margin-top: 8px;"><span class="status-badge">Canceled</span></p>
+          </div>
+
+          <p class="lede">The crew assigned to this flight cannot legally fly it by morning. We could not source a replacement crew in time.</p>
+
+          <p class="meta-line">We're sorry. The next screen will show your rebooking, refund, credit, and standby options, plus support for tonight if you qualify.</p>
+
+          <p class="meta-line"><strong style="color: var(--ink-900);">This affects 2 travelers</strong> on this booking.</p>
+
+          <button class="btn" type="button">See my options</button>
+        </div>
+
+        <footer class="screen-footer">
+          <a class="call-link" href="#" aria-label="Call Northstar (support number from your booking)">
+            <span>Call Northstar</span>
+            <span class="num">support number from your booking</span>
+          </a>
+        </footer>
+      </article>
+    </section>
+
+    <!-- =========================================================
+         SCREEN 2 — Choose how to recover
+         ========================================================= -->
+    <section class="screen-slot" id="screen-2" aria-labelledby="cap-2">
+      <p class="screen-caption" id="cap-2">Screen 2<strong>Choose how to recover</strong></p>
+
+      <article class="phone" aria-label="Screen 2: Choose how to recover">
+        <div class="status-bar" aria-hidden="true">
+          <span>10:49</span>
+          <span class="brand">Northstar Air</span>
+          <span>5G</span>
+        </div>
+
+        <header class="screen-header">
+          <p class="screen-eyebrow">Step 2 of 4</p>
+          <h2 class="screen-title">Choose how to recover</h2>
+        </header>
+
+        <div class="screen-body">
+          <p class="lede">Pick the option that works best for you. You can change your mind until you confirm.</p>
+
+          <div role="group" aria-label="Recovery options" style="display:flex; flex-direction:column; gap: var(--s-3);">
+
+            <button class="option-card" type="button" aria-describedby="opt-rebook-desc">
+              <span class="label">Rebook on another Northstar flight</span>
+              <span class="choose" aria-hidden="true">Choose &rsaquo;</span>
+              <span class="consequence" id="opt-rebook-desc">Get on the next available flight we can offer.</span>
+            </button>
+
+            <button class="option-card" type="button" aria-describedby="opt-refund-desc">
+              <span class="label">Refund to original payment</span>
+              <span class="choose" aria-hidden="true">Choose &rsaquo;</span>
+              <span class="consequence" id="opt-refund-desc">Cancel this trip and get your money back. We'll show the expected timing before you confirm.</span>
+            </button>
+
+            <button class="option-card" type="button" aria-describedby="opt-credit-desc">
+              <span class="label">Travel credit</span>
+              <span class="choose" aria-hidden="true">Choose &rsaquo;</span>
+              <span class="consequence" id="opt-credit-desc">Cancel this trip and hold the value for a future Northstar booking. Terms shown before you confirm.</span>
+            </button>
+
+            <button class="option-card" type="button" aria-describedby="opt-standby-desc" aria-disabled="true">
+              <span class="label">Standby — Not guaranteed</span>
+              <span class="choose">Unavailable</span>
+              <span class="consequence" id="opt-standby-desc">Wait at the airport for an open seat on an earlier flight. A seat is not guaranteed.</span>
+              <span class="why-disabled">Standby is closed for overnight cancellations. Available again after 5 a.m.</span>
+            </button>
+          </div>
+
+          <div class="support-row" role="note">
+            <h4>Need a hotel or meals tonight?</h4>
+            <p>Support is listed on the next screen, not hidden in a FAQ. Pick an option above to continue.</p>
+          </div>
+
+          <p class="meta-line" style="font-size: var(--fs-xs); color: var(--ink-500);">Need to split travelers across different options? <a href="#" class="text-link">Call Northstar</a>.</p>
+        </div>
+
+        <footer class="screen-footer">
+          <a class="call-link" href="#" aria-label="Call Northstar (support number from your booking)">
+            <span>Call Northstar</span>
+            <span class="num">support number from your booking</span>
+          </a>
+        </footer>
+      </article>
+    </section>
+
+    <!-- =========================================================
+         SCREEN 3 — Decide the details (rebook variant)
+         ========================================================= -->
+    <section class="screen-slot" aria-labelledby="cap-3">
+      <p class="screen-caption" id="cap-3">Screen 3<strong>Decide the details</strong></p>
+
+      <article class="phone" aria-label="Screen 3: Decide the details">
+        <div class="status-bar" aria-hidden="true">
+          <span>10:51</span>
+          <span class="brand">Northstar Air</span>
+          <span>5G</span>
+        </div>
+
+        <header class="screen-header">
+          <p class="screen-eyebrow">Step 3 of 4</p>
+          <h2 class="screen-title">Decide the details</h2>
+        </header>
+
+        <div class="screen-body">
+
+          <div class="recap-chip">
+            <span>You chose: <strong>Rebook on Northstar</strong></span>
+            <button class="link-btn" type="button">Change</button>
+          </div>
+
+          <div>
+            <p class="section-label" style="margin-bottom: 8px;">Available flights — DEN to LGA</p>
+            <div class="filters" role="group" aria-label="Filter flights">
+              <button class="filter-chip" type="button" aria-pressed="false">Direct only</button>
+              <button class="filter-chip" type="button" aria-pressed="false">Arrive by 3 p.m.</button>
+              <button class="filter-chip" type="button" aria-pressed="false">Same airport</button>
+            </div>
+            <p class="filter-meta" style="margin-top: 8px;" role="status" aria-live="polite" aria-atomic="true">Sorted by earliest arrival. All flights shown.</p>
+          </div>
+
+          <div role="group" aria-label="Choose a replacement flight" style="display:flex; flex-direction:column; gap: var(--s-3);">
+
+            <button class="flight-card" type="button" aria-pressed="false">
+              <span class="times">7:10 a.m. → 1:28 p.m.</span>
+              <span class="duration">6h 18m</span>
+              <span class="stops">1 stop in ORD · Arrives tomorrow</span>
+              <span class="selected-mark">Selected</span>
+            </button>
+
+            <button class="flight-card" type="button" aria-pressed="false">
+              <span class="times">2:40 p.m. → 8:55 p.m.</span>
+              <span class="duration">4h 15m</span>
+              <span class="stops">Nonstop · Arrives tomorrow</span>
+              <span class="selected-mark">Selected</span>
+            </button>
+
+            <button class="flight-card" type="button" aria-pressed="false">
+              <span class="times">6:30 p.m. → 12:48 a.m.</span>
+              <span class="duration">6h 18m</span>
+              <span class="stops">1 stop in DTW · Arrives day after</span>
+              <span class="selected-mark">Selected</span>
+            </button>
+          </div>
+
+          <p class="filter-meta pick-prompt">Pick a flight to continue.</p>
+          <p class="filter-meta">Showing 3 of 3. No fare difference applies during a Northstar cancellation.</p>
+
+          <section class="support-block" aria-labelledby="support-heading">
+            <h3 id="support-heading">Tonight's support</h3>
+            <p class="lede">Listed here so you don't have to hunt. Eligibility is checked against your booking.</p>
+
+            <div class="item">
+              <div>
+                <span class="name">Overnight hotel</span>
+                <p>If you qualify, we'll send a hotel partner address and check-in code by SMS after you confirm.</p>
+              </div>
+              <span class="status">Checking eligibility</span>
+            </div>
+
+            <div class="item">
+              <div>
+                <span class="name">Meal support</span>
+                <p>A meal credit may be available depending on your situation. Eligibility, amount, and partners shown on the confirmation step.</p>
+              </div>
+              <span class="status">Checking eligibility</span>
+            </div>
+
+            <p class="lede" style="font-size: var(--fs-xs); color: var(--ink-500);">Eligibility confirmed at confirm. You'll accept or decline each item on the next screen.</p>
+
+            <div class="not-included" hidden>
+              <strong>Overnight support isn't included for this disruption.</strong> If you need to discuss exceptions, call Northstar.
+            </div>
+          </section>
+
+          <button class="btn" type="button" disabled aria-disabled="true">Review and confirm</button>
+        </div>
+
+        <footer class="screen-footer">
+          <a class="call-link" href="#" aria-label="Call Northstar (support number from your booking)">
+            <span>Call Northstar</span>
+            <span class="num">support number from your booking</span>
+          </a>
+        </footer>
+      </article>
+    </section>
+
+    <!-- =========================================================
+         SCREEN 4 — Review and confirm
+         ========================================================= -->
+    <section class="screen-slot" aria-labelledby="cap-4">
+      <p class="screen-caption" id="cap-4">Screen 4<strong>Review and confirm</strong></p>
+
+      <article class="phone" aria-label="Screen 4: Review and confirm">
+        <div class="status-bar" aria-hidden="true">
+          <span>10:53</span>
+          <span class="brand">Northstar Air</span>
+          <span>5G</span>
+        </div>
+
+        <header class="screen-header">
+          <p class="screen-eyebrow">Step 4 of 4</p>
+          <h2 class="screen-title">Review and confirm</h2>
+        </header>
+
+        <div class="screen-body">
+          <p class="lede">Here's what will happen when you tap Confirm. Nothing is final yet.</p>
+
+          <div class="recap-list" role="group" aria-label="Trip changes to confirm">
+            <div class="row">
+              <span class="key">New flight</span>
+              <span class="val wrap-anywhere"><strong>NS614</strong> · DEN to LGA · Tomorrow, 2:40 p.m. → 8:55 p.m. · Nonstop</span>
+              <button class="link-btn edit" type="button" aria-label="Change flight">Change</button>
+            </div>
+            <div class="row">
+              <span class="key">Travelers</span>
+              <span class="val">Both travelers on this booking. Same seats class as original.</span>
+              <button class="link-btn edit" type="button" aria-label="Change travelers">Change</button>
+            </div>
+            <div class="row support-row-item">
+              <span class="key">Hotel support tonight</span>
+              <span class="val">A partner hotel and check-in code if you qualify. Eligibility confirmed at confirm — no charge to you.</span>
+              <div class="consent-pair" role="group" aria-label="Hotel support consent">
+                <button class="consent-btn" type="button" aria-pressed="false">Accept</button>
+                <button class="consent-btn" type="button" aria-pressed="false">Decline</button>
+              </div>
+            </div>
+            <div class="row support-row-item">
+              <span class="key">Meal credit</span>
+              <span class="val">A meal credit if eligible. Amount and partners shown at confirm.</span>
+              <div class="consent-pair" role="group" aria-label="Meal credit consent">
+                <button class="consent-btn" type="button" aria-pressed="false">Accept</button>
+                <button class="consent-btn" type="button" aria-pressed="false">Decline</button>
+              </div>
+            </div>
+            <div class="row">
+              <span class="key">What we'll send</span>
+              <span class="val">SMS and email with your new flight, support details, and a saveable summary. Standard messaging rates apply.</span>
+            </div>
+          </div>
+
+          <p class="meta-line" style="font-size: var(--fs-sm);">Confirming releases your original 6:15 a.m. seat. You can still call us if anything looks wrong.</p>
+
+          <button class="btn" type="button">Confirm changes</button>
+          <button class="btn btn-ghost" type="button">Go back</button>
+        </div>
+
+        <footer class="screen-footer">
+          <a class="call-link" href="#" aria-label="Call Northstar (support number from your booking)">
+            <span>Call Northstar</span>
+            <span class="num">support number from your booking</span>
+          </a>
+        </footer>
+      </article>
+    </section>
+
+    <!-- =========================================================
+         SCREEN 5 — You're set
+         ========================================================= -->
+    <section class="screen-slot" aria-labelledby="cap-5">
+      <p class="screen-caption" id="cap-5">Screen 5<strong>You're set</strong></p>
+
+      <article class="phone" aria-label="Screen 5: You're set">
+        <div class="status-bar" aria-hidden="true">
+          <span>10:54</span>
+          <span class="brand">Northstar Air</span>
+          <span>5G</span>
+        </div>
+
+        <header class="screen-header">
+          <p class="screen-eyebrow">Confirmed</p>
+          <h2 class="screen-title">You're set</h2>
+        </header>
+
+        <div class="screen-body">
+
+          <section class="confirm-hero" aria-labelledby="confirm-headline">
+            <h3 id="confirm-headline">You're booked on NS614</h3>
+            <p>Tomorrow, 2:40 p.m. departure from DEN. Both travelers covered.</p>
+            <p><span class="status-badge good">Confirmed</span></p>
+          </section>
+
+          <section aria-labelledby="next-heading">
+            <h3 id="next-heading" class="section-label" style="margin-bottom: var(--s-3);">What happens next</h3>
+            <ol class="next-steps">
+              <li>Arrive at <strong>DEN Terminal Concourse B</strong> by 1:10 p.m.
+                <span class="sub">Northstar check-in is on the south end of the concourse.</span>
+              </li>
+              <li>Bags from your original flight stay checked through.
+                <span class="sub">If you carried bags off, the kiosk will recheck them at no charge.</span>
+              </li>
+              <li>Hotel and meal details are being sent by SMS now.
+                <span class="sub">If you don't see them within a few minutes, tap Call Northstar below.</span>
+              </li>
+              <li>Boarding starts about 40 minutes before departure.
+                <span class="sub">Watch for gate changes on the screens.</span>
+              </li>
+            </ol>
+          </section>
+
+          <section class="offline-card" aria-labelledby="offline-heading">
+            <h3 id="offline-heading">Save this summary</h3>
+            <dl>
+              <dt>Flight</dt><dd class="wrap-anywhere"><strong>NS614</strong> · DEN → LGA</dd>
+              <dt>Depart</dt><dd>Tomorrow, 2:40 p.m.</dd>
+              <dt>Arrive</dt><dd>Tomorrow, 8:55 p.m. (LGA)</dd>
+              <dt>Travelers</dt><dd>2</dd>
+              <dt>Confirmation</dt><dd class="wrap-anywhere">NS-RBK-7G2X9C</dd>
+              <dt>Support</dt><dd>Hotel and meal details by SMS</dd>
+            </dl>
+            <button class="btn btn-ghost" type="button">Save as image</button>
+          </section>
+
+          <p class="meta-line"><a class="text-link" href="#screen-2">Plans changed again?</a> You can pick a different option without starting over.</p>
+        </div>
+
+        <footer class="screen-footer">
+          <a class="call-link" href="#" aria-label="Call Northstar (support number from your booking)">
+            <span>Call Northstar</span>
+            <span class="num">support number from your booking</span>
+          </a>
+        </footer>
+      </article>
+    </section>
+
+  </main>
+
+  <footer class="page-footer">
+    <p>Concept only. Flight numbers, times, and phone numbers are illustrative. No real bookings are created.</p>
+  </footer>
+
+</div>
+
+</body>
+</html>
