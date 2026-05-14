@@ -6,7 +6,7 @@ Use this when the goal is to improve the agent-team system, not just run the dem
 
 Better does not mean longer, more specialist-sounding, or more visibly coordinated. Better means a human would make a better product decision or ship a better artifact with less risky rework.
 
-Grounding sources: Anthropic's Claude Code [agent-team docs](https://code.claude.com/docs/en/agent-teams), [worktree docs](https://code.claude.com/docs/en/worktrees), ["How we built our multi-agent research system"](https://www.anthropic.com/engineering/multi-agent-research-system), and ["Building effective agents"](https://www.anthropic.com/engineering/building-effective-agents).
+Grounding sources: Anthropic's Claude Code [agent-team docs](https://code.claude.com/docs/en/agent-teams), [worktree docs](https://code.claude.com/docs/en/worktrees), ["How we built our multi-agent research system"](https://www.anthropic.com/engineering/multi-agent-research-system), ["Building effective agents"](https://www.anthropic.com/engineering/building-effective-agents), and ["Building a C compiler with a team of parallel Claudes"](https://www.anthropic.com/engineering/building-c-compiler).
 
 ## What Success Means
 
@@ -113,6 +113,8 @@ Suggested overhead penalty:
 - 6 points: team took more than 3x baseline time or required substantial cleanup
 - 10 points: team output was hard to use without a human rebuild
 
+When the overhead penalty is close to a threshold, or when wall-time and token-cost evidence point in different directions, record a sensitivity check: calculate Coordination Yield at the chosen penalty and at the next harsher penalty. Promote only if the conclusion survives that stress test, unless the team caught a severe risk the baseline missed.
+
 Promote a system change only when:
 
 - Candidate Layer 0 gates pass and the comparison is valid.
@@ -171,6 +173,7 @@ Run these before, during, and after each loop. The point is to avoid grounding t
 - **Code-only visual scoring:** HTML that looks semantically careful can still clip, overflow, or break in a small viewport. Render it.
 - **Masked overflow:** `overflow-x: hidden` can make `scrollWidth` look clean while clipping a layout bug. If the page uses global horizontal clipping, run a no-mask overflow check before passing the render floor.
 - **Top-level pass illusion:** a page can have `scrollWidth <= clientWidth` while text or placeholder tokens escape inside a phone mockup, table, card, or other fixed-format container. Treat visible internal clipping as a render-floor failure, not as a cosmetic note.
+- **Render-proof zeal:** DOM probes often flag hidden form inputs, off-screen skip links, or padding-edge fills. Do not pass or fail on counts alone. Categorize each finding, inspect the screenshot, and fail only when readable text, controls, decision-critical content, or layout boundaries are actually clipped, overlapped, or inaccessible.
 - **Proof-loop displacement:** exhaustive render proof before the audit/revision pass can burn time on markup that will change anyway. Prefer a quick author sanity check before audits, then one lead-owned exhaustive proof after revisions.
 - **Process blindness:** a good prototype can hide unsafe assumptions or missing edge cases.
 - **Aesthetic overcorrection:** after a generic team artifact, the next run may chase distinctiveness and lose clarity.
