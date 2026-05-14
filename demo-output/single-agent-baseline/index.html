@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Northstar Air — Canceled-flight recovery</title>
+<meta name="description" content="A redesigned mobile flow for travellers whose flight has just been canceled.">
+<style>
+:root {
+  --bg:#F5F1E9;
+  --surface:#FFFFFF;
+  --surface-warm:#FBF7EE;
+  --ink:#1B1F25;
+  --ink-soft:#5A6470;
+  --ink-faint:#8A93A0;
+  --line:#E5DDD0;
+  --line-strong:#C9C0B0;
+  --signal:#A8431A;
+  --signal-soft:#FCE9DD;
+  --calm:#2D4A66;
+  --calm-soft:#E2EAF1;
+  --ok:#2F6B4D;
+  --ok-soft:#DCEAE2;
+  --warn-ink:#913012;
+  --warn-soft:#FAE3D6;
+
+  --r-sm:8px;
+  --r-md:14px;
+  --r-lg:22px;
+  --r-phone:38px;
+
+  --shadow-sm:0 1px 2px rgba(27,31,37,0.06);
+  --shadow-md:0 4px 16px rgba(27,31,37,0.08),0 1px 2px rgba(27,31,37,0.04);
+  --shadow-phone:0 24px 50px -16px rgba(27,31,37,0.22),0 8px 16px -8px rgba(27,31,37,0.12);
+
+  --font-serif:'Charter','Iowan Old Style','Sitka Text','Cambria',Georgia,serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif;
+  --font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0E1218;
+    --surface:#171C24;
+    --surface-warm:#1B2029;
+    --ink:#ECE6D8;
+    --ink-soft:#A2ABBA;
+    --ink-faint:#6E7889;
+    --line:#252C39;
+    --line-strong:#34394A;
+    --signal:#E68253;
+    --signal-soft:#2E1B11;
+    --calm:#7AABDA;
+    --calm-soft:#14253A;
+    --ok:#6CB78F;
+    --ok-soft:#16271E;
+    --warn-ink:#E89770;
+    --warn-soft:#2A1810;
+    --shadow-sm:0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md:0 4px 16px rgba(0,0,0,0.4),0 1px 2px rgba(0,0,0,0.2);
+    --shadow-phone:0 24px 50px -16px rgba(0,0,0,0.65),0 8px 16px -8px rgba(0,0,0,0.45);
+  }
+}
+
+* { box-sizing:border-box; }
+html,body { margin:0; padding:0; }
+body {
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+a { color:inherit; }
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline:3px solid var(--signal);
+  outline-offset:2px;
+  border-radius:4px;
+}
+
+.page { max-width:1240px; margin:0 auto; padding:40px 22px 80px; }
+
+.masthead {
+  padding:32px 0 40px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:48px;
+  display:grid;
+  gap:20px;
+}
+.masthead-eyebrow {
+  font-size:11.5px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--signal);
+  font-weight:700;
+}
+.masthead-title {
+  font-family:var(--font-serif);
+  font-weight:500;
+  font-size:clamp(34px,5.4vw,56px);
+  line-height:1.04;
+  letter-spacing:-0.012em;
+  margin:0;
+}
+.masthead-title em { font-style:italic; color:var(--signal); }
+.masthead-deck {
+  font-size:18px;
+  color:var(--ink-soft);
+  max-width:62ch;
+  margin:0;
+  line-height:1.5;
+}
+.masthead-meta {
+  display:flex; flex-wrap:wrap;
+  gap:24px 40px;
+  margin:8px 0 0;
+  font-size:13px;
+}
+.masthead-meta dt {
+  font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--ink-faint); margin:0; font-weight:700;
+}
+.masthead-meta dd { margin:5px 0 0; color:var(--ink); font-weight:500; }
+
+.flow-strip {
+  display:flex; align-items:stretch; gap:0;
+  padding:16px 18px;
+  background:var(--surface-warm);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  margin-bottom:60px;
+  font-size:13px;
+  overflow-x:auto;
+}
+.flow-step {
+  flex:1 0 auto;
+  display:grid; grid-template-columns:auto 1fr;
+  gap:10px; align-items:center;
+  padding:4px 0;
+  min-width:140px;
+}
+.flow-step-num {
+  font-family:var(--font-serif);
+  font-weight:600; font-style:italic;
+  color:var(--signal); font-size:18px;
+}
+.flow-step-label { color:var(--ink); font-weight:500; }
+.flow-step + .flow-step::before {
+  content:""; display:block;
+  width:24px; height:1px;
+  border-top:1px dashed var(--line-strong);
+  margin:0 14px;
+  align-self:center;
+}
+
+.screens { display:grid; gap:80px; }
+
+.screen-section {
+  display:grid; grid-template-columns:minmax(0,1fr);
+  gap:36px; align-items:start;
+}
+@media (min-width: 880px) {
+  .screen-section { grid-template-columns:330px 1fr; gap:64px; }
+  .screen-section.reverse { grid-template-columns:1fr 330px; }
+  .screen-section.reverse .phone-wrap { order:2; }
+  .screen-section.reverse .annotations { order:1; }
+}
+
+.annotations h2 {
+  font-family:var(--font-serif);
+  font-weight:500;
+  font-size:30px;
+  line-height:1.1;
+  letter-spacing:-0.01em;
+  margin:0 0 8px;
+}
+.annotations h2 .step {
+  display:inline-block;
+  font-family:var(--font-sans);
+  font-size:11px; font-weight:700;
+  letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--signal);
+  vertical-align:6px; margin-right:14px;
+}
+.annotations p.lede {
+  font-size:17px;
+  color:var(--ink-soft);
+  margin:0 0 22px;
+  max-width:56ch;
+  line-height:1.5;
+}
+.annot-list {
+  list-style:none; margin:0; padding:0;
+  display:grid; gap:10px;
+}
+.annot-list li {
+  display:grid; grid-template-columns:auto 1fr;
+  gap:12px;
+  padding:11px 14px;
+  background:var(--surface-warm);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  font-size:13.5px;
+  line-height:1.5;
+  color:var(--ink);
+}
+.annot-list .tag {
+  font-size:10px; letter-spacing:0.14em; text-transform:uppercase;
+  font-weight:700; padding:5px 7px;
+  border-radius:4px; align-self:start;
+  white-space:nowrap; line-height:1;
+}
+.annot-list .tag.fix { background:var(--ok-soft); color:var(--ok); }
+.annot-list .tag.trust { background:var(--calm-soft); color:var(--calm); }
+.annot-list .tag.a11y { background:var(--signal-soft); color:var(--signal); }
+.annot-list .tag.copy { background:var(--warn-soft); color:var(--warn-ink); }
+
+.phone-wrap { display:flex; justify-content:center; }
+.phone {
+  width:100%; max-width:340px;
+  background:var(--surface);
+  border-radius:var(--r-phone);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow-phone);
+  overflow:hidden; position:relative;
+}
+.phone::before {
+  content:"";
+  position:absolute; top:12px; left:50%;
+  transform:translateX(-50%);
+  width:96px; height:24px;
+  background:var(--ink);
+  border-radius:999px; z-index:10;
+}
+
+.statusbar {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 26px 0;
+  font-size:12px; font-weight:600;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.statusbar-icons { display:flex; gap:6px; align-items:center; }
+.bars { display:inline-flex; align-items:flex-end; gap:1.5px; height:9px; }
+.bars span { width:2px; background:currentColor; border-radius:1px; display:inline-block; }
+.bars span:nth-child(1) { height:3px; }
+.bars span:nth-child(2) { height:5px; }
+.bars span:nth-child(3) { height:7px; }
+.bars span:nth-child(4) { height:9px; }
+.battery {
+  width:18px; height:9px; border:1px solid currentColor; border-radius:2px;
+  position:relative;
+}
+.battery::after {
+  content:""; position:absolute; right:-3px; top:2px;
+  width:1.5px; height:5px; background:currentColor;
+  border-radius:0 1px 1px 0;
+}
+.battery::before {
+  content:""; position:absolute; left:1px; top:1px;
+  width:11px; height:5px;
+  background:currentColor;
+}
+
+.screen-body {
+  padding:38px 22px 28px;
+  display:flex; flex-direction:column; gap:16px;
+  min-height:600px;
+}
+
+.app-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding-bottom:4px;
+}
+.brand {
+  font-family:var(--font-serif);
+  font-weight:600; font-style:italic;
+  color:var(--ink); font-size:15px;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.brand::before {
+  content:"✦"; color:var(--signal);
+  font-style:normal; font-weight:400;
+}
+.help-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 12px;
+  border:1px solid var(--line-strong);
+  border-radius:999px;
+  font-size:12px; font-weight:600;
+  background:var(--surface); color:var(--ink);
+  text-decoration:none; min-height:32px;
+  cursor:pointer;
+}
+.help-pill::before {
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--ok); display:inline-block;
+}
+
+.eyebrow {
+  font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase;
+  font-weight:700;
+}
+.eyebrow.warn { color:var(--warn-ink); }
+.eyebrow.signal { color:var(--signal); }
+.eyebrow.ok { color:var(--ok); }
+
+.h-screen {
+  font-family:var(--font-serif);
+  font-weight:500;
+  font-size:24px;
+  line-height:1.14;
+  letter-spacing:-0.005em;
+  margin:6px 0 0;
+  color:var(--ink);
+}
+.subhead {
+  margin:0;
+  font-size:14px; line-height:1.5;
+  color:var(--ink-soft);
+}
+
+.flight-context {
+  display:flex; align-items:center; gap:12px;
+  font-size:13px; color:var(--ink);
+  padding:10px 12px;
+  background:var(--surface-warm);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+}
+.flight-context .route {
+  display:flex; align-items:center; gap:6px;
+  font-weight:600;
+}
+.flight-context .code {
+  font-family:var(--font-mono);
+  font-size:11px; color:var(--ink-soft);
+  letter-spacing:0.04em;
+  padding-left:8px; margin-left:auto;
+  border-left:1px solid var(--line-strong);
+}
+
+.option-card {
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  padding:14px;
+  background:var(--surface);
+  display:grid; gap:8px;
+}
+.option-card.featured {
+  border-color:var(--ink);
+  border-width:1.5px;
+  position:relative;
+}
+.option-card .badge {
+  font-size:10px; font-weight:700;
+  letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--ink);
+  display:inline-flex; align-items:center; gap:5px;
+}
+.option-card .badge::before {
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--signal); display:inline-block;
+}
+.option-card .badge.muted::before { background:var(--ink-faint); }
+.option-card .top {
+  display:flex; align-items:baseline; justify-content:space-between; gap:8px;
+}
+.option-card .time {
+  font-family:var(--font-serif);
+  font-weight:500;
+  font-size:19px;
+  letter-spacing:-0.01em;
+  color:var(--ink);
+}
+.option-card .arrive {
+  font-size:12px; color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+}
+.option-card .meta {
+  display:flex; flex-wrap:wrap; gap:6px 12px;
+  font-size:12px; color:var(--ink-soft);
+}
+.option-card .meta strong { color:var(--ink); font-weight:600; }
+.option-card .reason {
+  font-size:12.5px; color:var(--ink);
+  padding:8px 10px;
+  background:var(--signal-soft);
+  border-radius:var(--r-sm);
+  line-height:1.4;
+}
+.option-card .reason::before {
+  content:"→ "; color:var(--signal); font-weight:700;
+}
+
+.option-card.muted {
+  background:var(--surface-warm);
+  border-style:dashed;
+}
+.option-card.muted .time { color:var(--ink-soft); }
+
+.choice-grid {
+  display:grid; gap:10px;
+}
+.choice-card {
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  padding:14px;
+  background:var(--surface);
+  display:grid; grid-template-columns:auto 1fr auto;
+  gap:12px; align-items:center;
+  font-size:14px;
+  text-decoration:none; color:inherit;
+  cursor:pointer;
+  min-height:64px;
+}
+.choice-card.primary {
+  border-width:1.5px; border-color:var(--ink);
+  background:var(--surface);
+}
+.choice-card .icon {
+  width:36px; height:36px;
+  border-radius:10px;
+  background:var(--surface-warm);
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--line);
+  font-family:var(--font-serif);
+  font-style:italic; font-size:17px;
+  color:var(--signal);
+  font-weight:600;
+}
+.choice-card.primary .icon {
+  background:var(--ink); color:var(--surface-warm);
+  border-color:var(--ink);
+}
+.choice-card .body { display:grid; gap:2px; }
+.choice-card .label {
+  font-weight:600; color:var(--ink); font-size:14px;
+}
+.choice-card .sub {
+  font-size:12px; color:var(--ink-soft); line-height:1.4;
+}
+.choice-card .chev {
+  color:var(--ink-soft); font-size:18px;
+  font-family:var(--font-serif);
+}
+
+.filter-bar {
+  display:flex; gap:6px; overflow-x:auto;
+  padding-bottom:2px;
+  margin:0 -22px;
+  padding-left:22px; padding-right:22px;
+  scrollbar-width:none;
+}
+.filter-bar::-webkit-scrollbar { display:none; }
+.chip {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:7px 12px;
+  border-radius:999px;
+  border:1px solid var(--line-strong);
+  background:var(--surface);
+  font-size:12px; font-weight:600;
+  color:var(--ink);
+  white-space:nowrap; cursor:pointer;
+  min-height:32px;
+}
+.chip.on { background:var(--ink); color:var(--surface-warm); border-color:var(--ink); }
+.chip .dot { width:6px; height:6px; border-radius:50%; background:var(--signal); }
+
+.btn {
+  display:flex; align-items:center; justify-content:center;
+  gap:8px; width:100%;
+  min-height:48px;
+  padding:12px 16px;
+  border-radius:12px;
+  font-size:15px; font-weight:600;
+  border:1px solid transparent;
+  cursor:pointer;
+  font-family:inherit;
+  text-decoration:none;
+  text-align:center; line-height:1.2;
+}
+.btn-primary { background:var(--ink); color:var(--surface-warm); border-color:var(--ink); }
+.btn-secondary { background:var(--surface); color:var(--ink); border-color:var(--line-strong); }
+.btn-ghost {
+  background:transparent; color:var(--ink);
+  font-weight:500;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  min-height:44px;
+}
+
+.entitlement-banner {
+  display:grid; grid-template-columns:auto 1fr auto;
+  gap:12px; align-items:center;
+  padding:12px 14px;
+  background:var(--calm-soft);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  text-decoration:none;
+  color:var(--ink);
+}
+.entitlement-banner .mark {
+  width:30px; height:30px;
+  border-radius:50%;
+  background:var(--calm);
+  color:var(--surface-warm);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-serif); font-style:italic;
+  font-weight:600; font-size:15px;
+}
+.entitlement-banner .text { font-size:13px; line-height:1.4; }
+.entitlement-banner .text strong { font-weight:700; }
+.entitlement-banner .chev { color:var(--calm); font-size:16px; font-weight:700; }
+
+.support-stack { display:grid; gap:10px; }
+.support-card {
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  padding:14px;
+  display:grid; gap:6px;
+  background:var(--surface);
+}
+.support-card.included { background:var(--calm-soft); border-color:var(--calm-soft); }
+.support-card .head {
+  display:flex; justify-content:space-between; align-items:flex-start;
+  gap:12px;
+}
+.support-card h3 {
+  margin:0;
+  font-family:var(--font-serif);
+  font-weight:600; font-size:16px;
+  color:var(--ink); letter-spacing:-0.005em;
+}
+.support-card p {
+  margin:0;
+  font-size:13px;
+  color:var(--ink); line-height:1.45;
+}
+.support-card .det {
+  font-size:12px; color:var(--ink-soft);
+  display:flex; flex-wrap:wrap; gap:4px 12px;
+}
+.toggle {
+  position:relative;
+  display:inline-flex; align-items:center;
+  gap:8px;
+  font-size:11px; color:var(--ink-soft);
+  font-weight:700; letter-spacing:0.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.toggle input {
+  appearance:none; -webkit-appearance:none;
+  width:38px; height:22px;
+  border-radius:999px;
+  background:var(--line-strong);
+  border:none; position:relative;
+  cursor:pointer;
+  transition:background 150ms ease;
+  margin:0;
+}
+.toggle input::after {
+  content:""; position:absolute;
+  top:2px; left:2px;
+  width:18px; height:18px;
+  border-radius:50%;
+  background:var(--surface);
+  box-shadow:var(--shadow-sm);
+  transition:left 150ms ease;
+}
+.toggle input:checked { background:var(--ink); }
+.toggle input:checked::after { left:18px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:0.001s !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.001s !important;
+    scroll-behavior:auto !important;
+  }
+}
+
+.confirm-card {
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  padding:14px;
+  display:grid; gap:8px;
+}
+.confirm-card h3 {
+  margin:0 0 2px;
+  font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--ink-soft); font-weight:700;
+}
+.confirm-card .big {
+  font-family:var(--font-serif);
+  font-weight:500; font-size:18px;
+  color:var(--ink); letter-spacing:-0.005em;
+}
+.confirm-card .row {
+  display:grid; grid-template-columns:1fr auto;
+  gap:6px 12px; align-items:baseline;
+  font-size:13px;
+}
+.confirm-card .row .l { color:var(--ink-soft); }
+.confirm-card .row .v {
+  color:var(--ink); font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.confirm-card .next-step {
+  font-size:12.5px; color:var(--ink);
+  padding-top:6px;
+  border-top:1px dashed var(--line);
+  line-height:1.45;
+}
+.confirm-card .next-step strong { font-weight:700; color:var(--signal); }
+
+.sms-frame {
+  background:linear-gradient(180deg,var(--surface-warm),var(--surface));
+  border-radius:20px;
+  padding:16px 14px 18px;
+  border:1px solid var(--line);
+  display:grid; gap:12px;
+}
+.sms-from {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; color:var(--ink-soft);
+}
+.sms-from .name { font-weight:700; color:var(--ink); font-size:13px; }
+.sms-from .time { font-variant-numeric:tabular-nums; }
+.sms-bubble {
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:13px 14px;
+  font-size:14px;
+  color:var(--ink);
+  line-height:1.5;
+  box-shadow:var(--shadow-sm);
+}
+.sms-bubble strong { font-weight:700; }
+.sms-bubble .link {
+  display:block; margin-top:10px;
+  color:var(--calm);
+  font-weight:600;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  font-size:13.5px;
+}
+.sms-bubble .aside {
+  display:block; margin-top:8px;
+  font-size:12.5px; color:var(--ink-soft);
+}
+
+.always-help {
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--ink-soft);
+  padding:8px 4px 0;
+  border-top:1px dashed var(--line);
+}
+.always-help .dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--ok); display:inline-block;
+}
+.always-help a {
+  color:var(--ink); font-weight:600;
+  text-decoration:underline; text-underline-offset:3px;
+}
+
+.scrollhint {
+  text-align:center;
+  font-size:12px; color:var(--ink-faint);
+  margin-top:8px;
+  letter-spacing:0.08em; text-transform:uppercase; font-weight:600;
+}
+
+footer {
+  margin-top:80px;
+  padding:32px 0 16px;
+  border-top:1px solid var(--line);
+  font-size:13px;
+  color:var(--ink-soft);
+  display:grid; gap:6px;
+}
+footer .principles {
+  display:grid; gap:6px;
+  grid-template-columns:1fr;
+}
+@media (min-width: 720px) {
+  footer .principles { grid-template-columns:repeat(3, 1fr); }
+}
+footer h4 {
+  margin:0 0 4px;
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:700;
+}
+
+.sr-only {
+  position:absolute; width:1px; height:1px;
+  padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+</style>
+</head>
+<body>
+<a class="sr-only" href="#flow">Skip to flow</a>
+<main class="page">
+
+<header class="masthead">
+  <div class="masthead-eyebrow">Mobile flow concept · Canceled-flight recovery</div>
+  <h1 class="masthead-title">When a flight gets canceled at 10:46&nbsp;p.m., <em>plain language and visible help</em> beat polished apology.</h1>
+  <p class="masthead-deck">Five screens for a tired, mobile-only traveller trying to reach a family event tomorrow. The flow names what happened, surfaces support that is already owed, and never makes the disrupted trip feel like a sales surface.</p>
+  <dl class="masthead-meta">
+    <div><dt>Scope</dt><dd>5 screens, mobile</dd></div>
+    <div><dt>Constraints</dt><dd>No invented policy or metrics</dd></div>
+    <div><dt>Accessibility</dt><dd>WCAG 2.1 AA target</dd></div>
+    <div><dt>Modes</dt><dd>Light · Dark · Reduced motion</dd></div>
+  </dl>
+</header>
+
+<nav class="flow-strip" aria-label="Flow overview">
+  <div class="flow-step"><span class="flow-step-num">01</span><span class="flow-step-label">Alert</span></div>
+  <div class="flow-step"><span class="flow-step-num">02</span><span class="flow-step-label">What happened &amp; choices</span></div>
+  <div class="flow-step"><span class="flow-step-num">03</span><span class="flow-step-label">Pick a flight</span></div>
+  <div class="flow-step"><span class="flow-step-num">04</span><span class="flow-step-label">Add overnight support</span></div>
+  <div class="flow-step"><span class="flow-step-num">05</span><span class="flow-step-label">You're set</span></div>
+</nav>
+
+<section id="flow" class="screens">
+
+<!-- Screen 1 — Alert -->
+<article class="screen-section">
+  <div class="annotations">
+    <h2><span class="step">01 · Alert</span>Say the real thing, in the first message.</h2>
+    <p class="lede">The text the traveller wakes up to has to do three jobs: name what happened, hold their seat, and signal that help is real. Not "schedule irregularity."</p>
+    <ul class="annot-list">
+      <li><span class="tag copy">Copy</span><span><strong>"Canceled"</strong> not "schedule irregularity." Plain language is the first trust signal.</span></li>
+      <li><span class="tag trust">Trust</span><span>A seat is pre-held on the next viable option, with a visible hold timer. Loss aversion is engaged honestly — they're not being rushed, they're being held.</span></li>
+      <li><span class="tag fix">Fix</span><span>Hotel and meal support are surfaced in the first message, not buried in an FAQ.</span></li>
+      <li><span class="tag a11y">A11y</span><span>SMS reads cleanly in screen-reader linear order; the link uses a short, brandable code so it survives line wrapping and Braille displays.</span></li>
+    </ul>
+  </div>
+  <div class="phone-wrap">
+    <div class="phone" role="img" aria-label="Mobile screen, push notification preview">
+      <div class="statusbar"><span>10:46</span><div class="statusbar-icons" aria-hidden="true"><span class="bars"><span></span><span></span><span></span><span></span></span><span class="battery"></span></div></div>
+      <div class="screen-body">
+        <div class="app-bar">
+          <span class="brand">Messages</span>
+          <span style="font-size:12px;color:var(--ink-soft)">now</span>
+        </div>
+        <div class="sms-frame">
+          <div class="sms-from"><span class="name">Northstar Air</span><span class="time">10:46 PM</span></div>
+          <div class="sms-bubble">
+            Your <strong>6:15 AM flight DEN → New York (LGA)</strong> is <strong>canceled</strong>. Reason: crew availability.<br><br>
+            We've held a seat for you on a 7:10 AM option for the next <strong>30 min</strong>. Tap to confirm, switch, or get a refund:
+            <a class="link" href="#">ns.air/r/T49P</a>
+            <span class="aside">Hotel and meal support is inside — not behind a menu.</span>
+          </div>
+          <div class="sms-bubble" style="background:var(--surface-warm);font-size:12.5px;color:var(--ink-soft)">
+            Reply <strong>CALL</strong> to talk to someone. We see your trip.
+          </div>
+        </div>
+        <div class="always-help"><span class="dot" aria-hidden="true"></span><span>Agent line stays open. <a href="#">+1 (888) 000-0000</a></span></div>
+      </div>
+    </div>
+  </div>
+</article>
+
+<!-- Screen 2 — Status & choices -->
+<article class="screen-section reverse">
+  <div class="phone-wrap">
+    <div class="phone" role="img" aria-label="Mobile screen, what happened and three top-level choices">
+      <div class="statusbar"><span>10:47</span><div class="statusbar-icons" aria-hidden="true"><span class="bars"><span></span><span></span><span></span><span></span></span><span class="battery"></span></div></div>
+      <div class="screen-body">
+        <div class="app-bar">
+          <span class="brand">Northstar</span>
+          <a class="help-pill" href="#">Talk to us</a>
+        </div>
+
+        <div>
+          <span class="eyebrow warn">Canceled · NS482</span>
+          <h2 class="h-screen">Your 6:15 a.m. to New York is canceled.</h2>
+        </div>
+        <p class="subhead">Crew availability. Sorry to wake you. Three things you can do — pick whichever fits tomorrow.</p>
+
+        <div class="flight-context" role="group" aria-label="Trip context">
+          <span class="route">DEN <span aria-hidden="true">→</span> LGA</span>
+          <span class="code">NS482 · TUE</span>
+        </div>
+
+        <div class="choice-grid" role="list">
+          <a class="choice-card primary" href="#" role="listitem">
+            <span class="icon" aria-hidden="true">→</span>
+            <span class="body">
+              <span class="label">Rebook a flight</span>
+              <span class="sub">7:10 a.m. seat held. Other times available.</span>
+            </span>
+            <span class="chev" aria-hidden="true">›</span>
+          </a>
+          <a class="choice-card" href="#" role="listitem">
+            <span class="icon" aria-hidden="true">↺</span>
+            <span class="body">
+              <span class="label">Refund as travel credit</span>
+              <span class="sub">Full fare, available right away. Use within 24 months.</span>
+            </span>
+            <span class="chev" aria-hidden="true">›</span>
+          </a>
+          <a class="choice-card" href="#" role="listitem">
+            <span class="icon" aria-hidden="true">☎</span>
+            <span class="body">
+              <span class="label">Talk to an agent</span>
+              <span class="sub">We'll show the current wait before you commit.</span>
+            </span>
+            <span class="chev" aria-hidden="true">›</span>
+          </a>
+        </div>
+
+        <a class="entitlement-banner" href="#" aria-label="Overnight support is available — see what's included">
+          <span class="mark" aria-hidden="true">+</span>
+          <span class="text"><strong>Overnight support is on this trip.</strong><br>Hotel near DEN and a meal credit are ready to add.</span>
+          <span class="chev" aria-hidden="true">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <h2><span class="step">02 · What &amp; choices</span>Three roads. No buried defaults.</h2>
+    <p class="lede">The current flow opens on a vague itinerary change and defaults to travel credit. We open on the real event and present every meaningful path at the same depth — including a path to a human.</p>
+    <ul class="annot-list">
+      <li><span class="tag fix">Fix</span><span>Removes the "Continue" button that didn't say what would happen. Each card states its consequence in 6–10 words.</span></li>
+      <li><span class="tag fix">Fix</span><span>No default tab forcing travel credit. Rebook is featured because the user goal is "get there," but refund and human are one tap, same surface.</span></li>
+      <li><span class="tag trust">Trust</span><span>Entitlements banner is visible <em>before</em> the user picks an option. People shouldn't have to commit to a path to see what's owed.</span></li>
+      <li><span class="tag a11y">A11y</span><span>Choice list uses semantic list/listitem roles. Icons are decorative (aria-hidden); labels carry the meaning. Targets ≥ 44×44.</span></li>
+    </ul>
+  </div>
+</article>
+
+<!-- Screen 3 — Pick flight -->
+<article class="screen-section">
+  <div class="annotations">
+    <h2><span class="step">03 · Pick a flight</span>Sort by what they care about, not what you score.</h2>
+    <p class="lede">"Recommended" is opaque. Replace it with a reason the user can verify. Sort by arrival time by default, because the user goal is to land — not to depart.</p>
+    <ul class="annot-list">
+      <li><span class="tag copy">Copy</span><span>"Closest to your original arrival" replaces "Recommended." It's checkable; the user knows why this is first.</span></li>
+      <li><span class="tag fix">Fix</span><span>No fare-difference price tag during a disruption the carrier caused. Pricing belongs in a buy flow, not a recovery flow.</span></li>
+      <li><span class="tag fix">Fix</span><span>Filters cover real goals (nonstop, arrive AM, family-friendly, mobility help) — not airline-coded categories.</span></li>
+      <li><span class="tag trust">Trust</span><span>Standby is visible but visually demoted and labeled as a chance, not a confirmed seat.</span></li>
+    </ul>
+  </div>
+  <div class="phone-wrap">
+    <div class="phone" role="img" aria-label="Mobile screen, list of replacement flights sorted by arrival time">
+      <div class="statusbar"><span>10:48</span><div class="statusbar-icons" aria-hidden="true"><span class="bars"><span></span><span></span><span></span><span></span></span><span class="battery"></span></div></div>
+      <div class="screen-body">
+        <div class="app-bar">
+          <span class="brand">Northstar</span>
+          <a class="help-pill" href="#">Talk to us</a>
+        </div>
+        <div>
+          <span class="eyebrow signal">Rebook · DEN → LGA</span>
+          <h2 class="h-screen">Pick a flight that gets you there.</h2>
+          <p class="subhead" style="margin-top:6px">Sorted by arrival time — closest to your original landing first.</p>
+        </div>
+
+        <div class="filter-bar" role="group" aria-label="Filters">
+          <button class="chip on" type="button">Arrive AM</button>
+          <button class="chip" type="button">Nonstop</button>
+          <button class="chip" type="button">Family-friendly</button>
+          <button class="chip" type="button">Mobility help</button>
+        </div>
+
+        <div style="display:grid;gap:10px">
+          <div class="option-card featured">
+            <div class="badge">Closest to your original arrival</div>
+            <div class="top">
+              <span class="time">7:10 a.m.</span>
+              <span class="arrive">arr. 3:30 p.m. ET</span>
+            </div>
+            <div class="meta"><strong>1 stop</strong><span>DFW · 1h 5m</span><span>Total 7h 20m</span></div>
+            <div class="reason">Your seat is held until 11:16 p.m. Tap to confirm.</div>
+            <button class="btn btn-primary" type="button">Confirm 7:10 a.m.</button>
+          </div>
+
+          <div class="option-card">
+            <div class="top">
+              <span class="time">2:40 p.m.</span>
+              <span class="arrive">arr. 8:55 p.m. ET</span>
+            </div>
+            <div class="meta"><strong>Nonstop</strong><span>4h 15m</span><span>Lands in time for dinner ET</span></div>
+            <button class="btn btn-secondary" type="button">Switch to 2:40 p.m.</button>
+          </div>
+
+          <div class="option-card muted">
+            <div class="badge muted">Standby · seat not guaranteed</div>
+            <div class="top">
+              <span class="time">6:30 p.m.</span>
+              <span class="arrive">arr. 12:50 a.m. ET (next day)</span>
+            </div>
+            <div class="meta"><strong>1 stop</strong><span>Standby list opens at 4:00 p.m.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>
+
+<!-- Screen 4 — Support -->
+<article class="screen-section reverse">
+  <div class="phone-wrap">
+    <div class="phone" role="img" aria-label="Mobile screen, overnight support">
+      <div class="statusbar"><span>10:49</span><div class="statusbar-icons" aria-hidden="true"><span class="bars"><span></span><span></span><span></span><span></span></span><span class="battery"></span></div></div>
+      <div class="screen-body">
+        <div class="app-bar">
+          <span class="brand">Northstar</span>
+          <a class="help-pill" href="#">Talk to us</a>
+        </div>
+
+        <div>
+          <span class="eyebrow ok">Eligible · disruption support</span>
+          <h2 class="h-screen">Add what you need for tonight.</h2>
+          <p class="subhead" style="margin-top:6px">Already linked to your trip. Keep what helps. Turn off what you don't need.</p>
+        </div>
+
+        <div class="support-stack">
+          <div class="support-card included">
+            <div class="head">
+              <h3>Hotel near DEN</h3>
+              <label class="toggle"><input type="checkbox" checked aria-label="Include hotel">On</label>
+            </div>
+            <p>Free shuttle from terminal. Check in any time after 11 p.m.</p>
+            <div class="det"><span>1 night · 1 traveller</span><span>Confirmation sent by SMS</span></div>
+          </div>
+          <div class="support-card included">
+            <div class="head">
+              <h3>Meal credit at DEN</h3>
+              <label class="toggle"><input type="checkbox" checked aria-label="Include meal credit">On</label>
+            </div>
+            <p>Use at any DEN food vendor tonight or at the gate tomorrow morning. Shown as a QR code in your trip.</p>
+          </div>
+          <div class="support-card">
+            <div class="head">
+              <h3>Travel-with help</h3>
+              <label class="toggle"><input type="checkbox" aria-label="Request travel-with help">Off</label>
+            </div>
+            <p>Add a child, companion, or mobility assistance. We'll route you to a specialist agent — no phone tree.</p>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" type="button">Add to my trip</button>
+        <button class="btn btn-ghost" type="button">Skip — I'll handle it myself</button>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <h2><span class="step">04 · Overnight support</span>If it's owed, it shouldn't be hidden in an FAQ.</h2>
+    <p class="lede">Hotel and meal credit were inside a collapsed "Other policies" panel in the current flow. That's a low-trust pattern under stress. Here, what's available is named, opt-out by default, and reversible.</p>
+    <ul class="annot-list">
+      <li><span class="tag fix">Fix</span><span>Eligible support is opt-out, not buried. The user can always say "skip — I'll handle it myself" with one tap.</span></li>
+      <li><span class="tag trust">Trust</span><span>"On" / "Off" replace marketing language. No "complimentary" or "courtesy" — the system shows status, not framing.</span></li>
+      <li><span class="tag a11y">A11y</span><span>Toggles have visible labels (not just colour). Each switch announces its state to screen readers; touch target wraps the full row.</span></li>
+      <li><span class="tag copy">Copy</span><span>"Travel-with help" is named explicitly — children, mobility, companion — and routes to a specialist, not a generic queue.</span></li>
+    </ul>
+  </div>
+</article>
+
+<!-- Screen 5 — All set -->
+<article class="screen-section">
+  <div class="annotations">
+    <h2><span class="step">05 · You're set</span>End with a useful summary, not a "Done" button.</h2>
+    <p class="lede">The current confirmation says "Your changes have been applied" and offers a Done button. That's a deflection screen, not a confidence screen. Replace it with everything the user needs to walk out the door tomorrow morning.</p>
+    <ul class="annot-list">
+      <li><span class="tag fix">Fix</span><span>Summary names the flight, the hotel, the meal credit, baggage status, and check-in moment — in that order of "what do I do next."</span></li>
+      <li><span class="tag trust">Trust</span><span>Always-visible "if plans change" link returns to options without restarting the flow. People know they can re-pick.</span></li>
+      <li><span class="tag a11y">A11y</span><span>"Save offline" downloads a PDF and adds to the OS wallet. Works at low bandwidth and inside the screen-reader linear flow.</span></li>
+      <li><span class="tag copy">Copy</span><span>No exclamation marks, no "all done!" — fatigue and stress respond better to calm specifics than to celebration.</span></li>
+    </ul>
+  </div>
+  <div class="phone-wrap">
+    <div class="phone" role="img" aria-label="Mobile screen, confirmation summary">
+      <div class="statusbar"><span>10:51</span><div class="statusbar-icons" aria-hidden="true"><span class="bars"><span></span><span></span><span></span><span></span></span><span class="battery"></span></div></div>
+      <div class="screen-body">
+        <div class="app-bar">
+          <span class="brand">Northstar</span>
+          <a class="help-pill" href="#">Talk to us</a>
+        </div>
+
+        <div>
+          <span class="eyebrow ok">Saved · tomorrow's trip</span>
+          <h2 class="h-screen">You're set for tomorrow.</h2>
+          <p class="subhead" style="margin-top:6px">Sleep when you can. Here's what's waiting.</p>
+        </div>
+
+        <div class="confirm-card" aria-label="New flight">
+          <h3>Flight</h3>
+          <div class="big">7:10 a.m. · DEN → LGA</div>
+          <div class="row"><span class="l">Stop</span><span class="v">DFW · 1h 5m</span></div>
+          <div class="row"><span class="l">Arrives</span><span class="v">3:30 p.m. ET</span></div>
+          <div class="row"><span class="l">Mobile pass</span><span class="v">Ready · Wallet</span></div>
+          <div class="next-step"><strong>Next:</strong> board pass appears at DEN security 2h before takeoff.</div>
+        </div>
+
+        <div class="confirm-card" aria-label="Hotel">
+          <h3>Hotel</h3>
+          <div class="big">Brookline Inn DEN</div>
+          <div class="row"><span class="l">Check-in</span><span class="v">Any time after 11 p.m.</span></div>
+          <div class="row"><span class="l">Shuttle</span><span class="v">Terminal door 506</span></div>
+          <div class="next-step"><strong>Next:</strong> shuttle code in your trip — show at door 506.</div>
+        </div>
+
+        <div class="confirm-card" aria-label="Meal credit">
+          <h3>Meal credit</h3>
+          <div class="row"><span class="l">Where</span><span class="v">Any DEN vendor</span></div>
+          <div class="row"><span class="l">How</span><span class="v">QR in your trip</span></div>
+        </div>
+
+        <button class="btn btn-primary" type="button">Save offline · add to wallet</button>
+        <button class="btn btn-ghost" type="button">If plans change, see options again</button>
+
+        <div class="always-help"><span class="dot" aria-hidden="true"></span><span>Agent line: <a href="#">+1 (888) 000-0000</a> · open through your trip</span></div>
+      </div>
+    </div>
+  </div>
+</article>
+
+</section>
+
+<footer>
+  <div class="principles">
+    <div>
+      <h4>Anchor</h4>
+      The disrupted trip is not a sales surface. No fare-difference, no upsell, no marketing language inside a recovery flow.
+    </div>
+    <div>
+      <h4>Anchor</h4>
+      Anything owed is shown by default. Opt-out, not opt-in. People shouldn't have to find what they're already entitled to.
+    </div>
+    <div>
+      <h4>Anchor</h4>
+      A path to a human is always one tap away, on every screen. Reducing call volume by hiding the call button is not a win.
+    </div>
+  </div>
+</footer>
+
+</main>
+</body>
+</html>
