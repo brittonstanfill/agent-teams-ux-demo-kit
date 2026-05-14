@@ -1,0 +1,1482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Northstar Air — Canceled-flight recovery (baseline prototype)</title>
+<meta name="description" content="A single-agent baseline redesign of Northstar Air's late-night canceled-flight recovery experience. Five mobile screens, mid-disruption.">
+<style>
+  /* ------- Tokens ------- */
+  :root {
+    --bg: #F4F1EB;
+    --surface: #FFFFFF;
+    --surface-2: #F9F6F1;
+    --surface-sunken: #ECE7DC;
+    --ink: #14181F;
+    --ink-dim: #44505F;
+    --ink-faint: #7C8493;
+    --border: #E1DAC9;
+    --border-strong: #C5BCA6;
+    --brand: #14233D;
+    --brand-ink: #F3EFE6;
+    --action: #DA5F1F;
+    --action-strong: #B84812;
+    --action-ink: #1A0E07;
+    --ok: #2A6244;
+    --ok-bg: #DCEBE2;
+    --hold: #7A5712;
+    --hold-bg: #F4E7C5;
+    --info: #1D4F88;
+    --info-bg: #DCE7F3;
+    --danger: #993522;
+    --focus: #1850D8;
+    --phone-bezel: #14181F;
+    --phone-shadow: 0 30px 60px -20px rgba(20,24,31,.32), 0 8px 22px -10px rgba(20,24,31,.18);
+    --phone-screen: #FAFAF7;
+    --radius: 14px;
+    --radius-sm: 9px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Palatino', 'Georgia', serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0B0E14;
+      --surface: #161A22;
+      --surface-2: #1B202A;
+      --surface-sunken: #0F131A;
+      --ink: #EFEADF;
+      --ink-dim: #B2BAC8;
+      --ink-faint: #6E7687;
+      --border: #2A303C;
+      --border-strong: #404858;
+      --brand: #E5EAF4;
+      --brand-ink: #14181F;
+      --action: #F38249;
+      --action-strong: #E26A2A;
+      --action-ink: #150A05;
+      --ok: #6FBA8C;
+      --ok-bg: #1A2C22;
+      --hold: #E5B964;
+      --hold-bg: #2C2517;
+      --info: #84B0E9;
+      --info-bg: #182334;
+      --danger: #E2826B;
+      --focus: #6FA0FF;
+      --phone-bezel: #07090D;
+      --phone-shadow: 0 32px 70px -18px rgba(0,0,0,.65), 0 8px 22px -10px rgba(0,0,0,.45);
+      --phone-screen: #161A22;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Focus — visible on every interactive element */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* ------- Page chrome ------- */
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(20px, 4vw, 56px) clamp(16px, 4vw, 48px) 80px;
+  }
+  .page-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+  .kicker {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--ink-dim);
+    margin: 0 0 8px;
+    letter-spacing: 0.01em;
+  }
+  .page-title {
+    font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 0 0 14px;
+    font-weight: 650;
+  }
+  .page-dek {
+    color: var(--ink-dim);
+    max-width: 62ch;
+    margin: 0;
+    font-size: 1.02rem;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 22px;
+    margin-top: 22px;
+    font-size: 0.85rem;
+    color: var(--ink-dim);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend .dot {
+    width: 10px; height: 10px; border-radius: 999px; flex: 0 0 auto;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.05);
+  }
+  .legend .dot--ok { background: var(--ok); }
+  .legend .dot--hold { background: var(--hold); }
+  .legend .dot--action { background: var(--action); }
+
+  /* ------- Filmstrip of phones ------- */
+  .filmstrip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: clamp(20px, 3vw, 36px);
+    align-items: start;
+  }
+
+  .phone-block { display: flex; flex-direction: column; gap: 14px; }
+  .phone-label {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--ink-dim);
+    font-size: 0.92rem;
+  }
+  .phone-label .num {
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 0.78rem;
+    background: var(--surface-sunken);
+    color: var(--ink-dim);
+    padding: 3px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .phone-label .when {
+    color: var(--ink-faint);
+    font-style: normal;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    margin-left: auto;
+    letter-spacing: 0.02em;
+  }
+
+  /* ------- Phone frame ------- */
+  .phone {
+    background: var(--phone-bezel);
+    border-radius: 38px;
+    padding: 10px;
+    box-shadow: var(--phone-shadow);
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+  .phone-screen {
+    background: var(--phone-screen);
+    border-radius: 30px;
+    overflow: hidden;
+    color: var(--ink);
+    position: relative;
+    min-height: 640px;
+    display: flex;
+    flex-direction: column;
+  }
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 22px 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .status-bar .right {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ink-dim);
+    font-weight: 500;
+  }
+  .signal-bars { display: inline-flex; gap: 1.5px; align-items: flex-end; height: 9px; }
+  .signal-bars i {
+    width: 2px;
+    background: currentColor;
+    display: inline-block;
+    border-radius: 1px;
+  }
+  .signal-bars i:nth-child(1) { height: 3px; }
+  .signal-bars i:nth-child(2) { height: 5px; }
+  .signal-bars i:nth-child(3) { height: 7px; }
+  .signal-bars i:nth-child(4) { height: 9px; }
+  .battery {
+    width: 22px;
+    height: 11px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    position: relative;
+    display: inline-block;
+  }
+  .battery::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 1.5px; height: 5px;
+    background: currentColor;
+    border-radius: 0 1px 1px 0;
+  }
+  .battery::before {
+    content: '';
+    position: absolute;
+    left: 1px; top: 1px; bottom: 1px;
+    width: 12px;
+    background: currentColor;
+    border-radius: 1px;
+  }
+  .home-indicator {
+    height: 4px;
+    width: 110px;
+    background: var(--ink);
+    opacity: .22;
+    border-radius: 99px;
+    margin: 0 auto 8px;
+  }
+
+  /* ------- Screen 1: SMS ------- */
+  .lock {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px 18px 14px;
+    background: linear-gradient(180deg, #283450 0%, #14233D 50%, #0B1426 100%);
+    color: #F1ECDD;
+    text-align: center;
+  }
+  .lock .lock-time {
+    font-size: 4.4rem;
+    font-weight: 250;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: 0 0 4px;
+    font-feature-settings: 'tnum';
+  }
+  .lock .lock-date {
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    opacity: 0.8;
+    margin: 0 0 28px;
+  }
+  .lock .notif {
+    background: rgba(255,255,255,.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 17px;
+    padding: 13px 14px;
+    text-align: left;
+    color: #F1ECDD;
+  }
+  .lock .notif-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .lock .notif-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--action);
+    color: var(--action-ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    flex: 0 0 auto;
+  }
+  .lock .notif-app {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    flex: 1;
+  }
+  .lock .notif-time { font-size: 0.72rem; opacity: 0.7; }
+  .lock .notif-title {
+    font-size: 0.93rem;
+    font-weight: 600;
+    margin: 0 0 3px;
+  }
+  .lock .notif-body {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    margin: 0;
+    color: #E1DACA;
+  }
+  .lock .notif-body a { color: #F8B785; text-decoration: underline; }
+  .lock .glyph { color: rgba(255,255,255,.55); font-size: 0.8rem; letter-spacing: 0.06em; }
+
+  /* ------- Generic in-app shell ------- */
+  .app-header {
+    padding: 8px 18px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .app-header .back {
+    background: none;
+    border: 0;
+    color: var(--ink-dim);
+    font-size: 0.92rem;
+    padding: 8px 10px 8px 0;
+    cursor: pointer;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .app-header .brand {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--ink-dim);
+  }
+  .app-header .menu {
+    background: none;
+    border: 0;
+    color: var(--ink-dim);
+    padding: 8px;
+    min-width: 44px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+  .app-body {
+    flex: 1;
+    padding: 18px 18px 100px;
+    overflow-y: auto;
+    background: var(--surface);
+  }
+  .app-action-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    padding: 12px 16px 14px;
+    background: linear-gradient(180deg, rgba(0,0,0,0), var(--surface) 30%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    line-height: 1.2;
+    width: 100%;
+    letter-spacing: -0.005em;
+  }
+  .btn--primary { background: var(--action); color: var(--action-ink); }
+  .btn--primary:hover { background: var(--action-strong); color: #fff; }
+  .btn--secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--border-strong);
+  }
+  .btn--ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 0;
+    min-height: 44px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .btn--ghost.danger { color: var(--danger); }
+  .btn--inline {
+    width: auto;
+    padding: 8px 14px;
+    min-height: 40px;
+    font-size: 0.9rem;
+  }
+
+  /* Headings inside screens */
+  .h-eyebrow {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 0.82rem;
+    color: var(--ink-dim);
+    margin: 0 0 4px;
+    letter-spacing: 0.01em;
+  }
+  .h-main {
+    font-size: 1.45rem;
+    line-height: 1.18;
+    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+    font-weight: 650;
+    color: var(--ink);
+  }
+  .h-section {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    font-weight: 600;
+    margin: 22px 0 10px;
+  }
+
+  /* Status header strip */
+  .trip-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--ink-dim);
+    font-size: 0.88rem;
+    margin: 0 0 12px;
+  }
+  .trip-meta .sep { color: var(--ink-faint); }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--surface-sunken);
+    color: var(--ink-dim);
+    border: 1px solid var(--border);
+  }
+  .chip--ok { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+  .chip--hold { background: var(--hold-bg); color: var(--hold); border-color: transparent; }
+  .chip--info { background: var(--info-bg); color: var(--info); border-color: transparent; }
+  .chip .dot { width: 7px; height: 7px; border-radius: 99px; background: currentColor; }
+
+  /* Care tiles — "what we've already done" */
+  .care-stack {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .care-stack > .care-stack-head {
+    padding: 12px 14px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .care-stack-head .label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+  .care-stack-head .time-held {
+    font-size: 0.78rem;
+    color: var(--ink-dim);
+    font-feature-settings: 'tnum';
+  }
+  .care-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .care-row:first-of-type { border-top: 0; }
+  .care-row .glyph {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brand);
+  }
+  .care-row .glyph svg { width: 18px; height: 18px; display: block; }
+  .care-row .meta { min-width: 0; }
+  .care-row .meta strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--ink);
+    font-weight: 600;
+    margin: 0 0 1px;
+  }
+  .care-row .meta span {
+    font-size: 0.83rem;
+    color: var(--ink-dim);
+  }
+  .care-row .action {
+    color: var(--info);
+    font-size: 0.85rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 4px;
+  }
+  .care-row .action.confirmed {
+    color: var(--ok);
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Option card (flight) */
+  .options { display: flex; flex-direction: column; gap: 12px; }
+  .option {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 14px;
+    background: var(--surface);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .option-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .option-time {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-feature-settings: 'tnum';
+    font-size: 1.18rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .option-time .arrow {
+    color: var(--ink-faint);
+    font-size: 1rem;
+    margin: 0 2px;
+  }
+  .option-time .day {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-left: 4px;
+  }
+  .option-route {
+    color: var(--ink-dim);
+    font-size: 0.88rem;
+  }
+  .option-route .duration { color: var(--ink-faint); }
+  .option-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .option-detail {
+    border-top: 1px dashed var(--border);
+    padding-top: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    font-size: 0.82rem;
+    color: var(--ink-dim);
+  }
+  .option-detail strong { color: var(--ink); font-weight: 600; }
+
+  .option .btn--primary { width: 100%; }
+  .option-secondary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.83rem;
+    color: var(--ink-dim);
+  }
+  .option-secondary a {
+    color: var(--info);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Disclosure for less-likely options */
+  details.other-options {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    padding: 0;
+  }
+  details.other-options > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.93rem;
+    font-weight: 600;
+    color: var(--ink);
+    min-height: 44px;
+  }
+  details.other-options > summary::-webkit-details-marker { display: none; }
+  details.other-options > summary::after {
+    content: '+';
+    color: var(--ink-dim);
+    font-size: 1.4rem;
+    line-height: 1;
+    transition: transform .2s ease;
+  }
+  details.other-options[open] > summary::after { content: '–'; }
+  details.other-options[open] > summary { border-bottom: 1px solid var(--border); }
+  details.other-options .inner { padding: 6px 14px 12px; display: flex; flex-direction: column; gap: 12px; }
+  details.other-options .other-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 0;
+  }
+  details.other-options .other-row strong { font-size: 0.95rem; }
+  details.other-options .other-row span { font-size: 0.84rem; color: var(--ink-dim); }
+  details.other-options .other-row a {
+    margin-top: 6px;
+    color: var(--info);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-size: 0.88rem;
+    align-self: flex-start;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Trust banner */
+  .trust-note {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: var(--info-bg);
+    border-radius: var(--radius-sm);
+    color: var(--info);
+    font-size: 0.82rem;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .trust-note svg { flex: 0 0 auto; margin-top: 1px; }
+
+  /* Inline help / call CTA */
+  .support-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 0;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .support-row .lhs { display: flex; gap: 10px; align-items: center; }
+  .support-row .lhs strong { display: block; font-size: 0.9rem; color: var(--ink); }
+  .support-row .lhs span { display: block; font-size: 0.78rem; color: var(--ink-dim); }
+  .support-row .glyph {
+    width: 36px; height: 36px;
+    border-radius: 99px;
+    background: var(--ok-bg);
+    color: var(--ok);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .support-row a.call {
+    color: var(--ok);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Confirmation screen — timeline */
+  .timeline {
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+    position: relative;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--border-strong);
+    border-radius: 2px;
+  }
+  .timeline li {
+    position: relative;
+    padding: 4px 0 16px 28px;
+  }
+  .timeline li::before {
+    content: '';
+    position: absolute;
+    left: 4px; top: 7px;
+    width: 12px; height: 12px;
+    border-radius: 99px;
+    background: var(--surface);
+    border: 2px solid var(--border-strong);
+  }
+  .timeline li.now::before {
+    background: var(--action);
+    border-color: var(--action);
+    box-shadow: 0 0 0 4px rgba(218, 95, 31, .18);
+  }
+  .timeline li.next::before {
+    background: var(--surface);
+    border-color: var(--action);
+  }
+  .timeline .when {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    font-weight: 600;
+    margin-bottom: 1px;
+    font-feature-settings: 'tnum';
+  }
+  .timeline .what {
+    font-size: 0.95rem;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .timeline .sub {
+    font-size: 0.82rem;
+    color: var(--ink-dim);
+    margin-top: 2px;
+  }
+
+  .new-flight-card {
+    background: var(--brand);
+    color: var(--brand-ink);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    margin: 14px 0 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .new-flight-card::before {
+    content: '';
+    position: absolute;
+    width: 220px; height: 220px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.04);
+    right: -100px; top: -100px;
+  }
+  .new-flight-card .label {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 0.78rem;
+    opacity: .68;
+    margin-bottom: 4px;
+    letter-spacing: 0.01em;
+  }
+  .new-flight-card .route {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 1.7rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-feature-settings: 'tnum';
+  }
+  .new-flight-card .route .iata { font-size: 1.1rem; opacity: .7; font-weight: 500; }
+  .new-flight-card .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 0.82rem;
+    margin-top: 6px;
+    opacity: 0.85;
+  }
+  .new-flight-card .arrive-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,.12);
+    border-radius: 99px;
+    padding: 6px 12px;
+    margin-top: 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  /* Hotel detail screen */
+  .map-card {
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    margin-bottom: 16px;
+  }
+  .map-img {
+    height: 140px;
+    background:
+      radial-gradient(circle at 30% 60%, rgba(20,35,61,.05) 0 4px, transparent 5px),
+      linear-gradient(180deg, #DDE3EC 0%, #C4CCD8 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  @media (prefers-color-scheme: dark) {
+    .map-img { background: linear-gradient(180deg, #1B202A 0%, #0F131A 100%); }
+  }
+  .map-img svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .map-pin {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -100%);
+    width: 28px; height: 28px;
+    background: var(--action);
+    border-radius: 50% 50% 50% 0;
+    transform-origin: bottom center;
+    rotate: -45deg;
+    box-shadow: 0 6px 14px rgba(0,0,0,.25);
+  }
+  .map-pin::after {
+    content: '';
+    position: absolute;
+    inset: 7px;
+    background: var(--phone-screen);
+    border-radius: 99px;
+  }
+  .hotel-meta {
+    padding: 14px;
+  }
+  .hotel-meta h3 {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .hotel-meta address {
+    font-style: normal;
+    font-size: 0.88rem;
+    color: var(--ink-dim);
+    margin: 0 0 12px;
+  }
+  .receipt {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .receipt > div {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .receipt > div strong {
+    display: block;
+    color: var(--ink);
+    font-size: 0.95rem;
+    letter-spacing: -0.005em;
+    text-transform: none;
+    margin-top: 1px;
+    font-weight: 600;
+  }
+
+  /* Reasoning callout under filmstrip */
+  .notes {
+    margin-top: 56px;
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 28px;
+  }
+  .notes h2 {
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 10px;
+  }
+  .notes p, .notes li { font-size: 0.94rem; color: var(--ink-dim); }
+  .notes ul { padding-left: 18px; margin: 0; }
+  .notes code {
+    font-family: var(--font-mono);
+    font-size: 0.84em;
+    background: var(--surface-sunken);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* Run metadata footer */
+  .runmeta {
+    margin-top: 48px;
+    padding: 18px 20px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    color: var(--ink-dim);
+    line-height: 1.7;
+  }
+  .runmeta dt {
+    display: inline-block;
+    color: var(--ink-faint);
+    margin-right: 6px;
+  }
+  .runmeta dd { display: inline; margin: 0; color: var(--ink); }
+  .runmeta dl { margin: 0; }
+  .runmeta dl > div + div::before { content: '·'; margin: 0 8px; color: var(--ink-faint); }
+  .runmeta dl > div { display: inline; }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  /* Print-friendlyish */
+  @media print {
+    body { background: #fff; color: #000; }
+    .phone { box-shadow: none; }
+  }
+
+  /* Visually hidden but accessible */
+  .sr-only {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <p class="kicker">Northstar Air — single-agent baseline prototype</p>
+      <h1 class="page-title">Recovering a 6:15 a.m. flight at 10:46 p.m., on a phone, alone.</h1>
+      <p class="page-dek">Five mobile screens that take a stressed traveler from a vague SMS to a confirmed itinerary, with entitlements visible up front, alternatives kept available, and a human always one tap away. Honors <code>prefers-color-scheme</code> and <code>prefers-reduced-motion</code>; designed against WCAG 2.1 AA (1.4.3 contrast, 2.5.5 target size, 1.3.1 info-and-relationships, 2.4.7 focus visible, 1.4.13 hover-focus content).</p>
+      <p class="legend" aria-label="Status legend">
+        <span><span class="dot dot--ok" aria-hidden="true"></span> Confirmed — done for you</span>
+        <span><span class="dot dot--hold" aria-hidden="true"></span> Held — needs your tap</span>
+        <span><span class="dot dot--action" aria-hidden="true"></span> Your next decision</span>
+      </p>
+    </header>
+
+    <div class="filmstrip" role="list">
+
+      <!-- ============================== SCREEN 1 : SMS ============================== -->
+      <section class="phone-block" role="listitem" aria-label="Screen 1 of 5: Entry SMS">
+        <p class="phone-label"><span class="num">01</span> Entry SMS on lock screen <span class="when">10:46 p.m.</span></p>
+        <div class="phone">
+          <div class="phone-screen" aria-label="Phone lock screen">
+            <div class="status-bar" style="color:#fff;">
+              <span>10:46</span>
+              <span class="right" aria-hidden="true">
+                <span class="signal-bars"><i></i><i></i><i></i><i></i></span>
+                LTE
+                <span class="battery"></span>
+              </span>
+            </div>
+            <div class="lock">
+              <div>
+                <p class="lock-time">10:46</p>
+                <p class="lock-date">Wed, May 14</p>
+                <div class="notif" role="group" aria-label="Notification from Northstar Air">
+                  <div class="notif-head">
+                    <span class="notif-icon" aria-hidden="true">NS</span>
+                    <span class="notif-app">Northstar Air · Text</span>
+                    <span class="notif-time">now</span>
+                  </div>
+                  <p class="notif-title">Your 6:15 a flight tomorrow is canceled (crew).</p>
+                  <p class="notif-body">We've reserved you a hotel near DEN and are holding 2 seats on tomorrow's morning flights — pick one in about 2 minutes: <a href="#screen-2">ns.app/trip/X9F2</a>. Reply <strong>HELP</strong> to talk to an agent now (24/7).</p>
+                </div>
+              </div>
+              <p class="glyph">swipe up to open</p>
+              <div class="home-indicator" style="background:#fff;opacity:.5;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== SCREEN 2 : STATUS + PLAN ============================== -->
+      <section class="phone-block" role="listitem" aria-label="Screen 2 of 5: Status and care plan">
+        <p class="phone-label"><span class="num">02</span> Status &amp; care plan <span class="when">10:48 p.m.</span></p>
+        <div class="phone">
+          <div class="phone-screen" id="screen-2" aria-label="Trip status screen">
+            <div class="status-bar">
+              <span>10:48</span>
+              <span class="right" aria-hidden="true">
+                <span class="signal-bars"><i></i><i></i><i></i><i></i></span>
+                LTE
+                <span class="battery"></span>
+              </span>
+            </div>
+
+            <div class="app-header">
+              <button class="back" type="button" aria-label="Close trip">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Close
+              </button>
+              <span class="brand">Northstar</span>
+              <button class="menu" type="button" aria-label="Trip menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+              </button>
+            </div>
+
+            <div class="app-body">
+              <p class="h-eyebrow">Trip X9F2 · DEN → LGA</p>
+              <h2 class="h-main">Your 6:15 a flight tomorrow is canceled.</h2>
+              <p class="trip-meta">
+                NS482 · Thu, May 15
+                <span class="chip chip--info"><span class="dot" aria-hidden="true"></span>Reason: crew availability</span>
+              </p>
+
+              <div class="care-stack" aria-label="What Northstar has already arranged">
+                <div class="care-stack-head">
+                  <span class="label">What we've already done for you</span>
+                  <span class="time-held">held until 7:30 a</span>
+                </div>
+
+                <div class="care-row">
+                  <span class="glyph" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>
+                  </span>
+                  <div class="meta">
+                    <strong>Hotel reserved · Hampton Inn DEN-Airport</strong>
+                    <span>Free shuttle from Door 6 every 20 min · in your name</span>
+                  </div>
+                  <a href="#screen-5" class="action confirmed" aria-label="View hotel details">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    Done
+                  </a>
+                </div>
+
+                <div class="care-row">
+                  <span class="glyph" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16 22 8l-4 12-5-5L8 18l-6-2Z"/></svg>
+                  </span>
+                  <div class="meta">
+                    <strong>2 seats held on tomorrow's morning flights</strong>
+                    <span>Confirm one to lock it in · no fare difference</span>
+                  </div>
+                  <a href="#screen-3" class="action" aria-label="Choose a held flight">Choose</a>
+                </div>
+
+                <div class="care-row">
+                  <span class="glyph" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M12 11v6"/></svg>
+                  </span>
+                  <div class="meta">
+                    <strong>Bags will follow your new flight</strong>
+                    <span>Same tag · no recheck unless you change airlines</span>
+                  </div>
+                  <a href="#" class="action confirmed" aria-label="Baggage handled">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    Done
+                  </a>
+                </div>
+              </div>
+
+              <div class="support-row">
+                <span class="lhs">
+                  <span class="glyph" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92V21a1 1 0 0 1-1.08 1 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 3.22 4.08 1 1 0 0 1 4.22 3h4.09a1 1 0 0 1 1 .75c.13.96.37 1.9.72 2.81a1 1 0 0 1-.22 1.05L8.09 9.34a16 16 0 0 0 6.57 6.57l1.73-1.72a1 1 0 0 1 1.05-.22c.91.35 1.85.59 2.81.72a1 1 0 0 1 .75 1Z"/></svg>
+                  </span>
+                  <span>
+                    <strong>Talk to a person — 24/7</strong>
+                    <span>Average wait tonight: 6 min</span>
+                  </span>
+                </span>
+                <a href="tel:+18006674357" class="call">Call</a>
+              </div>
+            </div>
+
+            <div class="app-action-bar">
+              <a href="#screen-3" class="btn btn--primary">Choose your new flight</a>
+              <button class="btn btn--ghost" type="button">Take travel credit instead</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== SCREEN 3 : OPTIONS ============================== -->
+      <section class="phone-block" role="listitem" aria-label="Screen 3 of 5: Held flight options">
+        <p class="phone-label"><span class="num">03</span> Held flights &amp; alternatives <span class="when">10:48 p.m.</span></p>
+        <div class="phone">
+          <div class="phone-screen" id="screen-3" aria-label="Flight options screen">
+            <div class="status-bar">
+              <span>10:48</span>
+              <span class="right" aria-hidden="true">
+                <span class="signal-bars"><i></i><i></i><i></i><i></i></span>
+                LTE
+                <span class="battery"></span>
+              </span>
+            </div>
+
+            <div class="app-header">
+              <button class="back" type="button" aria-label="Back to trip status">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                Back
+              </button>
+              <span class="brand">Pick your flight</span>
+              <button class="menu" type="button" aria-label="Filter and sort">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div class="app-body" style="padding-bottom: 24px;">
+              <p class="h-eyebrow">Held in your name · expires 7:30 a tomorrow</p>
+              <h2 class="h-main">Two seats are already yours — tap one to confirm.</h2>
+
+              <div class="options" style="margin-top:14px;">
+
+                <article class="option" aria-label="Flight option 1">
+                  <div class="option-head">
+                    <p class="option-time">
+                      9:05<span class="day">a</span>
+                      <span class="arrow" aria-hidden="true">→</span>
+                      3:12<span class="day">p NYC</span>
+                    </p>
+                    <p class="option-route">DEN → ORD (1 stop) → LGA · <span class="duration">7h 7m</span> · Closest to your original arrival</p>
+                  </div>
+                  <div class="option-pills">
+                    <span class="chip chip--hold"><span class="dot" aria-hidden="true"></span>Seat 14C held</span>
+                    <span class="chip">No fare difference</span>
+                    <span class="chip">Same bag tag</span>
+                  </div>
+                  <div class="option-detail">
+                    <div><strong>NS214</strong> DEN 9:05 a → ORD 12:01 p</div>
+                    <div><strong>NS118</strong> ORD 12:39 p → LGA 3:12 p</div>
+                  </div>
+                  <button class="btn btn--primary" type="button" aria-describedby="opt1-note">Confirm this flight</button>
+                  <p id="opt1-note" class="sr-only">Confirming will lock in seat 14C, the connection in Chicago, and your hotel tonight.</p>
+                </article>
+
+                <article class="option" aria-label="Flight option 2">
+                  <div class="option-head">
+                    <p class="option-time">
+                      1:40<span class="day">p</span>
+                      <span class="arrow" aria-hidden="true">→</span>
+                      7:48<span class="day">p NYC</span>
+                    </p>
+                    <p class="option-route">DEN → LGA · Nonstop · <span class="duration">4h 8m</span> · Later arrival, fewer connections</p>
+                  </div>
+                  <div class="option-pills">
+                    <span class="chip chip--hold"><span class="dot" aria-hidden="true"></span>Seat 22A held</span>
+                    <span class="chip">No fare difference</span>
+                    <span class="chip">Same bag tag</span>
+                  </div>
+                  <div class="option-detail">
+                    <div><strong>NS610</strong> DEN 1:40 p → LGA 7:48 p</div>
+                    <div>Sleep-in friendly · hotel checkout 11 a</div>
+                  </div>
+                  <button class="btn btn--primary" type="button">Confirm this flight</button>
+                </article>
+
+              </div>
+
+              <h3 class="h-section">If a held flight doesn't work</h3>
+
+              <details class="other-options">
+                <summary>Other ways to recover · 3 options</summary>
+                <div class="inner">
+                  <div class="other-row">
+                    <strong>Search all DEN → LGA flights</strong>
+                    <span>Any time tomorrow, including other airlines we partner with. We'll cover the rebooking.</span>
+                    <a href="#">Open search →</a>
+                  </div>
+                  <div class="other-row">
+                    <strong>Standby on tonight's last DEN → LGA (11:55 p)</strong>
+                    <span>14 open seats right now. <em>Standby is not a confirmed seat</em> — if it doesn't clear, you'll fly tomorrow.</span>
+                    <a href="#">Add to standby →</a>
+                  </div>
+                  <div class="other-row">
+                    <strong>Take travel credit instead</strong>
+                    <span>Only choose this if you no longer need to fly. Worth roughly the cash you paid; valid 1 year.</span>
+                    <a href="#">See credit details →</a>
+                  </div>
+                </div>
+              </details>
+
+              <div class="trust-note" role="note">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>You won't be charged a fare difference for any of these. We'll text you a copy of whatever you pick.</span>
+              </div>
+
+              <div class="support-row" style="margin-top:14px;">
+                <span class="lhs">
+                  <span class="glyph" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92V21a1 1 0 0 1-1.08 1 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 3.22 4.08 1 1 0 0 1 4.22 3h4.09a1 1 0 0 1 1 .75c.13.96.37 1.9.72 2.81a1 1 0 0 1-.22 1.05L8.09 9.34a16 16 0 0 0 6.57 6.57l1.73-1.72a1 1 0 0 1 1.05-.22c.91.35 1.85.59 2.81.72a1 1 0 0 1 .75 1Z"/></svg>
+                  </span>
+                  <span>
+                    <strong>Traveling with kids or mobility needs?</strong>
+                    <span>An agent can lock in a better fit fast.</span>
+                  </span>
+                </span>
+                <a href="tel:+18006674357" class="call">Call</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== SCREEN 4 : CONFIRMATION ============================== -->
+      <section class="phone-block" role="listitem" aria-label="Screen 4 of 5: Confirmation and what happens next">
+        <p class="phone-label"><span class="num">04</span> Confirmed · what happens next <span class="when">10:49 p.m.</span></p>
+        <div class="phone">
+          <div class="phone-screen" id="screen-4" aria-label="Confirmation screen">
+            <div class="status-bar">
+              <span>10:49</span>
+              <span class="right" aria-hidden="true">
+                <span class="signal-bars"><i></i><i></i><i></i><i></i></span>
+                LTE
+                <span class="battery"></span>
+              </span>
+            </div>
+
+            <div class="app-header">
+              <button class="back" type="button" aria-label="Back to options">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                Trip
+              </button>
+              <span class="brand">Confirmed</span>
+              <button class="menu" type="button" aria-label="Share trip">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </button>
+            </div>
+
+            <div class="app-body">
+              <p class="h-eyebrow"><span class="chip chip--ok"><span class="dot" aria-hidden="true"></span>Locked in · seat 14C</span></p>
+              <h2 class="h-main">You're flying at 9:05 a tomorrow.</h2>
+
+              <article class="new-flight-card" aria-label="Your new flight at a glance">
+                <p class="label">Northstar · Thu May 15</p>
+                <p class="route">
+                  <span>DEN</span>
+                  <span class="iata">9:05 a</span>
+                  <span aria-hidden="true">→</span>
+                  <span>ORD</span>
+                  <span class="iata">12:01 p</span>
+                  <span aria-hidden="true">→</span>
+                  <span>LGA</span>
+                </p>
+                <p class="meta">
+                  <span>NS214 + NS118</span>
+                  <span>1 stop · 38 min layover</span>
+                  <span>7h 7m</span>
+                </p>
+                <p class="arrive-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Arrives LGA Terminal B · 3:12 p NYC time</p>
+              </article>
+
+              <h3 class="h-section">Your night, step by step</h3>
+              <ol class="timeline" aria-label="Itinerary in chronological order">
+                <li class="now">
+                  <p class="when">Now · 10:49 p</p>
+                  <p class="what">Walk to <strong>Door 6</strong>, level 5</p>
+                  <p class="sub">Free Hampton Inn shuttle, every 20 min until 1 a. Look for the navy minibus.</p>
+                </li>
+                <li>
+                  <p class="when">Tomorrow · 6:30 a</p>
+                  <p class="what">Shuttle back to DEN · check in by 7:30 a</p>
+                  <p class="sub">Hotel breakfast opens at 5:30 a — grab-and-go bag available at the desk.</p>
+                </li>
+                <li class="next">
+                  <p class="when">9:05 a · NS214</p>
+                  <p class="what">Boarding from <strong>Gate B22</strong></p>
+                  <p class="sub">Seat 14C, aisle. Gate may move — we'll text you any change to this number.</p>
+                </li>
+                <li>
+                  <p class="when">12:01 p Chicago · ORD</p>
+                  <p class="what">38 min layover · <strong>Gate F11</strong></p>
+                  <p class="sub">Same terminal, same concourse. Restrooms across from F09.</p>
+                </li>
+                <li>
+                  <p class="when">3:12 p NYC · LGA</p>
+                  <p class="what">Arrive Terminal B</p>
+                  <p class="sub">Your bag will be on belt B3. If it's not there in 20 min, tap the trip — we'll start tracing.</p>
+                </li>
+              </ol>
+
+              <div class="trust-note" role="note" style="margin-top:18px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <span>We'll text any change to this trip from <strong>1-800-NS-ALERT</strong>. Forward that number to family if they're tracking you.</span>
+              </div>
+            </div>
+
+            <div class="app-action-bar">
+              <button class="btn btn--primary" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Save trip offline · Wallet &amp; PDF
+              </button>
+              <button class="btn btn--secondary" type="button">Plans changed? Switch flight</button>
+              <a href="tel:+18006674357" class="btn btn--ghost">Call Northstar · 1-800-NS-HELP</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== SCREEN 5 : HOTEL DETAIL ============================== -->
+      <section class="phone-block" role="listitem" aria-label="Screen 5 of 5: Hotel detail">
+        <p class="phone-label"><span class="num">05</span> Hotel detail (drill-down) <span class="when">10:50 p.m.</span></p>
+        <div class="phone">
+          <div class="phone-screen" id="screen-5" aria-label="Hotel detail screen">
+            <div class="status-bar">
+              <span>10:50</span>
+              <span class="right" aria-hidden="true">
+                <span class="signal-bars"><i></i><i></i><i></i><i></i></span>
+                LTE
+                <span class="battery"></span>
+              </span>
+            </div>
+
+            <div class="app-header">
+              <button class="back" type="button" aria-label="Back to trip">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                Trip
+              </button>
+              <span class="brand">Hotel</span>
+              <button class="menu" type="button" aria-label="Hotel options">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+              </button>
+            </div>
+
+            <div class="app-body">
+              <p class="h-eyebrow"><span class="chip chip--ok"><span class="dot" aria-hidden="true"></span>Booked in your name</span></p>
+              <h2 class="h-main">Hampton Inn DEN-Airport</h2>
+
+              <div class="map-card">
+                <div class="map-img" role="img" aria-label="Map of hotel location near Denver International Airport">
+                  <svg viewBox="0 0 320 140" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M0 60 Q 80 50 160 70 T 320 60" stroke="#A2AEC2" stroke-width="2" fill="none" opacity=".6"/>
+                    <path d="M0 100 Q 100 90 200 110 T 320 100" stroke="#A2AEC2" stroke-width="2" fill="none" opacity=".4"/>
+                    <path d="M30 0 L60 140" stroke="#A2AEC2" stroke-width="1.4" fill="none" opacity=".3"/>
+                    <path d="M250 0 L220 140" stroke="#A2AEC2" stroke-width="1.4" fill="none" opacity=".3"/>
+                    <circle cx="220" cy="40" r="3" fill="#A2AEC2" opacity=".5"/>
+                    <text x="226" y="44" font-family="ui-sans-serif" font-size="9" fill="#5B6573" opacity=".7">DEN</text>
+                  </svg>
+                  <span class="map-pin" aria-hidden="true"></span>
+                </div>
+                <div class="hotel-meta">
+                  <h3>4685 Airport Way, Denver CO 80249</h3>
+                  <address>1.4 mi from your terminal · 6 min by shuttle</address>
+                  <div class="receipt">
+                    <div>Confirmation<strong>HMP-7F2J9C</strong></div>
+                    <div>Check-in<strong>Tonight, ready now</strong></div>
+                    <div>Check-out<strong>Tomorrow, 11:00 a</strong></div>
+                    <div>Paid by<strong>Northstar Air</strong></div>
+                  </div>
+                </div>
+              </div>
+
+              <h3 class="h-section">What's covered tonight</h3>
+              <ul style="padding-left:18px; margin:0; color: var(--ink-dim); font-size:0.92rem; line-height:1.6;">
+                <li>Room for 1 (king bed). Need 2 beds or extra room? <a href="#" style="color:var(--info)">Change room</a> — no charge.</li>
+                <li>$18 meal credit at the lobby café until 1 a · code <code>NS-DEN-X9F2</code>.</li>
+                <li>Toothbrush, charger, child basics free at the front desk — just ask.</li>
+                <li>Late checkout by 11 a if you take the 1:40 p flight instead.</li>
+              </ul>
+
+              <div class="trust-note" role="note" style="margin-top:18px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>If the front desk asks for a card, show them this confirmation. Northstar is paying — you should not be charged.</span>
+              </div>
+            </div>
+
+            <div class="app-action-bar">
+              <button class="btn btn--primary" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                Get shuttle directions · Door 6
+              </button>
+              <button class="btn btn--secondary" type="button">Decline hotel · I have other plans</button>
+              <a href="tel:+18006674357" class="btn btn--ghost">Hotel issue? Call Northstar</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ============================== Notes ============================== -->
+    <section class="notes" aria-label="Designer notes">
+      <div>
+        <h2>Why this isn't a tab bar</h2>
+        <p>The current flow buries hotel and meal vouchers in an FAQ called "Other policies." That's the design saying "we'd prefer you didn't ask." Pushing entitlements up to Screen 02 trades a few pixels of polish for a measurable drop in calls and out-of-pocket spend by tired travelers. The stack reads top-to-bottom in screen-reader order: <em>done · done · your turn</em>.</p>
+      </div>
+      <div>
+        <h2>Why "Confirmed when you tap"</h2>
+        <p>The brief flags that the current Screen 2 makes standby look like a confirmed rebooking. Held seats are honest about their state — you only own them after the tap. We named that out loud rather than relying on a tab color. Two cards instead of three; "Recommended" is replaced with a real comparison ("Closest to your original arrival" vs. "Nonstop, slower arrival") so the user can pick on their goal, not ours.</p>
+      </div>
+      <div>
+        <h2>Why the call button never disappears</h2>
+        <p>Reducing support calls by hiding the support number is the dark-pattern version of this goal. We kept the call action visible on every screen — but pair it with a wait estimate and a "kids/mobility" cue so users self-route to the channel that's actually better for them.</p>
+      </div>
+      <div>
+        <h2>Accessibility calls we made</h2>
+        <ul>
+          <li>All interactive targets ≥ 44×44 (WCAG 2.5.5).</li>
+          <li>Body text contrast ≥ 4.5:1, large text ≥ 3:1 (WCAG 1.4.3); checked in both schemes.</li>
+          <li>Status is never color-alone — every chip carries text (WCAG 1.4.1).</li>
+          <li>Focus rings visible on all interactive elements (WCAG 2.4.7).</li>
+          <li>Reduced-motion respected (WCAG 2.3.3).</li>
+          <li>Care tiles use semantic <code>article</code>/<code>section</code>/<code>ol</code> so screen readers announce the plan as a list, not a soup of divs (WCAG 1.3.1).</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="runmeta" aria-label="Run metadata">
+      <dl>
+        <div><dt>Branch:</dt><dd>experiment/northstar-baseline-20260514-0059</dd></div>
+        <div><dt>Commit at start:</dt><dd>80e8000</dd></div>
+        <div><dt>Start:</dt><dd>2026-05-14T07:05:26Z</dd></div>
+        <div><dt>Model:</dt><dd>claude-opus-4-7 (1M ctx)</dd></div>
+        <div><dt>Mode:</dt><dd>single-agent baseline · clean room</dd></div>
+        <div><dt>Clean-room checks:</dt><dd>passed (HEAD ≥ 80e8000, demo-output empty)</dd></div>
+      </dl>
+    </footer>
+  </div>
+</body>
+</html>
