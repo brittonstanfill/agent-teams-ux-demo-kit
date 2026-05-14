@@ -51,6 +51,7 @@ A good demo names both. The scorecard in `05-scorecard.md` is built around the "
 | `10-clean-room-experiment-runbook.md` | **Evaluation protocol** — fresh clone/branch, no prior output contamination, sealed baseline/team outputs, scorecard, and promotion rules |
 | `11-evaluation-system.md` | **Improvement-loop evaluator** — gates, weighted outcome/decision/efficiency scoring, coordination yield, and metacognition checks |
 | `12-lean-agent-team-prompt.md` | **Lean team prompt** — tests whether fewer specialists can preserve artifact quality with lower overhead |
+| `13-four-role-agent-team-prompt.md` | **Compact team prompt** — tests the smallest practical team: IA, Visual, A11y, Behavioral, with lead-run red-team checklist |
 | `agent-teams-meetup-deck.html` | Self-contained HTML talk deck (17 slides, ~20 min). Open in any browser; arrow keys to navigate; `N` for speaker notes; `F` for fullscreen |
 
 ### The 9 agents (in `claude-agents/`)
@@ -113,7 +114,7 @@ Restart your Claude Code session in this project.
 
 1. Open [`demo-inputs/northstar-canceled-flight-brief.md`](demo-inputs/northstar-canceled-flight-brief.md).
 2. Run [`03-single-agent-baseline-prompt.md`](03-single-agent-baseline-prompt.md) first if you want a direct comparison. For a serious evaluation, follow [`10-clean-room-experiment-runbook.md`](10-clean-room-experiment-runbook.md) so the baseline and team run do not see past outputs.
-3. Run [`02-master-agent-team-prompt.md`](02-master-agent-team-prompt.md) and point it at the brief. Use [`12-lean-agent-team-prompt.md`](12-lean-agent-team-prompt.md) when testing whether a smaller team can keep quality while reducing overhead.
+3. Run [`02-master-agent-team-prompt.md`](02-master-agent-team-prompt.md) and point it at the brief. Use [`12-lean-agent-team-prompt.md`](12-lean-agent-team-prompt.md) when testing whether a smaller team can keep quality while reducing overhead; use [`13-four-role-agent-team-prompt.md`](13-four-role-agent-team-prompt.md) when testing the smallest practical team.
 4. Show the team messages, role-owned files, conflict resolution, and final recommendation.
 5. Score both outputs with [`05-scorecard.md`](05-scorecard.md). For improvement-loop decisions, use [`11-evaluation-system.md`](11-evaluation-system.md) plus `templates/evaluation-report-template.md`.
 

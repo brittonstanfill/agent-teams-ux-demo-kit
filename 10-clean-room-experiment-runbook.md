@@ -82,6 +82,7 @@ Start a new Claude Code session in the separate team checkout with `/clear` or a
 - `02-master-agent-team-prompt.md` for relay-with-debate
 - `09-parallel-author-prompt.md` when visual authorship is the main thing being tested
 - `12-lean-agent-team-prompt.md` when the hypothesis is that fewer specialists can preserve quality with lower overhead
+- `13-four-role-agent-team-prompt.md` when the hypothesis is that the smallest practical team can preserve quality with lower overhead
 
 Commit the sealed team output:
 
