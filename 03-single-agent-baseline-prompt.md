@@ -47,7 +47,9 @@ Quality bar:
 - Hold the line on distinctiveness over completeness.
 
 Label assumptions ([observed from brief], [inferred], [assumption], [recommendation]).
-Do not invent metrics, user quotes, airline policies, or legal obligations.
+Do not invent metrics, user quotes, airline policies, legal obligations, static wait times, credit expiration windows, eligibility promises, hotel names, voucher amounts, phone numbers, or other operational facts not present in the brief. Use dynamic copy ("current wait shown here") or mark placeholders outside user-visible copy.
+If the brief names a constraint such as family / multi-passenger travel, low bandwidth, screen reader use, or refund-seeker paths, either solve it in the artifact or name it as a scoped gap in the recommendation.
+Before committing, run a blind-hygiene scan on the HTML and recommendation for origin-identifying terms, branch names, commit SHAs, and ungrounded operational promises.
 ```
 
 ## Why this changed

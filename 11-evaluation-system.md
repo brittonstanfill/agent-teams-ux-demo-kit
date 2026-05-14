@@ -24,14 +24,14 @@ For this kit, an agent team succeeds only when it beats the single-agent baselin
 
 ### Layer 0: Gates
 
-Any gate failure blocks promotion, even if the score is high.
+Gate failures in the candidate system block promotion, even if the score is high. Gate failures in the comparison output are diagnostic: record them, penalize the comparison where appropriate, and use them as evidence only if the candidate avoided the same failure. If either side fails clean-room integrity or same-artifact-type, the comparison itself is invalid and should be rerun.
 
 | Gate | Pass Standard |
 |---|---|
 | Clean-room integrity | No prior outputs, branches, PRs, screenshots, or summaries inspected before outputs were sealed. |
 | Same artifact type | Single-agent and team outputs both ship the requested HTML artifact plus recommendation doc. |
 | Completeness | Required files exist and are not stubs. |
-| Constraint integrity | No invented metrics, user quotes, laws, airline policies, or compensation guarantees. |
+| Constraint integrity | No invented metrics, user quotes, laws, airline policies, compensation guarantees, static wait times, credit expiration windows, eligibility promises, hotel names, voucher amounts, phone numbers, or other operational facts not supplied by the brief. Dynamic placeholders are acceptable only when clearly framed as placeholders or system-provided values. |
 | Accessibility floor | No obvious keyboard trap, unreadable contrast, missing focus path, or screen-reader-breaking structure. |
 | Trust floor | The flow does not hide refund/support/entitlement information to reduce calls. |
 
@@ -95,7 +95,7 @@ Layer score = (average dimension score / 4) * layer weight
 Total score = Layer 1 score + Layer 2 score + Layer 3 score
 ```
 
-Layer 0 gates do not add points. They only block promotion.
+Layer 0 gates do not add points. Candidate gate failures block promotion. Comparison-only gate failures should be named and scored as outcome risk, not used to pretend the candidate won more cleanly than it did.
 
 ## Coordination Yield
 
@@ -114,7 +114,7 @@ Suggested overhead penalty:
 
 Promote a system change only when:
 
-- All Layer 0 gates pass.
+- Candidate Layer 0 gates pass and the comparison is valid.
 - Coordination Yield is at least +8 points, or the team catches a severe risk the baseline missed.
 - The team does not drop more than 1 point on visual craft or recommendation clarity unless the task explicitly deprioritized those.
 - The evaluator can name what changed in the system and why that change likely caused the improvement.
@@ -124,11 +124,12 @@ Promote a system change only when:
 1. Seal both outputs in separate commits before scoring.
 2. Copy only the HTML artifact and meeting-ready recommendation into blind labels `A` and `B`; hide which one is single-agent vs. team.
 3. Exclude `run-metadata.md`, role reports, process appendices, branch names, commit SHAs, and origin-identifying headings from Layer 1.
-4. Have at least one judge score outcome quality while blind to process.
-5. Reveal process artifacts only after Layer 1 scoring, then score Layer 2 and Layer 3.
-6. Reveal which system produced which output.
-7. Write an evaluation report using `templates/evaluation-report-template.md`.
-8. Decide: promote, hold, revert, or run another experiment.
+4. Run a hygiene scan on the blind artifacts for origin-identifying terms and ungrounded operational claims. Keep scanning results separate from Layer 1 outcome notes until after the blind score is recorded.
+5. Have at least one judge score outcome quality while blind to process.
+6. Reveal process artifacts only after Layer 1 scoring, then score Layer 2 and Layer 3.
+7. Reveal which system produced which output.
+8. Write an evaluation report using `templates/evaluation-report-template.md`.
+9. Decide: promote, hold, revert, or run another experiment.
 
 For an LLM judge, use `templates/llm-judge-prompt.md`. For human facilitators, use the same rubric and require evidence notes for every score of 0, 1, or 4.
 

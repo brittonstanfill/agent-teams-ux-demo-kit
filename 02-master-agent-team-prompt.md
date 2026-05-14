@@ -43,6 +43,8 @@ Working rules:
 - The team also produces a working HTML artifact at `demo-output/prototype/index.html`. Visual-designer authors this; other teammates refine in their domain.
 - Label every major claim as one of: observed from brief, inferred, assumption, or recommendation.
 - Do not invent research data, metrics, laws, airline policies, or user quotes. WCAG criteria and named behavioral principles are standard reference, not invention.
+- Do not invent static operational details unless the brief provides them. This includes wait times, credit expiration windows, eligibility promises, hotel names, voucher amounts, phone numbers, legal rights, or airline policy. Use dynamic copy ("current wait shown here") or explicitly mark a placeholder in process-only notes; do not put ungrounded operational facts into user-visible copy.
+- If the brief names an edge case or constraint, either solve it in the artifact or name it as a scoped gap in the final recommendation. Do not silently drop constraints such as family / multi-passenger travel, low bandwidth, screen reader use, or refund-seeker paths.
 - Make teammate messages visible in the process appendix, not in the meeting-ready recommendation.
 - Blind-eval hygiene: do not put "agent-team", "team run", branch names, commit SHAs, teammate count, or run metadata in the HTML title/body or in the meeting-ready recommendation. Put origin-identifying details only in `demo-output/run-metadata.md`.
 
@@ -93,12 +95,14 @@ Before writing the final recommendation, the lead should show:
 3. Which teammate message changed another teammate's recommendation.
 
 Final deliverables:
-Write `demo-output/final-recommendation.md` as a concise meeting-ready memo, target 900 words or fewer, with these sections only:
+Write `demo-output/final-recommendation.md` as a concise meeting-ready memo, hard cap 900 words, with these sections only:
 
 1. Executive recommendation
 2. Redesigned flow (target 4–5 screens, but if a 6-screen flow is genuinely better, ship 6; explain why)
 3. Accessibility and trust guardrails
 4. Experiment plan
+
+Before sealing, run `wc -w demo-output/final-recommendation.md`. If it is over 900 words, trim until it is under the cap. The process appendix can carry evidence, debates, and dissent; the first-read memo should stay presentable.
 
 Write `demo-output/process-appendix.md` with these sections:
 
@@ -113,7 +117,7 @@ Write `demo-output/run-metadata.md` with branch, commit SHA, start/end time, mod
 
 Also produce the HTML artifact at `demo-output/prototype/index.html`. All deliverables ship; a recommendation without an artifact, an artifact without a recommendation, or a missing process appendix is incomplete.
 
-Keep the final recommendation crisp and meeting-ready. Distinctiveness over completeness; named principles over generic best practices. Preserve dissent in the appendix, not in the first-read memo.
+Before committing, run a blind-hygiene scan on the HTML and final recommendation for origin-identifying terms, branch names, commit SHAs, and ungrounded operational promises. Keep the final recommendation crisp and meeting-ready. Distinctiveness over completeness; named principles over generic best practices. Preserve dissent in the appendix, not in the first-read memo.
 ```
 
 ## What's different from the V2 version of this prompt

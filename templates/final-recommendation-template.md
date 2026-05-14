@@ -1,10 +1,16 @@
 # Final Recommendation Template
 
+Hard cap: 900 words.
+
+Keep this file meeting-ready and origin-neutral. Do not include teammate names, branch names, commit SHAs, run metadata, or process commentary. Put debates, role contributions, and handoffs in `process-appendix.md`.
+
 ## Executive Recommendation
+
+State the recommendation in one paragraph. Name the current failure mode, the proposed direction, and the primary risk guardrail.
 
 ## Redesigned Flow
 
-Keep to 5 screens or fewer.
+Target 4-5 screens. For each screen, include the user job, core content, primary action, and important state/recovery behavior.
 
 1.
 2.
@@ -12,34 +18,12 @@ Keep to 5 screens or fewer.
 4.
 5.
 
-## What Each Role Contributed
-
-| Role | Contribution | Evidence Level |
-|---|---|---|
-| UX Researcher |  |  |
-| Information Architect |  |  |
-| Interaction Designer |  |  |
-| Content Designer / UX Writer |  |  |
-| Accessibility Specialist |  |  |
-| Visual / UI Designer |  |  |
-| Behavioral Scientist |  |  |
-
-## Cross-Agent Handoffs That Changed The Answer
-
-| Handoff | Change |
-|---|---|
-|  |  |
-
-## Key Tradeoffs And Rejected Alternatives
+If a brief constraint is not solved in the flow, name it as a scoped gap here or in the experiment plan.
 
 ## Accessibility And Trust Guardrails
 
+List only artifact-level guardrails: keyboard/SR path, contrast/focus, motion, non-coercive choice architecture, support/refund/entitlement visibility, and factual-honesty requirements.
+
 ## Experiment Plan
 
-| Hypothesis | Variant | Metric | Risk |
-|---|---|---|---|
-|  |  |  |  |
-
-## Scorecard-Ready Comparison
-
-Where did the agent team improve on a single-agent baseline?
+For each experiment, include hypothesis, primary metric, guardrail, and kill/exit rule. Do not invent operational thresholds unless they are explicitly marked as assumptions to calibrate.

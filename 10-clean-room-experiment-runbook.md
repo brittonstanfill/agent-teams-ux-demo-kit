@@ -72,6 +72,7 @@ Use 03-single-agent-baseline-prompt.md exactly. Follow its clean-room rule. Writ
 Commit the sealed baseline:
 
 ```bash
+wc -w demo-output/single-agent-baseline.md
 git add demo-output/single-agent-baseline demo-output/single-agent-baseline.md demo-output/run-metadata.md
 git commit -m "Add clean-room single-agent baseline"
 ```
@@ -84,6 +85,7 @@ Start a new Claude Code session in the separate team checkout with `/clear` or a
 Commit the sealed team output:
 
 ```bash
+wc -w demo-output/final-recommendation.md
 git add demo-output/role-reports demo-output/prototype demo-output/final-recommendation.md demo-output/process-appendix.md demo-output/run-metadata.md
 git commit -m "Add clean-room agent-team run"
 ```
@@ -91,6 +93,8 @@ git commit -m "Add clean-room agent-team run"
 Only after both commits exist may the lead compare outputs. At that point, create a scoring branch or folder that brings the two sealed artifacts side by side.
 
 For blind Layer 1 scoring, copy only the HTML artifact and meeting-ready recommendation into neutral `artifact-a/` and `artifact-b/` folders. Do not include `run-metadata.md`, role reports, process appendices, branch names, or commit SHAs until Layer 2 and Layer 3 scoring.
+
+Before scoring, run a quick scan on the blind artifacts for origin-identifying terms and ungrounded operational promises such as static wait times, credit expiration windows, eligibility guarantees, hotel names, voucher amounts, phone numbers, or compensation rules not present in the brief. Treat those as constraint risks; if they appear in the candidate output, promotion is blocked until fixed and rerun.
 
 ## Score and decide
 
